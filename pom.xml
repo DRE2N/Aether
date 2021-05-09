@@ -5,15 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>de.erethon</groupId>
-    <artifactId>mobsxl</artifactId>
+    <artifactId>aether</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>MobsXL</name>
+    <name>Aether</name>
 
     <description>A mob and NPC plugin</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>15</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <url>erethon.de</url>
@@ -25,8 +25,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>16</source>
+                    <target>16</target>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
@@ -89,6 +90,12 @@
             <artifactId>commons-dist</artifactId>
             <version>6.2.3</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.erethon</groupId>
+            <artifactId>questsxl</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.dmulloy2</groupId>
