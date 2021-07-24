@@ -22,6 +22,7 @@ public class NPC {
     private EntityType baseType;
     private EntityType displayType;
     private String displayName = "npc";
+    private boolean instancable = true;
     private boolean hasCollision = true;
     private boolean persistent;
     private boolean invulnerable;
@@ -106,6 +107,10 @@ public class NPC {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public boolean isInstancable() {
+        return instancable;
     }
 
     public void setDisplayName(String displayName) {
@@ -266,6 +271,7 @@ public class NPC {
         displayName = cfg.getString("displayname", "");
         baseType = EntityType.valueOf(cfg.getString("baseType", "PIG"));
         displayType = EntityType.valueOf(cfg.getString("displayType", "PIG"));
+        instancable = cfg.getBoolean("instancable", true);
         hasCollision = cfg.getBoolean("config.collision", true);
         persistent = cfg.getBoolean("config.persistent", false);
         invulnerable = cfg.getBoolean("config.invulnerable", false);
