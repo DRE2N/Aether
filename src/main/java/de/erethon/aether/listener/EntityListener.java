@@ -145,7 +145,6 @@ public class EntityListener implements Listener {
                 if (instanced.getViewers() == null || instanced.getViewers().isEmpty()) {
                     return;
                 }
-                item.setOwner(instanced.getViewers().get(0).getUniqueId());
             }
             event.setDeathSound(null);
             for (Player player : instanced.getViewers()) {

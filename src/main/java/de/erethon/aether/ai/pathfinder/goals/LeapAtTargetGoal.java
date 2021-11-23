@@ -1,9 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalLeapAtTarget;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class LeapAtTargetGoal extends AEPathfinderGoal {
 
@@ -14,8 +14,8 @@ public class LeapAtTargetGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalLeapAtTarget(entity, 2);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.LeapAtTargetGoal((Mob) entity, 2);
     }
 
     @Override

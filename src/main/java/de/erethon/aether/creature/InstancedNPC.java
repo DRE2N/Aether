@@ -7,15 +7,15 @@ import java.util.*;
 
 public class InstancedNPC extends ActiveNPC {
 
-    List<Player> viewers = new ArrayList<>();
+    Set<Player> viewers = new HashSet<>();
 
-    public InstancedNPC(NPC npc, Player... viewers) {
-        super(npc);
+    public InstancedNPC(NPCData npcData, Player... viewers) {
+        super(npcData);
         this.viewers.addAll(Arrays.asList(viewers));
     }
 
-    public InstancedNPC(NPC npc, Entity entity, Player... viewers) {
-        super(npc);
+    public InstancedNPC(NPCData npcData, Entity entity, Player... viewers) {
+        super(npcData);
         this.viewers.addAll(Arrays.asList(viewers));
     }
 
@@ -27,7 +27,7 @@ public class InstancedNPC extends ActiveNPC {
         viewers.remove(player);
     }
 
-    public List<Player> getViewers() {
+    public Set<Player> getViewers() {
         return viewers;
     }
 }

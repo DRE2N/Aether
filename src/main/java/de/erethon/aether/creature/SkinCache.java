@@ -25,8 +25,8 @@ public class SkinCache {
     }
 
     public void refresh() {
-        for (NPC npc : plugin.getCreatureManager().getCreatures()) {
-            fetch(npc.getSkinID());
+        for (NPCData npcData : plugin.getCreatureManager().getCreatures()) {
+            fetch(npcData.getSkinID());
         }
     }
 }

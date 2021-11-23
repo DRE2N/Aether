@@ -1,10 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityCreature;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalRestrictSun;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class RestrictSunGoal extends AEPathfinderGoal {
 
@@ -13,8 +12,8 @@ public class RestrictSunGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalRestrictSun((EntityCreature) entity);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.RestrictSunGoal((PathfinderMob) entity);
     }
 
     @Override

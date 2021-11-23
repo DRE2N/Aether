@@ -1,20 +1,18 @@
 package de.erethon.aether.creature;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import de.erethon.aether.Aether;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.commons.chat.MessageUtil;
-import net.minecraft.server.v1_16_R3.EntityArmorStand;
-import net.minecraft.server.v1_16_R3.EntityTypes;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.World;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
@@ -25,19 +23,22 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class ActiveNPC {
 
     Aether plugin = Aether.getInstance();
     String id;
-    ProtocolManager protocol = ProtocolLibrary.getProtocolManager();
-    EntityArmorStand stand;
+    ArmorStand stand;
     Entity baseEntity;
-    NPC npc;
+    NPCData npcData;
     boolean isAttacked = false;
     boolean isTalking = false;
+    Set<Player> viewers = new HashSet<>();
 
-    public ActiveNPC(NPC npc) {
-        this.npc = npc;
+    public ActiveNPC(NPCData npcData) {
+        this.npcData = npcData;
     }
 
     public ActiveNPC(org.bukkit.entity.Entity entity) {
@@ -46,8 +47,8 @@ public class ActiveNPC {
             return;
         }
         MessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
-        npc = plugin.getCreatureManager().getByID(npcID);
-        if (npc == null) {
+        npcData = plugin.getCreatureManager().getByID(npcID);
+        if (npcData == null) {
             MessageUtil.log(npcID + " is invalid.");
             return;
         }
@@ -55,46 +56,46 @@ public class ActiveNPC {
         setProperties();
     }
 
-    public ActiveNPC(NPC npc,  String id) {
-        this.npc = npc;
+    public ActiveNPC(NPCData npcData, String id) {
+        this.npcData = npcData;
         this.id = id;
     }
 
     public void spawn(Location location) {
-        net.minecraft.server.v1_16_R3.Entity nmsEntity = NMSUtils.spawnEntityWithoutSending(location, npc.getBaseType());
+        net.minecraft.world.entity.Entity nmsEntity = NMSUtils.spawnEntityWithoutSending(location, npcData.getBaseType());
         if (nmsEntity == null) {
             return;
         }
         baseEntity = nmsEntity.getBukkitEntity();
         plugin.getActiveCreatureManager().addActive(baseEntity, this);
-        baseEntity.getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.STRING, npc.getID());
+        baseEntity.getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.STRING, npcData.getID());
         setProperties();
         NMSUtils.addEntity(nmsEntity, location);
     }
 
     public void setProperties() {
         baseEntity.setSilent(true);
-        baseEntity.setGlowing(npc.isGlowing());
-        baseEntity.setGravity(npc.isGravity());
-        baseEntity.setInvulnerable(npc.isInvulnerable());
-        baseEntity.setPersistent(npc.isPersistent());
+        baseEntity.setGlowing(npcData.isGlowing());
+        baseEntity.setGravity(npcData.isGravity());
+        baseEntity.setInvulnerable(npcData.isInvulnerable());
+        baseEntity.setPersistent(npcData.isPersistent());
         if (baseEntity instanceof LivingEntity) {
             LivingEntity living = (LivingEntity) baseEntity;
             setAttributes(living);
             LivingEntity livingBase = (LivingEntity) baseEntity;
-            livingBase.setCollidable(npc.hasCollision());
-            livingBase.setMaximumAir(npc.getMaximumAir());
-            livingBase.setMaximumNoDamageTicks(npc.getNoDamageTicks());
+            livingBase.setCollidable(npcData.hasCollision());
+            livingBase.setMaximumAir(npcData.getMaximumAir());
+            livingBase.setMaximumNoDamageTicks(npcData.getNoDamageTicks());
             equip(living);
         }
 
-        if (npc.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
+        if (npcData.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 //PacketListener.doPlayerStuff(player, baseEntity.getUniqueId(), npc.getDisplayName());
             }
         }
-        if (npc.getDisplayName() != null) {
-            baseEntity.setCustomName(npc.getDisplayName());
+        if (npcData.getDisplayName() != null) {
+            baseEntity.setCustomName(npcData.getDisplayName());
             baseEntity.setCustomNameVisible(true);
         }
         Mob mob = (Mob) baseEntity;
@@ -122,10 +123,10 @@ public class ActiveNPC {
             baseEntity.setCustomName("§a" + name + ": §7§o" + strings[0]);
             baseEntity.setCustomNameVisible(true);
             CraftWorld craftWorld = (CraftWorld) baseEntity.getWorld();
-            World world = craftWorld.getHandle();
-            stand = new EntityArmorStand(EntityTypes.ARMOR_STAND, world);
-            instancing.addInstanced(stand.getUniqueID());
-            instancing.show(player, stand.getUniqueID());
+            Level world = craftWorld.getHandle();
+            stand = new ArmorStand(EntityType.ARMOR_STAND, world);
+            instancing.addInstanced(stand.getUUID());
+            instancing.show(player, stand.getUUID());
             stand.setInvisible(true);
             stand.setMarker(true);
             stand.getBukkitEntity().setCustomName("§7§o" + strings[1]);
@@ -146,7 +147,7 @@ public class ActiveNPC {
                     living.setAI(true);
                 }
                 if (stand != null) {
-                    instancing.removeInstanced(stand.getUniqueID());
+                    instancing.removeInstanced(stand.getUUID());
                     stand.getBukkitEntity().remove();
                 }
                 isTalking = false;
@@ -157,12 +158,12 @@ public class ActiveNPC {
 
     public void equip(LivingEntity entity) {
         EntityEquipment eq = entity.getEquipment();
-        eq.setItemInMainHand(new ItemStack(npc.getMainHand()));
-        eq.setItemInOffHand(new ItemStack(npc.getOffHand()));
-        eq.setHelmet(new ItemStack(npc.getHelmet()));
-        eq.setChestplate(new ItemStack(npc.getChest()));
-        eq.setLeggings(new ItemStack(npc.getLeggings()));
-        eq.setBoots(new ItemStack(npc.getBoots()));
+        eq.setItemInMainHand(new ItemStack(npcData.getMainHand()));
+        eq.setItemInOffHand(new ItemStack(npcData.getOffHand()));
+        eq.setHelmet(new ItemStack(npcData.getHelmet()));
+        eq.setChestplate(new ItemStack(npcData.getChest()));
+        eq.setLeggings(new ItemStack(npcData.getLeggings()));
+        eq.setBoots(new ItemStack(npcData.getBoots()));
     }
 
     public void setAttributes(LivingEntity living) {
@@ -170,55 +171,55 @@ public class ActiveNPC {
         if (living.getAttribute(Attribute.GENERIC_MAX_HEALTH) == null) {
             living.registerAttribute(Attribute.GENERIC_MAX_HEALTH);
         }
-        living.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(npc.getMaxHealth());
+        living.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(npcData.getMaxHealth());
         // Range
         if (living.getAttribute(Attribute.GENERIC_FOLLOW_RANGE) == null) {
             living.registerAttribute(Attribute.GENERIC_FOLLOW_RANGE);
         }
-        living.getAttribute(Attribute.GENERIC_FOLLOW_RANGE).setBaseValue(npc.getRange());
+        living.getAttribute(Attribute.GENERIC_FOLLOW_RANGE).setBaseValue(npcData.getRange());
         // knockback resistance
         if (living.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE) == null) {
             living.registerAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
         }
-        living.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(npc.getKnockbackResistance());
+        living.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(npcData.getKnockbackResistance());
         // Movement speed
         if (living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) == null) {
             living.registerAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         }
-        living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(npc.getMovementSpeed());
+        living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(npcData.getMovementSpeed());
         // Damage
         if (living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) == null) {
             living.registerAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
         }
-        living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(npc.getDamage());
+        living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(npcData.getDamage());
         // Armor
         if (living.getAttribute(Attribute.GENERIC_ARMOR) == null) {
             living.registerAttribute(Attribute.GENERIC_ARMOR);
         }
-        living.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(npc.getArmor());
+        living.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(npcData.getArmor());
         // Toughness
         if (living.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS) == null) {
             living.registerAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS);
         }
-        living.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS).setBaseValue(npc.getArmorToughness());
+        living.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS).setBaseValue(npcData.getArmorToughness());
         // Knockback
         if (living.getAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK) == null) {
             living.registerAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK);
         }
-        living.getAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK).setBaseValue(npc.getKnockback());
+        living.getAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK).setBaseValue(npcData.getKnockback());
         // Attack speed
         if (living.getAttribute(Attribute.GENERIC_ATTACK_SPEED) == null) {
             living.registerAttribute(Attribute.GENERIC_ATTACK_SPEED);
         }
-        living.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(npc.getAttackSpeed());
+        living.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(npcData.getAttackSpeed());
     }
 
-    public void addGoal(int prio, PathfinderGoal goal) {
+    public void addGoal(int prio, Goal goal) {
         CraftMob mob = (CraftMob) baseEntity;
         mob.getHandle().goalSelector.addGoal(prio, goal);
     }
 
-    public void addTarget(int prio, PathfinderGoal goal) {
+    public void addTarget(int prio, Goal goal) {
         CraftMob mob = (CraftMob) baseEntity;
         mob.getHandle().targetSelector.addGoal(prio, goal);
     }
@@ -229,10 +230,10 @@ public class ActiveNPC {
     }
 
     public void playAmbientSound() {
-        if (npc.getAmbientSound() == null) {
+        if (npcData.getAmbientSound() == null) {
             return;
         }
-        baseEntity.getWorld().playSound(baseEntity.getLocation(), npc.getAmbientSound(), org.bukkit.SoundCategory.VOICE, 1.0f, 1.0f);
+        baseEntity.getWorld().playSound(baseEntity.getLocation(), npcData.getAmbientSound(), org.bukkit.SoundCategory.VOICE, 1.0f, 1.0f);
     }
 
     public void playEffect(EntityEffect entityEffect) {
@@ -252,9 +253,13 @@ public class ActiveNPC {
         isAttacked = attacked;
     }
 
+    public Set<Player> getViewers() {
+        viewers.addAll(Bukkit.getOnlinePlayers());
+        return viewers;
+    }
 
-    public NPC getNpc() {
-        return npc;
+    public NPCData getNpc() {
+        return npcData;
     }
 
     public boolean hasHit() {

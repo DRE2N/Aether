@@ -1,14 +1,15 @@
 package de.erethon.aether;
 
 import de.erethon.aether.creature.*;
+import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
-import de.erethon.aether.listener.PacketListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.commons.chat.MessageUtil;
 import de.erethon.commons.compatibility.Internals;
 import de.erethon.commons.javaplugin.DREPlugin;
 import de.erethon.commons.javaplugin.DREPluginSettings;
 import de.erethon.aether.commands.CommandCache;
+import io.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 
@@ -21,13 +22,12 @@ public final class Aether extends DREPlugin {
     public static File CREATURES;
     NamespacedKey key = new NamespacedKey(this, "aether");
     CommandCache commands;
-    NPCManager npcManager;
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
     NPCInstancing npcInstancing;
     PlayerListener playerListener;
-    PacketListener packetListener;
+    AEPacketListener packetListener;
     EntityListener entityListener;
 
     public Aether() {
@@ -36,6 +36,12 @@ public final class Aether extends DREPlugin {
                 .economy(true)
                 .internals(Internals.v1_16_R3)
                 .build();
+    }
+
+    @Override
+    public void onLoad() {
+        PacketEvents.create(this);
+        PacketEvents.get().load();
     }
 
     @Override
@@ -52,26 +58,23 @@ public final class Aether extends DREPlugin {
             getDataFolder().mkdir();
         }
 
-        MOBDATA = new File(getDataFolder(), "mobs");
-        if (!MOBDATA.exists()) {
-            MOBDATA.mkdir();
-        }
-
         CREATURES = new File(getDataFolder(), "creatures");
         if (!CREATURES.exists()) {
             CREATURES.mkdir();
         }
-
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
         entityListener = new EntityListener();
-        packetListener = new PacketListener();
         skinCache = new SkinCache();
         skinCache.refresh();
 
         npcInstancing = new NPCInstancing();
+
+        packetListener = new AEPacketListener();
+        PacketEvents.get().registerListener(packetListener);
+        PacketEvents.get().init();
 
         //Bukkit.getPluginManager().registerEvents(npcManager, this);
         Bukkit.getPluginManager().registerEvents(playerListener, this);
@@ -88,6 +91,7 @@ public final class Aether extends DREPlugin {
     @Override
     public void onDisable() {
         activeCreatureManager.clearHealthBars();
+        PacketEvents.get().terminate();
     }
 
     public static void debug(String string) {
@@ -96,10 +100,6 @@ public final class Aether extends DREPlugin {
 
     public static Aether getInstance() {
         return instance;
-    }
-
-    public NPCManager getNpcManager() {
-        return npcManager;
     }
 
     public ActiveCreatureManager getActiveCreatureManager() {

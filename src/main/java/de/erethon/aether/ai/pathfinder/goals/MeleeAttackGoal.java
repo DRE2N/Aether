@@ -1,10 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityCreature;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalMeleeAttack;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class MeleeAttackGoal extends AEPathfinderGoal {
 
@@ -16,8 +15,8 @@ public class MeleeAttackGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalMeleeAttack((EntityCreature) entity, speedModifier, followTargetIfNotSeen);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.MeleeAttackGoal((PathfinderMob) entity, speedModifier, followTargetIfNotSeen);
     }
 
     @Override

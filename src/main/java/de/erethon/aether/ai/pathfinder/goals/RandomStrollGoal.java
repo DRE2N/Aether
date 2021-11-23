@@ -1,10 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityCreature;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalRandomStroll;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class RandomStrollGoal extends AEPathfinderGoal {
 
@@ -17,8 +16,8 @@ public class RandomStrollGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalRandomStroll((EntityCreature) entity, speed, interval, checkNoActionTime);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.RandomStrollGoal((PathfinderMob) entity, speed, interval, checkNoActionTime);
     }
 
     @Override

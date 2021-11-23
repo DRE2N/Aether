@@ -1,36 +1,30 @@
 package de.erethon.aether.commands;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
-import com.destroystokyo.paper.entity.ai.*;
-import de.erethon.commons.chat.MessageUtil;
-import de.erethon.commons.command.DRECommand;
+import com.destroystokyo.paper.entity.ai.GoalKey;
+import com.destroystokyo.paper.entity.ai.PaperMobGoals;
+import com.destroystokyo.paper.entity.ai.VanillaGoal;
 import de.erethon.aether.Aether;
+import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
-import de.erethon.aether.creature.ActiveNPC;
-import de.erethon.aether.tools.hitbox.RayTraceUtils;
-import net.minecraft.server.v1_16_R3.EntityPose;
+import de.erethon.commons.chat.MessageUtil;
+import de.erethon.commons.command.DRECommand;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftEntity;
 import org.bukkit.entity.*;
 import org.bukkit.event.Listener;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TestCommand extends DRECommand implements Listener {
     Aether plugin = Aether.getInstance();
-    ProtocolManager protocol = ProtocolLibrary.getProtocolManager();
     Map<UUID, BoundingBox> boundingBoxMap = new HashMap<>();
 
     public TestCommand() {
@@ -42,12 +36,6 @@ public class TestCommand extends DRECommand implements Listener {
         setHelp("Help.");
         setPermission("mxl.test");
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Client.ARM_ANIMATION) {
-            @Override
-            public void onPacketReceiving(PacketEvent event) {
-                runSyncEntityCheck(event.getPlayer());
-            }
-        });
     }
 
     @Override
@@ -76,15 +64,6 @@ public class TestCommand extends DRECommand implements Listener {
                 }
             }
             activeNPC.displayTextAboveHead(player, desc, 6, true);
-            return;
-        }
-        if (args[1].equals("box")) {
-            Location location = player.getLocation();
-            EntityType type = EntityType.valueOf(args[2]);
-            CraftEntity entity = (CraftEntity) world.spawnEntity(location, EntityType.PIG);
-            entity.setCustomName("bb");
-            BoundingBox box = RayTraceUtils.getHitboxFromEntity(new Location(world, 0, 0, 0), EntityType.WITHER, EntityPose.STANDING);
-            boundingBoxMap.put(entity.getUniqueId(), box);
             return;
         }
         if (args[1].contains("walk")) {
@@ -121,9 +100,6 @@ public class TestCommand extends DRECommand implements Listener {
             }
             return;
         }
-        for (Location location : FormationTools.getSquare(player.getLocation(), FormationDirection.X, Integer.parseInt(args[1]), Integer.parseInt(args[2]), 1, 2)) {
-            plugin.getNpcManager().createNPC(player, location, "Test");
-        }
         MessageUtil.sendMessage(player, "Spawned test formation.");
     }
 
@@ -134,15 +110,5 @@ public class TestCommand extends DRECommand implements Listener {
         }
     }*/
 
-    // EHH PERFORMANCE
-    public void runSyncEntityCheck(Player player) {
-        Vector playerVector = player.getLocation().getDirection().clone().multiply(10);
-        player.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, playerVector.toLocation(player.getWorld()), 5);
-        for (Map.Entry<UUID, BoundingBox> box : boundingBoxMap.entrySet()) {
-            MessageUtil.log(box.toString());
-            if (box.getValue().contains(playerVector)) {
-                player.getWorld().getEntity(box.getKey()).setCustomName("HIT");
-            }
-        }
-    }
+
 }

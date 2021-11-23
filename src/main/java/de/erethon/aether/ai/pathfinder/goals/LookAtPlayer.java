@@ -1,10 +1,11 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityHuman;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalLookAtPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.player.Player;
 
 public class LookAtPlayer extends AEPathfinderGoal {
 
@@ -16,8 +17,8 @@ public class LookAtPlayer extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalLookAtPlayer(entity, EntityHuman.class, lookDistance, probability);
+    public Goal get(LivingEntity entity) {
+        return new LookAtPlayerGoal((Mob) entity, Player.class, lookDistance, probability);
     }
 
     @Override

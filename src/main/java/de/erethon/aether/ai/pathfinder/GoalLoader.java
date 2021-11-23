@@ -33,13 +33,13 @@ public class GoalLoader {
     public static Set<AEPathfinderGoal> loadGoals(List<String> cfg) {
         Set<AEPathfinderGoal> goals = new HashSet<>();
         for (String cfgString : cfg) {
-            String[] split = cfgString.split(":");
+            String[] split = cfgString.split(";");
             int priority = Integer.parseInt(split[0]);
             AIGoalType goalType = AIGoalType.valueOf(split[1].toUpperCase());
             AEPathfinderGoal goal = null;
             switch (goalType) {
                 case AVOID_TARGET -> {
-                    goal = new AvoidTargetGoal();
+                    goal = new AEAvoidTargetGoal();
                 }
                 case AVOID_WATER -> {
                     goal = new AvoidWaterGoal();

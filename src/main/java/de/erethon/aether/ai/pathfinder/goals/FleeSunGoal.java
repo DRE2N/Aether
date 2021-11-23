@@ -1,10 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityCreature;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalFleeSun;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class FleeSunGoal extends AEPathfinderGoal {
 
@@ -15,8 +14,8 @@ public class FleeSunGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalFleeSun((EntityCreature) entity, speed);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.FleeSunGoal((PathfinderMob) entity, speed);
     }
 
     @Override

@@ -1,7 +1,10 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.*;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.RandomSwimmingGoal;
 
 public class RandomSwimGoal extends AEPathfinderGoal {
 
@@ -13,8 +16,8 @@ public class RandomSwimGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalRandomSwim((EntityCreature) entity, speed, interval);
+    public Goal get(LivingEntity entity) {
+        return new RandomSwimmingGoal((PathfinderMob) entity, speed, interval);
     }
 
     @Override

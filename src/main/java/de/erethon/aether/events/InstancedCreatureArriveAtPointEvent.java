@@ -9,6 +9,7 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Set;
 
 public class InstancedCreatureArriveAtPointEvent extends Event {
 
@@ -25,7 +26,7 @@ public class InstancedCreatureArriveAtPointEvent extends Event {
         return npc;
     }
 
-    public List<Player> getViewers() {
+    public Set<Player> getViewers() {
         return npc.getViewers();
     }
 

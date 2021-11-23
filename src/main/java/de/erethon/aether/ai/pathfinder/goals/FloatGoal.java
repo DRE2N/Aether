@@ -1,9 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalFloat;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class FloatGoal extends AEPathfinderGoal {
 
@@ -12,8 +12,8 @@ public class FloatGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalFloat(entity);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.FloatGoal((Mob) entity);
     }
 
 }

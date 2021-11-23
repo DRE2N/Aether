@@ -1,10 +1,10 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.EntityTypes;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalNearestAttackableTarget;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 import java.util.Optional;
 
@@ -18,15 +18,15 @@ public class NearestAttackableTargetGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalNearestAttackableTarget(entity, target, alertSameTypeMobs);
+    public Goal get(LivingEntity entity) {
+        return new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>((Mob) entity, target, alertSameTypeMobs);
     }
 
     @Override
     public void load(String[] args) {
-        Optional<EntityTypes<?>> byName = EntityTypes.getByName(args[0]);
+        Optional<EntityType<?>> byName = EntityType.byString(args[0]);
         if (byName.isPresent()) {
-            EntityTypes<?> entityType = byName.get();
+            EntityType<?> entityType = byName.get();
             target = entityType.getClass();
         }
         alertSameTypeMobs = Boolean.parseBoolean(args[1]);

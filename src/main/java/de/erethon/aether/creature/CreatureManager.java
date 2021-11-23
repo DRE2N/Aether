@@ -10,20 +10,20 @@ import java.util.Set;
 
 public class CreatureManager {
 
-    Set<NPC> creatures = new HashSet<>();
+    Set<NPCData> creatures = new HashSet<>();
 
     public CreatureManager() {
         load();
     }
 
-    public Set<NPC> getCreatures() {
+    public Set<NPCData> getCreatures() {
         return creatures;
     }
 
-    public NPC getByID(String id) {
-        for (NPC npc : creatures) {
-            if (npc.getID().equalsIgnoreCase(id)) {
-                return npc;
+    public NPCData getByID(String id) {
+        for (NPCData npcData : creatures) {
+            if (npcData.getID().equalsIgnoreCase(id)) {
+                return npcData;
             }
         }
         return null;
@@ -42,7 +42,7 @@ public class CreatureManager {
             }
             YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
             String id = file.getName().replaceAll(".yml", "");
-            creatures.add(new NPC(configuration, id));
+            creatures.add(new NPCData(configuration, id));
         }
         MessageUtil.log("Loaded " + creatures.size() + " creatures.");
     }
@@ -57,7 +57,7 @@ public class CreatureManager {
             }
             YamlConfiguration configuration = YamlConfiguration.loadConfiguration(f);
             String id = f.getName().replaceAll(".yml", "");
-            creatures.add(new NPC(configuration, id));
+            creatures.add(new NPCData(configuration, id));
         }
     }
 

@@ -1,9 +1,10 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalDoorOpen;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.OpenDoorGoal;
 
 public class DoorInteractGoal extends AEPathfinderGoal {
 
@@ -14,8 +15,8 @@ public class DoorInteractGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalDoorOpen(entity, closeDoor);
+    public Goal get(LivingEntity entity) {
+        return new OpenDoorGoal((Mob) entity, closeDoor);
     }
 
     @Override

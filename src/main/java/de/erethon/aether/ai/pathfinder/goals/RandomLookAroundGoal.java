@@ -1,9 +1,9 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
-import net.minecraft.server.v1_16_R3.PathfinderGoalRandomLookaround;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public class RandomLookAroundGoal extends AEPathfinderGoal {
 
@@ -12,7 +12,7 @@ public class RandomLookAroundGoal extends AEPathfinderGoal {
     }
 
     @Override
-    public PathfinderGoal get(EntityInsentient entity) {
-        return new PathfinderGoalRandomLookaround(entity);
+    public Goal get(LivingEntity entity) {
+            return new net.minecraft.world.entity.ai.goal.RandomLookAroundGoal((Mob) entity);
     }
 }

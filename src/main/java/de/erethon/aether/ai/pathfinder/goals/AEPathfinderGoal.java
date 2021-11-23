@@ -1,8 +1,8 @@
 package de.erethon.aether.ai.pathfinder.goals;
 
 import de.erethon.aether.ai.pathfinder.GoalClass;
-import net.minecraft.server.v1_16_R3.EntityInsentient;
-import net.minecraft.server.v1_16_R3.PathfinderGoal;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.goal.Goal;
 
 public abstract class AEPathfinderGoal {
 
@@ -11,7 +11,7 @@ public abstract class AEPathfinderGoal {
     public GoalClass goalClass;
     int prio;
 
-    public PathfinderGoal get(EntityInsentient entity) {
+    public Goal get(LivingEntity entity) {
         return null;
     }
 

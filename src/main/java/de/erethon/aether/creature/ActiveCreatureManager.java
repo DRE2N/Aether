@@ -2,8 +2,7 @@ package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.tools.NMSUtils;
-import net.minecraft.server.v1_16_R3.EntityArmorStand;
-import org.bukkit.Bukkit;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.ChatColor;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
@@ -84,7 +83,7 @@ public class ActiveCreatureManager {
     public void showHealth(Entity entity) {
         LivingEntity livingEntity = (LivingEntity)  entity;
         if (healthBars.get(entity) == null) {
-            EntityArmorStand stand = NMSUtils.spawnInvisibleArmorstand(entity.getLocation().clone().add(0, 1.68, 0), true, true, true, getHealthMessage(((LivingEntity) entity).getHealth(), ((LivingEntity) entity).getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()));
+            ArmorStand stand = NMSUtils.spawnInvisibleArmorstand(entity.getLocation().clone().add(0, 1.68, 0), true, true, true, getHealthMessage(((LivingEntity) entity).getHealth(), ((LivingEntity) entity).getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()));
             healthBars.put(entity, stand.getBukkitEntity());
             return;
         }
