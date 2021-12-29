@@ -74,6 +74,14 @@ tasks {
         main = "de.erethon.aether.Aether"
         apiVersion = "1.18"
         authors = listOf("Malfrador")
+        commands {
+            register("aether") {
+                description = "Main command for Aether"
+                aliases = listOf("ae", "mxl")
+                permission = "aether.cmd"
+                usage = "/aether help"
+            }
+        }
     }
 }
 

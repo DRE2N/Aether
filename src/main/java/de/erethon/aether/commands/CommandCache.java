@@ -5,7 +5,7 @@ import de.erethon.commons.javaplugin.DREPlugin;
 
 public class CommandCache extends DRECommandCache {
 
-    public static final String LABEL = "mobsxl";
+    public static final String LABEL = "aether";
 
     DREPlugin plugin;
 

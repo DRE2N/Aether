@@ -11,7 +11,6 @@ import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.InstancedNPC;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
-import de.erethon.commons.chat.MessageUtil;
 import io.papermc.paper.event.entity.EntityMoveEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;

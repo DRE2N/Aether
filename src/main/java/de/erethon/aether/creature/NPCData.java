@@ -2,7 +2,7 @@ package de.erethon.aether.creature;
 
 import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
 import de.erethon.aether.ai.pathfinder.GoalLoader;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.aether.tools.UpdatedMessageUtil;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
@@ -267,7 +267,7 @@ public class NPCData {
 
     public void load() {
         // General
-        MessageUtil.log("Loading npc " + ID);
+        UpdatedMessageUtil.log("Loading npc " + ID);
         displayName = cfg.getString("displayname", "");
         baseType = EntityType.valueOf(cfg.getString("baseType", "PIG").toUpperCase());
         displayType = EntityType.valueOf(cfg.getString("displayType", "PIG").toUpperCase());

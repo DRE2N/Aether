@@ -4,7 +4,7 @@ import de.erethon.aether.creature.*;
 import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.commons.compatibility.Internals;
 import de.erethon.commons.javaplugin.DREPlugin;
 import de.erethon.commons.javaplugin.DREPluginSettings;
@@ -48,7 +48,7 @@ public final class Aether extends DREPlugin {
     public void onEnable() {
         super.onEnable();
         if (!compat.isPaper()) {
-            MessageUtil.log("Please use Paper. https://papermc.io/");
+            UpdatedMessageUtil.log("Please use Paper. https://papermc.io/");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -82,7 +82,7 @@ public final class Aether extends DREPlugin {
 
         commands = new CommandCache(this);
         setCommandCache(commands);
-        //commands.register(this);
+        commands.register(this);
 
         //npcManager.loadFiles();
 

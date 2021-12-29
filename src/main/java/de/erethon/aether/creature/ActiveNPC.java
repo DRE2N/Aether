@@ -2,7 +2,7 @@ package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.tools.NMSUtils;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.aether.tools.UpdatedMessageUtil;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -46,10 +46,10 @@ public class ActiveNPC {
         if (npcID == null) {
             return;
         }
-        MessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
+        UpdatedMessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
         npcData = plugin.getCreatureManager().getByID(npcID);
         if (npcData == null) {
-            MessageUtil.log(npcID + " is invalid.");
+            UpdatedMessageUtil.log(npcID + " is invalid.");
             return;
         }
         baseEntity = entity;
@@ -119,7 +119,6 @@ public class ActiveNPC {
         NPCInstancing instancing = plugin.getNpcInstancing();
         String[] strings = text.split(";");
         if (multiline && text.contains(";")) {
-            MessageUtil.broadcastMessage("Found multiline...");
             baseEntity.setCustomName("§a" + name + ": §7§o" + strings[0]);
             baseEntity.setCustomNameVisible(true);
             CraftWorld craftWorld = (CraftWorld) baseEntity.getWorld();
@@ -131,7 +130,6 @@ public class ActiveNPC {
             stand.setMarker(true);
             stand.getBukkitEntity().setCustomName("§7§o" + strings[1]);
             stand.setCustomNameVisible(true);
-            MessageUtil.broadcastMessage(stand.toString());
             stand.getBukkitEntity().teleport(baseEntity.getLocation().clone().add(0, 1.68, 0));
             world.addFreshEntity(stand, CreatureSpawnEvent.SpawnReason.CUSTOM);
         } else {

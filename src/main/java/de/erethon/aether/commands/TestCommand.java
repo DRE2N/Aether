@@ -7,7 +7,7 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.commons.command.DRECommand;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -67,7 +67,7 @@ public class TestCommand extends DRECommand implements Listener {
             return;
         }
         if (args[1].contains("walk")) {
-            MessageUtil.sendMessage(player, "Testing walk");
+            UpdatedMessageUtil.sendMessage(player, "Testing walk");
             List<Mob> mobs = new CopyOnWriteArrayList<>();
             for (Entity entity : world.getNearbyEntities(player.getLocation(), 30, 10, 30)) {
                 if (!(entity instanceof Mob)) {
@@ -80,7 +80,7 @@ public class TestCommand extends DRECommand implements Listener {
                 mobs.add(mob);
             }
             List<Location> locations = FormationTools.getLine(player.getTargetBlock(10).getLocation(), FormationDirection.X, mobs.size(), 2);
-            MessageUtil.sendMessage(player, "Found " + mobs.size() + " mobs and created " + locations.size() + " points.");
+            UpdatedMessageUtil.sendMessage(player, "Found " + mobs.size() + " mobs and created " + locations.size() + " points.");
             for (Location location : locations) {
                 if (mobs.isEmpty()) {
                     return;
@@ -100,7 +100,7 @@ public class TestCommand extends DRECommand implements Listener {
             }
             return;
         }
-        MessageUtil.sendMessage(player, "Spawned test formation.");
+        UpdatedMessageUtil.sendMessage(player, "Spawned test formation.");
     }
 
     /*public void entityMove(EntityMoveEvent event) {
