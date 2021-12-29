@@ -4,7 +4,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
@@ -23,7 +23,7 @@ public class NMSUtils {
         stand.getBukkitEntity().teleport(location);
         stand.getBukkitEntity().setCustomName(name);
         stand.setCustomNameVisible(true);
-        world.addEntity(stand, CreatureSpawnEvent.SpawnReason.CUSTOM);
+        world.addFreshEntity(stand, CreatureSpawnEvent.SpawnReason.CUSTOM);
         return stand;
     }
 
@@ -41,7 +41,7 @@ public class NMSUtils {
     public static void addEntity(Entity entity, Location location) {
         entity.getBukkitEntity().teleport(location);
         Level world = entity.getCommandSenderWorld();
-        world.addEntity(entity, CreatureSpawnEvent.SpawnReason.CUSTOM);
+        world.addFreshEntity(entity, CreatureSpawnEvent.SpawnReason.CUSTOM);
     }
 
 }

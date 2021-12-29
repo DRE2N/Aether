@@ -82,7 +82,7 @@ public final class Aether extends DREPlugin {
 
         commands = new CommandCache(this);
         setCommandCache(commands);
-        commands.register(this);
+        //commands.register(this);
 
         //npcManager.loadFiles();
 

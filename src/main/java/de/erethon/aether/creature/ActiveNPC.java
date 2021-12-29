@@ -11,8 +11,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R1.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
@@ -133,7 +133,7 @@ public class ActiveNPC {
             stand.setCustomNameVisible(true);
             MessageUtil.broadcastMessage(stand.toString());
             stand.getBukkitEntity().teleport(baseEntity.getLocation().clone().add(0, 1.68, 0));
-            world.addEntity(stand, CreatureSpawnEvent.SpawnReason.CUSTOM);
+            world.addFreshEntity(stand, CreatureSpawnEvent.SpawnReason.CUSTOM);
         } else {
             baseEntity.setCustomName("§a" + name + ": §7§o" + text);
             baseEntity.setCustomNameVisible(true);
