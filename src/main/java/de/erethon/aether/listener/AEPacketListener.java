@@ -1,62 +1,73 @@
 package de.erethon.aether.listener;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.*;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.*;
-import io.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.event.PacketEvent;
-import io.github.retrooper.packetevents.event.PacketListenerAbstract;
-import io.github.retrooper.packetevents.event.impl.PacketPlaySendEvent;
-import io.github.retrooper.packetevents.event.priority.PacketEventPriority;
-import io.github.retrooper.packetevents.packettype.PacketType;
-import io.github.retrooper.packetevents.packetwrappers.play.in.flying.WrappedPacketInFlying;
-import io.github.retrooper.packetevents.packetwrappers.play.out.entity.WrappedPacketOutEntity;
-import io.github.retrooper.packetevents.packetwrappers.play.out.spawnentityliving.WrappedPacketOutSpawnEntityLiving;
-import io.github.retrooper.packetevents.utils.npc.NPC;
-import net.minecraft.network.protocol.Packet;
+import de.erethon.aether.tools.packetwrapper.*;
+import de.erethon.commons.chat.MessageUtil;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
-public class AEPacketListener extends PacketListenerAbstract {
+public class AEPacketListener {
 
+    ProtocolManager protocol = ProtocolLibrary.getProtocolManager();
     Aether plugin = Aether.getInstance();
     ActiveCreatureManager manager = plugin.getActiveCreatureManager();
 
-    @Override
-    public void onPacketPlaySend(PacketPlaySendEvent event) {
-        if (event.getPacketId() == PacketType.Play.Server.SPAWN_ENTITY_LIVING) {
-            onEntitySpawn(new WrappedPacketOutSpawnEntityLiving(event.getNMSPacket()), event.getPlayer());
-        }
+    public AEPacketListener() {
+        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.SPAWN_ENTITY_LIVING) {
+            @Override
+            public void onPacketSending(PacketEvent event) {
+                onEntitySpawn(event);
+            }
+        });
+        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.ENTITY_SOUND) {
+            @Override
+            public void onPacketSending(PacketEvent event) {
+                onSound(event);
+            }
+        });
     }
 
-
-    /*public void onSound(PacketEvent event) {
+    public void onSound(PacketEvent event) {
         WrapperPlayServerEntitySound wrapper = new WrapperPlayServerEntitySound(event.getPacket());
         ActiveNPC activeNPC = manager.get(wrapper.getEntity(event).getUniqueId());
         if (activeNPC == null && wrapper.getSoundCategory() != EnumWrappers.SoundCategory.VOICE) {
             return;
         }
         event.setCancelled(true);
-    }*/
+    }
 
-    public void onEntitySpawn(WrappedPacketOutSpawnEntityLiving wrapper, Player player) {
-        ActiveNPC activeNPC = manager.get(wrapper.getEntity().getUniqueId());
+    public void onEntitySpawn(PacketEvent event) {
+        WrapperPlayServerSpawnEntityLiving wrapper = new WrapperPlayServerSpawnEntityLiving(event.getPacket());
+        ActiveNPC activeNPC = manager.get(wrapper.getEntity(event).getUniqueId());
         if (activeNPC == null) {
             return;
         }
         EntityType type = activeNPC.getNpc().getDisplayType();
         if (type == EntityType.PLAYER) {
-            NPC npc = new NPC(activeNPC.getNpc().getDisplayName());
-            for (Player p : activeNPC.getViewers()) {
-                npc.spawn(p);
-            }
-            PacketEvents.get().getServerUtils().getNPCManager().registerNPC(npc);
+            UUID uuid = wrapper.getEntity(event).getUniqueId();
+            doPlayerStuff(event.getPlayer(), uuid, activeNPC.getNpc().getDisplayName());
+            WrapperPlayServerNamedEntitySpawn namedEntitySpawn = new WrapperPlayServerNamedEntitySpawn();
+            namedEntitySpawn.setPlayerUUID(uuid);
+            namedEntitySpawn.setX(wrapper.getX());
+            namedEntitySpawn.setY(wrapper.getY());
+            namedEntitySpawn.setZ(wrapper.getZ());
+            namedEntitySpawn.setEntityID(wrapper.getEntityID());
+            namedEntitySpawn.sendPacket(event.getPlayer());
+            event.setCancelled(true);
+            return;
         }
-        wrapper.setEntityType(type);
-    }
-            /*if (!type.isAlive()) {
+        if (!type.isAlive()) {
             WrapperPlayServerSpawnEntity spawnEntity = new WrapperPlayServerSpawnEntity();
             spawnEntity.setType(type);
             spawnEntity.setUniqueId(wrapper.getUniqueId());
@@ -80,8 +91,8 @@ public class AEPacketListener extends PacketListenerAbstract {
         WrapperPlayServerPlayerInfo info = new WrapperPlayServerPlayerInfo();
         info.setAction(EnumWrappers.PlayerInfoAction.ADD_PLAYER);
         List<PlayerInfoData> dataList = new ArrayList<>(info.getData());
-        NPCData npcData = plugin.getActiveCreatureManager().get(uuid).getNpc();
-        Skin skin = plugin.getSkinCache().get(npcData.getSkinID());
+        NPCData npc = plugin.getActiveCreatureManager().get(uuid).getNpc();
+        Skin skin = plugin.getSkinCache().get(npc.getSkinID());
         WrappedGameProfile profile = new WrappedGameProfile(uuid, name);
         if (skin != null) {
             profile.getProperties().get("textures").clear();
@@ -105,6 +116,6 @@ public class AEPacketListener extends PacketListenerAbstract {
                 remove.sendPacket(player);
             }
         };
-        runLater.runTaskLater(Aether.getInstance(), 3);*/
-
+        runLater.runTaskLater(Aether.getInstance(), 3);
+    }
 }

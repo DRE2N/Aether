@@ -1,0 +1,8 @@
+displayname: ExampleNPC
+baseType: pig # Real mob
+displayType: player # what gets displayed to the players
+instancable: false # if this NPC can be instanced (one version per player)
+skin: 2047933517 # Mineskin ID, gets cached
+attributes:
+  health: 5
+  speed: 0.01

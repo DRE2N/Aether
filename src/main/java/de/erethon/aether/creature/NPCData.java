@@ -3,6 +3,7 @@ package de.erethon.aether.creature;
 import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
 import de.erethon.aether.ai.pathfinder.GoalLoader;
 import de.erethon.aether.tools.UpdatedMessageUtil;
+import de.erethon.commons.chat.MessageUtil;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
@@ -39,7 +40,7 @@ public class NPCData {
     private double maxHealth = 20;
     private double range = 32;
     private double knockbackResistance;
-    private double movementSpeed = 0.7;
+    private double movementSpeed = 0.2;
     private double flyingSpeed = 2;
     private double damage = 2;
     private double armor;
@@ -267,7 +268,7 @@ public class NPCData {
 
     public void load() {
         // General
-        UpdatedMessageUtil.log("Loading npc " + ID);
+        MessageUtil.log("Loading npc " + ID);
         displayName = cfg.getString("displayname", "");
         baseType = EntityType.valueOf(cfg.getString("baseType", "PIG").toUpperCase());
         displayType = EntityType.valueOf(cfg.getString("displayType", "PIG").toUpperCase());
@@ -286,7 +287,7 @@ public class NPCData {
         maxHealth = cfg.getDouble("config.attributes.health", 20);
         range = cfg.getDouble("config.attributes.range", 32);
         knockbackResistance = cfg.getDouble("config.attributes.knockbackResistance", 0);
-        movementSpeed = cfg.getDouble("config.attributes.speed", 0.7);
+        movementSpeed = cfg.getDouble("config.attributes.speed", 0.2);
         damage = cfg.getDouble("config.attributes.damage", 2);
         armor = cfg.getDouble("config.attributes.armor", 0);
         armorToughness = cfg.getDouble("config.attributes.armorToughness", 0);

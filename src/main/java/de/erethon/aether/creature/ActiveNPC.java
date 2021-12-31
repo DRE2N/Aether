@@ -3,6 +3,7 @@ package de.erethon.aether.creature;
 import de.erethon.aether.Aether;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.aether.tools.UpdatedMessageUtil;
+import de.erethon.commons.chat.MessageUtil;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -49,7 +50,7 @@ public class ActiveNPC {
         UpdatedMessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
         npcData = plugin.getCreatureManager().getByID(npcID);
         if (npcData == null) {
-            UpdatedMessageUtil.log(npcID + " is invalid.");
+            MessageUtil.log(npcID + " is invalid.");
             return;
         }
         baseEntity = entity;
@@ -116,7 +117,6 @@ public class ActiveNPC {
         }
         isTalking = true;
         String name = baseEntity.getCustomName();
-        NPCInstancing instancing = plugin.getNpcInstancing();
         String[] strings = text.split(";");
         if (multiline && text.contains(";")) {
             baseEntity.setCustomName("§a" + name + ": §7§o" + strings[0]);
@@ -124,8 +124,6 @@ public class ActiveNPC {
             CraftWorld craftWorld = (CraftWorld) baseEntity.getWorld();
             Level world = craftWorld.getHandle();
             stand = new ArmorStand(EntityType.ARMOR_STAND, world);
-            instancing.addInstanced(stand.getUUID());
-            instancing.show(player, stand.getUUID());
             stand.setInvisible(true);
             stand.setMarker(true);
             stand.getBukkitEntity().setCustomName("§7§o" + strings[1]);
@@ -145,7 +143,6 @@ public class ActiveNPC {
                     living.setAI(true);
                 }
                 if (stand != null) {
-                    instancing.removeInstanced(stand.getUUID());
                     stand.getBukkitEntity().remove();
                 }
                 isTalking = false;
@@ -185,6 +182,7 @@ public class ActiveNPC {
             living.registerAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         }
         living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(npcData.getMovementSpeed());
+        MessageUtil.broadcastMessage("Speed: " + living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getValue());
         // Damage
         if (living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) == null) {
             living.registerAttribute(Attribute.GENERIC_ATTACK_DAMAGE);

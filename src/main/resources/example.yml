@@ -5,15 +5,4 @@ instancable: false # if this NPC can be instanced (one version per player)
 skin: 2047933517 # Mineskin ID, gets cached
 attributes:
   health: 30
-equipment:
-  hand: awesome_helmet
-ai:
-  goals:
-    - randomstroll;1;2;false # goal;<speed>;<interval>;<checkNoActionTime> (whatever this does)
-    - avoid;player;5;2;2 # goal:<entity to avoid>;<range>;<walk speed mod>;<sprint speed mod>
-  targets:
-    - nearest;cow;true # targeter;<type to target>;<alert same type>
-loot:
-  xp: 200
-  items:
-    - custom_item;1;0.5 # item;<amount>;<chance>
+  speed: 0.2

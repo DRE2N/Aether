@@ -2,6 +2,7 @@ package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.tools.UpdatedMessageUtil;
+import de.erethon.commons.chat.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -29,9 +30,14 @@ public class CreatureManager {
         return null;
     }
 
+    public void reload() {
+        creatures.clear();
+        load();
+    }
+
     public void load() {
         creatures.clear();
-        UpdatedMessageUtil.log("Loading creatures (" + Aether.CREATURES.listFiles().length + " files in folder)");
+        MessageUtil.log("Loading creatures (" + Aether.CREATURES.listFiles().length + " files in folder)");
         for (File file : Aether.CREATURES.listFiles()){
             if (file.getName().contains("disabled")) {
                 continue;
@@ -44,7 +50,7 @@ public class CreatureManager {
             String id = file.getName().replaceAll(".yml", "");
             creatures.add(new NPCData(configuration, id));
         }
-        UpdatedMessageUtil.log("Loaded " + creatures.size() + " creatures.");
+        MessageUtil.log("Loaded " + creatures.size() + " creatures.");
     }
 
     public void loadSub(File file) {

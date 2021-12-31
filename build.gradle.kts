@@ -1,14 +1,14 @@
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 
 repositories {
-    maven("https://jitpack.io")
     maven("https://erethon.de/repo")
+    maven("https://repo.dmulloy2.net/repository/public/")
 }
 plugins {
     `java-library`
     id("io.papermc.paperweight.userdev") version "1.3.3"
     id("xyz.jpenilla.run-paper") version "1.0.6" // Adds runServer and runMojangMappedServer tasks for testing
-    id ("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
 }
 
@@ -23,8 +23,8 @@ java {
 
 dependencies {
     paperDevBundle("1.18.1-R0.1-SNAPSHOT")
-    implementation("com.github.retrooper:packetevents:v1.8-pre-19")
     implementation("de.erethon.commons:commons-dist:6.3.3")
+    compileOnly("com.comphenix.protocol:ProtocolLib:4.8.0-SNAPSHOT")
     // paperweightDevBundle("com.example.paperfork", "1.18.1-R0.1-SNAPSHOT")
 
     // You will need to manually specify the full dependency if using the groovy gradle dsl

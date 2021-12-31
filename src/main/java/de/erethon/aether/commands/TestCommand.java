@@ -8,6 +8,7 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
 import de.erethon.aether.tools.UpdatedMessageUtil;
+import de.erethon.commons.chat.MessageUtil;
 import de.erethon.commons.command.DRECommand;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -43,12 +44,9 @@ public class TestCommand extends DRECommand implements Listener {
         Player player = (Player) commandSender;
         World world = player.getWorld();
         if (args[1].equals("hide")) {
-            plugin.getNpcInstancing().addInstanced(player.getTargetEntity(10).getUniqueId());
-            plugin.getNpcInstancing().hide(player, player.getTargetEntity(10).getUniqueId());
             return;
         }
         if (args[1].equals("show")) {
-            plugin.getNpcInstancing().show(player, player.getTargetEntity(10).getUniqueId());
             return;
         }
         if (args[1].equals("text")) {
@@ -67,7 +65,7 @@ public class TestCommand extends DRECommand implements Listener {
             return;
         }
         if (args[1].contains("walk")) {
-            UpdatedMessageUtil.sendMessage(player, "Testing walk");
+            MessageUtil.sendMessage(player, "Testing walk");
             List<Mob> mobs = new CopyOnWriteArrayList<>();
             for (Entity entity : world.getNearbyEntities(player.getLocation(), 30, 10, 30)) {
                 if (!(entity instanceof Mob)) {
@@ -80,7 +78,7 @@ public class TestCommand extends DRECommand implements Listener {
                 mobs.add(mob);
             }
             List<Location> locations = FormationTools.getLine(player.getTargetBlock(10).getLocation(), FormationDirection.X, mobs.size(), 2);
-            UpdatedMessageUtil.sendMessage(player, "Found " + mobs.size() + " mobs and created " + locations.size() + " points.");
+            MessageUtil.sendMessage(player, "Found " + mobs.size() + " mobs and created " + locations.size() + " points.");
             for (Location location : locations) {
                 if (mobs.isEmpty()) {
                     return;
@@ -100,7 +98,7 @@ public class TestCommand extends DRECommand implements Listener {
             }
             return;
         }
-        UpdatedMessageUtil.sendMessage(player, "Spawned test formation.");
+        MessageUtil.sendMessage(player, "Spawned test formation.");
     }
 
     /*public void entityMove(EntityMoveEvent event) {

@@ -5,11 +5,11 @@ import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.tools.UpdatedMessageUtil;
+import de.erethon.commons.chat.MessageUtil;
 import de.erethon.commons.compatibility.Internals;
 import de.erethon.commons.javaplugin.DREPlugin;
 import de.erethon.commons.javaplugin.DREPluginSettings;
 import de.erethon.aether.commands.CommandCache;
-import io.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 
@@ -25,7 +25,6 @@ public final class Aether extends DREPlugin {
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
-    NPCInstancing npcInstancing;
     PlayerListener playerListener;
     AEPacketListener packetListener;
     EntityListener entityListener;
@@ -40,15 +39,13 @@ public final class Aether extends DREPlugin {
 
     @Override
     public void onLoad() {
-        PacketEvents.create(this);
-        PacketEvents.get().load();
     }
 
     @Override
     public void onEnable() {
         super.onEnable();
         if (!compat.isPaper()) {
-            UpdatedMessageUtil.log("Please use Paper. https://papermc.io/");
+            MessageUtil.log("Please use Paper. https://papermc.io/");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -70,11 +67,8 @@ public final class Aether extends DREPlugin {
         skinCache = new SkinCache();
         skinCache.refresh();
 
-        npcInstancing = new NPCInstancing();
 
         packetListener = new AEPacketListener();
-        PacketEvents.get().registerListener(packetListener);
-        PacketEvents.get().init();
 
         //Bukkit.getPluginManager().registerEvents(npcManager, this);
         Bukkit.getPluginManager().registerEvents(playerListener, this);
@@ -85,13 +79,14 @@ public final class Aether extends DREPlugin {
         commands.register(this);
 
         //npcManager.loadFiles();
+        System.setProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", "false");
+        MessageUtil.log("Warn for legacy formatting: " + System.getProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected"));
 
     }
 
     @Override
     public void onDisable() {
         activeCreatureManager.clearHealthBars();
-        PacketEvents.get().terminate();
     }
 
     public static void debug(String string) {
@@ -108,10 +103,6 @@ public final class Aether extends DREPlugin {
 
     public CreatureManager getCreatureManager() {
         return creatureManager;
-    }
-
-    public NPCInstancing getNpcInstancing() {
-        return npcInstancing;
     }
 
     public SkinCache getSkinCache() {

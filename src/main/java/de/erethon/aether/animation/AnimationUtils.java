@@ -1,25 +1,18 @@
 package de.erethon.aether.animation;
 
-import io.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.packetwrappers.play.out.animation.WrappedPacketOutAnimation;
-import io.github.retrooper.packetevents.packetwrappers.play.out.entitystatus.WrappedPacketOutEntityStatus;
+import de.erethon.aether.tools.packetwrapper.WrapperPlayServerAnimation;
+import de.erethon.aether.tools.packetwrapper.WrapperPlayServerEntityStatus;
+import net.minecraft.world.entity.LivingEntity;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftLivingEntity;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 public class AnimationUtils {
-
-    public static void lookAt(Entity entity, Location target) {
-        LivingEntity livingEntity = (LivingEntity) entity;
-        CraftLivingEntity ce = (CraftLivingEntity) livingEntity;
-        net.minecraft.world.entity.LivingEntity insentient = (net.minecraft.world.entity.LivingEntity) ce.getHandle();
-    }
 
     public static void nod(Entity entity) {
         Mob mob = (Mob) entity;
@@ -29,35 +22,36 @@ public class AnimationUtils {
         down.add(entity.getLocation().toVector());
         down.setY(down.getY() - 5);
         down.toLocation(entity.getWorld()).getBlock().setType(Material.REDSTONE_BLOCK);
-        lookAt(entity, down.toLocation(entity.getWorld()));
 
     }
 
     public static void sendAnimation(Entity entity, Player player, EntityAnimation anim) {
-        WrappedPacketOutAnimation.EntityAnimationType animation = null;
+        WrapperPlayServerAnimation animation = new WrapperPlayServerAnimation();
+        animation.setEntityID(entity.getEntityId());
+        int id = -1;
         switch (anim) {
             case SWAP_HANDS:
                 sendStatus(entity, player, Integer.valueOf(55).byteValue());
                 return;
             case SWING_MAIN_HAND:
-                animation = WrappedPacketOutAnimation.EntityAnimationType.SWING_MAIN_ARM;
+                id = 0;
                 break;
             case SWING_OFF_HAND:
-                animation = WrappedPacketOutAnimation.EntityAnimationType.SWING_OFFHAND;
+                id = 3;
                 break;
             case HURT:
-                animation = WrappedPacketOutAnimation.EntityAnimationType.TAKE_DAMAGE;
+                id = 1;
                 break;
             case CHORUS:
                 break;
             case CRITICAL:
-                animation = WrappedPacketOutAnimation.EntityAnimationType.CRITICAL_EFFECT;
+                id = 4;
                 break;
             case LEAVE_BED:
-                animation = WrappedPacketOutAnimation.EntityAnimationType.LEAVE_BED;
+                id = 2;
                 break;
             case MAGIC_CRITICAL:
-                animation = WrappedPacketOutAnimation.EntityAnimationType.MAGIC_CRITICAL_EFFECT;
+                id = 5;
                 break;
             case DEATH:
                 sendStatus(entity, player, Integer.valueOf(3).byteValue());
@@ -96,16 +90,19 @@ public class AnimationUtils {
                 sendStatus(entity, player, Integer.valueOf(30).byteValue());
                 return;
         }
-        WrappedPacketOutAnimation packet = new WrappedPacketOutAnimation(entity, animation);
-        PacketEvents.get().getPlayerUtils().sendPacket(player, packet);
-
+        if (id != -1) {
+            animation.setAnimation(id);
+            animation.sendPacket(player);
+        }
 
 
     }
 
     // Some animations are a status for whatever reason, so they use a different packet
     private static void sendStatus(Entity entity, Player player, byte id) {
-        WrappedPacketOutEntityStatus status = new WrappedPacketOutEntityStatus(entity, id);
-        PacketEvents.get().getPlayerUtils().sendPacket(player, status);
+        WrapperPlayServerEntityStatus status = new WrapperPlayServerEntityStatus();
+        status.setEntityID(entity.getEntityId());
+        status.setEntityStatus(id);
+        status.sendPacket(player);
     }
 }

@@ -14,6 +14,7 @@ public class CommandCache extends DRECommandCache {
         this.plugin = plugin;
         addCommand(new TestCommand());
         addCommand(new SpawnCommand());
+        addCommand(new ReloadCommand());
 
     }
 }
