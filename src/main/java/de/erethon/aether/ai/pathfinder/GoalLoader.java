@@ -1,7 +1,9 @@
 package de.erethon.aether.ai.pathfinder;
 
 import de.erethon.aether.ai.pathfinder.goals.*;
+import de.erethon.commons.chat.MessageUtil;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,10 +35,12 @@ public class GoalLoader {
     public static Set<AEPathfinderGoal> loadGoals(List<String> cfg) {
         Set<AEPathfinderGoal> goals = new HashSet<>();
         for (String cfgString : cfg) {
+            MessageUtil.log("Raw: " + cfgString);
             String[] split = cfgString.split(";");
             int priority = Integer.parseInt(split[0]);
             AIGoalType goalType = AIGoalType.valueOf(split[1].toUpperCase());
             AEPathfinderGoal goal = null;
+            MessageUtil.log("Split1: " + Arrays.toString(split));
             switch (goalType) {
                 case AVOID_TARGET -> {
                     goal = new AEAvoidTargetGoal();
@@ -88,8 +92,9 @@ public class GoalLoader {
                 }
                 default -> throw new IllegalStateException("Unexpected value: " + goalType);
             }
-            String[] splitArgs = split[2].split(";");
-            goal.load(splitArgs);
+            String[] args = Arrays.copyOfRange(split, 2,split.length);
+            MessageUtil.log("SplitArgs: " + Arrays.toString(args));
+            goal.load(args);
             goal.setPrio(priority);
             goals.add(goal);
         }

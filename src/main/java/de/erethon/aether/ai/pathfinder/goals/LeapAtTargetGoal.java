@@ -7,7 +7,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 
 public class LeapAtTargetGoal extends AEPathfinderGoal {
 
-    float yd;
+    float velocity;
 
     public LeapAtTargetGoal() {
         goalClass = GoalClass.MOVE;
@@ -15,11 +15,11 @@ public class LeapAtTargetGoal extends AEPathfinderGoal {
 
     @Override
     public Goal get(LivingEntity entity) {
-        return new net.minecraft.world.entity.ai.goal.LeapAtTargetGoal((Mob) entity, 2);
+        return new net.minecraft.world.entity.ai.goal.LeapAtTargetGoal((Mob) entity, velocity);
     }
 
     @Override
     public void load(String[] args) {
-        yd = Float.parseFloat(args[0]);
+        velocity = Float.parseFloat(args[0]);
     }
 }

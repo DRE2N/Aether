@@ -1,11 +1,15 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
+import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
+import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.commons.chat.MessageUtil;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
@@ -13,10 +17,11 @@ import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R1.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_18_R1.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.EntityEquipment;
@@ -54,7 +59,6 @@ public class ActiveNPC {
             return;
         }
         baseEntity = entity;
-        setProperties();
     }
 
     public ActiveNPC(NPCData npcData, String id) {
@@ -80,10 +84,9 @@ public class ActiveNPC {
         baseEntity.setGravity(npcData.isGravity());
         baseEntity.setInvulnerable(npcData.isInvulnerable());
         baseEntity.setPersistent(npcData.isPersistent());
-        if (baseEntity instanceof LivingEntity) {
+        if (baseEntity instanceof LivingEntity livingBase) {
             LivingEntity living = (LivingEntity) baseEntity;
             setAttributes(living);
-            LivingEntity livingBase = (LivingEntity) baseEntity;
             livingBase.setCollidable(npcData.hasCollision());
             livingBase.setMaximumAir(npcData.getMaximumAir());
             livingBase.setMaximumNoDamageTicks(npcData.getNoDamageTicks());
@@ -92,19 +95,21 @@ public class ActiveNPC {
 
         if (npcData.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                //PacketListener.doPlayerStuff(player, baseEntity.getUniqueId(), npc.getDisplayName());
+                AEPacketListener.doPlayerStuff(player, baseEntity.getUniqueId(), npcData.getDisplayName());
             }
         }
         if (npcData.getDisplayName() != null) {
             baseEntity.setCustomName(npcData.getDisplayName());
             baseEntity.setCustomNameVisible(true);
         }
-        Mob mob = (Mob) baseEntity;
-        /*Bukkit.getMobGoals().removeAllGoals(mob);
-        addTarget(2,  new PathfinderGoalNearestAttackableTarget((EntityInsentient) nmsEntity, EntityHuman.class, true));
-        if (nmsEntity instanceof EntityCreature) {
-            addGoal(1, new PathfinderGoalMeleeAttack((EntityCreature) nmsEntity, 1.5, true));
-        }*/
+        CraftEntity craftEntity = (CraftEntity) baseEntity;
+        Bukkit.getMobGoals().removeAllGoals((org.bukkit.entity.Mob) baseEntity);
+        net.minecraft.world.entity.Mob mob = (Mob) craftEntity.getHandle();
+        for (AEPathfinderGoal aegoal : npcData.getGoals()) {
+            CraftLivingEntity entity = (CraftLivingEntity) craftEntity;
+            addTarget(0, new NearestAttackableTargetGoal<>(mob, net.minecraft.world.entity.LivingEntity.class, false));
+            addGoal(aegoal.getPrio(), aegoal.get(entity.getHandle()));
+        }
     }
 
     public void setDisplayname(String displayname) {

@@ -117,4 +117,7 @@ public class ActiveCreatureManager {
         }
     }
 
+    public HashMap<UUID, ActiveNPC> getGlobalNPCs() {
+        return globalNPCs;
+    }
 }

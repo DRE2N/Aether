@@ -1,7 +1,6 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.commons.chat.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 
