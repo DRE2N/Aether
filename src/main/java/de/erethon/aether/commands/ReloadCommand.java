@@ -1,6 +1,7 @@
 package de.erethon.aether.commands;
 
 import de.erethon.aether.Aether;
+import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.commons.chat.MessageUtil;
 import de.erethon.commons.command.DRECommand;
 import org.bukkit.command.CommandSender;
@@ -21,6 +22,9 @@ public class ReloadCommand extends DRECommand {
     public void onExecute(String[] strings, CommandSender commandSender) {
         MessageUtil.sendMessage(commandSender, "&aReloading...");
         Aether.getInstance().getCreatureManager().reload();
+        for (ActiveNPC activeNPC : Aether.getInstance().getActiveCreatureManager().getGlobalNPCs().values()) {
+            activeNPC.setProperties();
+        }
         MessageUtil.sendMessage(commandSender, "&aReload complete!");
     }
 }

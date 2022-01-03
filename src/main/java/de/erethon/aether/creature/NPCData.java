@@ -1,15 +1,12 @@
 package de.erethon.aether.creature;
 
-import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
 import de.erethon.aether.ai.pathfinder.GoalLoader;
-import de.erethon.aether.tools.UpdatedMessageUtil;
+import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
 import de.erethon.commons.chat.MessageUtil;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BoundingBox;
 
@@ -25,7 +22,7 @@ public class NPCData {
     private String displayName = "npc";
     private boolean instancable = true;
     private boolean hasCollision = true;
-    private boolean persistent;
+    private boolean persistent = true;
     private boolean invulnerable;
     private boolean glowing;
     private boolean gravity = true;
@@ -266,6 +263,14 @@ public class NPCData {
         return skinID;
     }
 
+    public Set<AEPathfinderGoal> getGoals() {
+        return goals;
+    }
+
+    public Set<AEPathfinderGoal> getTargets() {
+        return targets;
+    }
+
     public void load() {
         // General
         MessageUtil.log("Loading npc " + ID);
@@ -274,7 +279,7 @@ public class NPCData {
         displayType = EntityType.valueOf(cfg.getString("displayType", "PIG").toUpperCase());
         instancable = cfg.getBoolean("instancable", true);
         hasCollision = cfg.getBoolean("config.collision", true);
-        persistent = cfg.getBoolean("config.persistent", false);
+        persistent = cfg.getBoolean("config.persistent", true);
         invulnerable = cfg.getBoolean("config.invulnerable", false);
         glowing = cfg.getBoolean("config.glowing", false);
         gravity = cfg.getBoolean("config.gravity", true);

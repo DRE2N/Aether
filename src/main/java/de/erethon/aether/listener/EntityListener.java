@@ -3,11 +3,9 @@ package de.erethon.aether.listener;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityPathfindEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
-import com.destroystokyo.paper.event.profile.PreFillProfileEvent;
-import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.Aether;
-import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.ActiveCreatureManager;
+import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.InstancedNPC;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
@@ -24,9 +22,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class EntityListener implements Listener {
 
@@ -49,6 +44,7 @@ public class EntityListener implements Listener {
         }
         ActiveNPC activeNPC = new ActiveNPC(event.getEntity());
         creatures.addActive(event.getEntity(), activeNPC);
+        activeNPC.setProperties();
     }
 
     @EventHandler
