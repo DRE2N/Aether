@@ -6,6 +6,7 @@ repositories {
 }
 plugins {
     `java-library`
+    `maven-publish`
     id("io.papermc.paperweight.userdev") version "1.3.3"
     id("xyz.jpenilla.run-paper") version "1.0.6" // Adds runServer and runMojangMappedServer tasks for testing
     id("com.github.johnrengelman.shadow") version "7.1.2"
@@ -64,16 +65,15 @@ tasks {
     shadowJar {
         dependencies {
             include(dependency("de.erethon.commons:commons-dist:6.3.3"))
-            include(dependency("com.github.retrooper:packetevents:v1.8-pre-19"))
         }
         relocate("de.erethon.commons", "de.erethon.aether.commons")
-        relocate("com.github.retrooper", "de.erethon.aether.packetevents")
     }
     bukkit {
         load = BukkitPluginDescription.PluginLoadOrder.STARTUP
         main = "de.erethon.aether.Aether"
         apiVersion = "1.18"
         authors = listOf("Malfrador")
+        depend = listOf("ProtocolLib")
         commands {
             register("aether") {
                 description = "Main command for Aether"
