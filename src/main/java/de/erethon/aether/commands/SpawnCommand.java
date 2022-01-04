@@ -3,9 +3,11 @@ package de.erethon.aether.commands;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.NPCData;
-import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.commons.chat.MessageUtil;
 import de.erethon.commons.command.DRECommand;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -22,15 +24,37 @@ public class SpawnCommand extends DRECommand {
     }
     @Override
     public void onExecute(String[] args, CommandSender commandSender) {
-        Player player = (Player) commandSender;
         NPCData npcData = Aether.getInstance().getCreatureManager().getByID(args[1]);
         if (npcData == null) {
-            MessageUtil.sendMessage(player, "&cDer NPC " + args[1] + " &cexistiert nicht.");
+            MessageUtil.sendMessage(commandSender, "&cDer NPC " + args[1] + " &cexistiert nicht.");
             return;
         }
-        for (int i = 0; i <= Integer.parseInt(args[2]); i++) {
-            ActiveNPC activeNPC = new ActiveNPC(npcData);
-            activeNPC.spawn(player.getLocation());
+        ActiveNPC activeNPC = new ActiveNPC(npcData);
+        Location location = null;
+        int amount = 1;
+        if (args.length > 2) {
+            amount = Integer.parseInt(args[2]);
+        }
+        if (args.length > 3) {
+            if (args.length < 7) {
+                MessageUtil.sendMessage(commandSender, "&cBitte gebe alle Parameter an. /ae s <mob> <amount> <world> <x> <y> <z>");
+                return;
+            }
+            World world = Bukkit.getWorld(args[3]);
+            int x = Integer.parseInt(args[4]);
+            int y = Integer.parseInt(args[5]);
+            int z = Integer.parseInt(args[6]);
+            location = new Location(world, x, y, z);
+        }
+        if (location == null) {
+            Player player = (Player) commandSender;
+            for (int i = 0; i <= amount; i++) {
+                activeNPC.spawn(player.getLocation());
+            }
+            return;
+        }
+        for (int i = 0; i <= amount; i++) {
+            activeNPC.spawn(location);
         }
     }
 }
