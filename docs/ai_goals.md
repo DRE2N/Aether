@@ -90,7 +90,7 @@ _Der Mob versucht mit einem Bogen anzugreifen. Führt auch zu Strafing. Setzt na
 * **Radius:** Entfernung, ab der Angegriffen wird.
 
 ## ranged_crossbow_attack
-_Der Mob versucht mit einer Armbrust anzugreifen. Führt auch zu Strafing. Setzt natürlich eine Armbrust voraus. Im Gegensatz zu ranged_bow_attack ohne Strafing._
+_Der Mob versucht mit einer Armbrust anzugreifen. Setzt natürlich eine Armbrust voraus. Im Gegensatz zu ranged_bow_attack ohne Strafing._
 
 ``<prio>;ranged_bow_attack;<<interval>;<radius>``
 * **Interval:** Angriffsgeschwindigkeit.
