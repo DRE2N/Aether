@@ -145,14 +145,14 @@ public class EntityListener implements Listener {
             for (Player player : instanced.getViewers()) {
                 player.playSound(event.getEntity().getLocation(), instanced.getNpc().getDeathSound(), SoundCategory.VOICE, 1, 1);
             }
-            InstancedCreatureDeathEvent instancedCreatureDeathEvent = new InstancedCreatureDeathEvent(instanced);
+            InstancedCreatureDeathEvent instancedCreatureDeathEvent = new InstancedCreatureDeathEvent(instanced, event.getEntity().getKiller());
             Bukkit.getPluginManager().callEvent(instancedCreatureDeathEvent);
         } else {
             event.setDeathSound(activeNPC.getNpc().getDeathSound());
             event.setDroppedExp(activeNPC.getNpc().getDropXP());
             event.getDrops().addAll(activeNPC.getNpc().getLoot());
             event.setDeathSoundCategory(SoundCategory.VOICE);
-            CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(activeNPC);
+            CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(activeNPC, event.getEntity().getKiller());
             Bukkit.getPluginManager().callEvent(creatureDeathEvent);
         }
         creatures.removeHealthbar(event.getEntity());

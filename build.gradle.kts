@@ -33,6 +33,18 @@ dependencies {
     // paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.18.1-R0.1-SNAPSHOT")
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "${project.group}"
+            artifactId = "Aether"
+            version = "${project.version}"
+
+            from(components["java"])
+        }
+    }
+}
+
 tasks {
     // Configure reobfJar to run when invoking the build task
     assemble {
