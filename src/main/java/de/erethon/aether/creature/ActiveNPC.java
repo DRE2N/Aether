@@ -1,7 +1,7 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
+import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.aether.tools.UpdatedMessageUtil;
@@ -105,10 +105,12 @@ public class ActiveNPC {
         CraftEntity craftEntity = (CraftEntity) baseEntity;
         Bukkit.getMobGoals().removeAllGoals((org.bukkit.entity.Mob) baseEntity);
         net.minecraft.world.entity.Mob mob = (Mob) craftEntity.getHandle();
+        CraftLivingEntity entity = (CraftLivingEntity) craftEntity;
         for (AEPathfinderGoal aegoal : npcData.getGoals()) {
-            CraftLivingEntity entity = (CraftLivingEntity) craftEntity;
-            addTarget(0, new NearestAttackableTargetGoal<>(mob, net.minecraft.world.entity.LivingEntity.class, false));
             addGoal(aegoal.getPrio(), aegoal.get(entity.getHandle()));
+        }
+        for (AEPathfinderGoal aetarget : npcData.getTargets()) {
+            addTarget(aetarget.getPrio(), aetarget.get(entity.getHandle()));
         }
     }
 

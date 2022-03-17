@@ -1,6 +1,6 @@
-package de.erethon.aether.ai.pathfinder.goals;
+package de.erethon.aether.ai.goals;
 
-import de.erethon.aether.ai.pathfinder.GoalClass;
+import de.erethon.aether.ai.GoalClass;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Monster;

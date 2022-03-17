@@ -1,4 +1,4 @@
-package de.erethon.aether.ai.pathfinder;
+package de.erethon.aether.ai;
 
 import org.bukkit.Location;
 

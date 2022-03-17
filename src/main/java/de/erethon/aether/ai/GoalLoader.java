@@ -1,6 +1,7 @@
-package de.erethon.aether.ai.pathfinder;
+package de.erethon.aether.ai;
 
-import de.erethon.aether.ai.pathfinder.goals.*;
+import de.erethon.aether.ai.goals.*;
+import de.erethon.aether.ai.goals.HurtByTargetGoal;
 import de.erethon.bedrock.chat.MessageUtil;
 
 import java.util.Arrays;
@@ -18,6 +19,7 @@ enum AIGoalType {
     LEAP_AT,
     LOOK_AT_PLAYERS,
     MELEE_ATTACK,
+    NEAREST_ATTACKABLE,
     PANIC,
     RANDOM_LOOK_AROUND,
     RANDOM_STROLL,
@@ -27,9 +29,7 @@ enum AIGoalType {
     RESTRICT_SUN;
 
 }
-enum AITargetType {
-    NEAREST_ATTACKABLE;
-}
+
 public class GoalLoader {
 
     public static Set<AEPathfinderGoal> loadGoals(List<String> cfg) {
@@ -68,6 +68,9 @@ public class GoalLoader {
                 }
                 case MELEE_ATTACK -> {
                     goal = new MeleeAttackGoal();
+                }
+                case NEAREST_ATTACKABLE -> {
+                    goal = new NearestAttackableTargetGoal();
                 }
                 case PANIC -> {
                     goal = new PanicGoal();
