@@ -25,6 +25,7 @@ public class ReloadCommand extends ECommand {
         for (ActiveNPC activeNPC : Aether.getInstance().getActiveCreatureManager().getGlobalNPCs().values()) {
             activeNPC.setProperties();
         }
+        Aether.getInstance().getSpawnerManager().reloadSpawners();
         MessageUtil.sendMessage(commandSender, "&aReload complete!");
     }
 }

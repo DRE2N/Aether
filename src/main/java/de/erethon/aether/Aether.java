@@ -4,6 +4,7 @@ import de.erethon.aether.creature.*;
 import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
+import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommandCache;
@@ -21,6 +22,7 @@ public final class Aether extends EPlugin {
     static Aether instance;
     public static File MOBDATA;
     public static File CREATURES;
+    public static File SPAWNERS;
     NamespacedKey key = new NamespacedKey(this, "aether");
     ECommandCache commands;
     CreatureManager creatureManager;
@@ -29,6 +31,7 @@ public final class Aether extends EPlugin {
     PlayerListener playerListener;
     AEPacketListener packetListener;
     EntityListener entityListener;
+    SpawnerManager spawnerManager;
 
     public Aether() {
         settings = EPluginSettings.builder()
@@ -59,6 +62,10 @@ public final class Aether extends EPlugin {
         if (!CREATURES.exists()) {
             CREATURES.mkdir();
         }
+        SPAWNERS = new File(getDataFolder(), "spawners");
+        if (!SPAWNERS.exists()) {
+            SPAWNERS.mkdir();
+        }
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
@@ -77,6 +84,10 @@ public final class Aether extends EPlugin {
         commands = new CommandCache(this);
         setCommandCache(commands);
         commands.register(this);
+        spawnerManager = new SpawnerManager();
+        spawnerManager.loadSpawners();
+        spawnerManager.startSpawning();
+
 
         //npcManager.loadFiles();
         System.setProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", "false");
@@ -87,6 +98,7 @@ public final class Aether extends EPlugin {
     @Override
     public void onDisable() {
         activeCreatureManager.clearHealthBars();
+        spawnerManager.stopSpawning();
     }
 
     public static void debug(String string) {
@@ -103,6 +115,10 @@ public final class Aether extends EPlugin {
 
     public CreatureManager getCreatureManager() {
         return creatureManager;
+    }
+
+    public SpawnerManager getSpawnerManager() {
+        return spawnerManager;
     }
 
     public SkinCache getSkinCache() {
