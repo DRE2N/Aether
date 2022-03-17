@@ -12,6 +12,8 @@ import de.erethon.bedrock.compatibility.Internals;
 import de.erethon.bedrock.plugin.EPlugin;
 import de.erethon.bedrock.plugin.EPluginSettings;
 import de.erethon.aether.commands.CommandCache;
+import net.minecraft.core.Registry;
+import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 
@@ -68,6 +70,12 @@ public final class Aether extends EPlugin {
         }
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
+        MessageUtil.log("Available creatures: ");
+        String creatures = "";
+        for (EntityType entityType : Registry.ENTITY_TYPE.stream().toList()) {
+            creatures = creatures + entityType.id + ", ";
+        }
+        MessageUtil.log(creatures);
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
         entityListener = new EntityListener();
