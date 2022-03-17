@@ -78,10 +78,6 @@ public class AESpawner {
             ActiveNPC activeNPC = new ActiveNPC(npcData);
             activeNPC.spawn(loc);
         }
-
-}
-
-    public void Leash() {
     }
 
     private void load() {
