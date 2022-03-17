@@ -187,7 +187,6 @@ public class ActiveNPC {
             living.registerAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         }
         living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(npcData.getMovementSpeed());
-        MessageUtil.broadcastMessage("Speed: " + living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getValue());
         // Damage
         if (living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) == null) {
             living.registerAttribute(Attribute.GENERIC_ATTACK_DAMAGE);

@@ -93,8 +93,11 @@ public class EntityListener implements Listener {
     @EventHandler
     public void onTarget(EntityTargetEvent event) {
         ActiveNPC own = creatures.get(event.getEntity().getUniqueId());
+        if (event.getTarget() == null) {
+            return;
+        }
         ActiveNPC target = creatures.get(event.getTarget().getUniqueId());
-        if (own == null || target == null) {
+        if (own == null || target == null || target.getNpc() == null || target.getNpc().getFaction() == null) {
             return;
         }
         if (own.getNpc().getFaction().equalsIgnoreCase(target.getNpc().getFaction())) {
