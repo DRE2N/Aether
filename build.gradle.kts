@@ -7,7 +7,7 @@ repositories {
 plugins {
     `java-library`
     `maven-publish`
-    id("io.papermc.paperweight.userdev") version "1.3.3"
+    id("io.papermc.paperweight.userdev") version "1.3.6-SNAPSHOT"
     id("xyz.jpenilla.run-paper") version "1.0.6" // Adds runServer and runMojangMappedServer tasks for testing
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
@@ -23,9 +23,9 @@ java {
 }
 
 dependencies {
-    paperDevBundle("1.18.1-R0.1-SNAPSHOT")
-    implementation("de.erethon.commons:commons-dist:6.3.3")
-    compileOnly("com.comphenix.protocol:ProtocolLib:4.8.0-SNAPSHOT")
+    paperDevBundle("1.18.2-R0.1-SNAPSHOT")
+    implementation("de.erethon:bedrock:1.2.0") { isTransitive = false }
+    compileOnly("com.comphenix.protocol:ProtocolLib:4.8.0")
     // paperweightDevBundle("com.example.paperfork", "1.18.1-R0.1-SNAPSHOT")
 
     // You will need to manually specify the full dependency if using the groovy gradle dsl
@@ -73,12 +73,11 @@ tasks {
       outputJar.set(layout.buildDirectory.file("libs/PaperweightTestPlugin-${project.version}.jar"))
     }
      */
-
     shadowJar {
         dependencies {
-            include(dependency("de.erethon.commons:commons-dist:6.3.3"))
+            include(dependency("de.erethon:bedrock:1.2.0"))
         }
-        relocate("de.erethon.commons", "de.erethon.aether.commons")
+        relocate("de.erethon.bedrock", "de.erethon.aether.bedrock")
     }
     bukkit {
         load = BukkitPluginDescription.PluginLoadOrder.STARTUP

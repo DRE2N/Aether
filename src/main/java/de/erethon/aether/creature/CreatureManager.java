@@ -1,7 +1,7 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;

@@ -10,7 +10,7 @@ import com.comphenix.protocol.wrappers.*;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.*;
 import de.erethon.aether.tools.packetwrapper.*;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;

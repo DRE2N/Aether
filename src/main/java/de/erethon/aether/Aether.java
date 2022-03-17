@@ -5,23 +5,24 @@ import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.tools.UpdatedMessageUtil;
-import de.erethon.commons.chat.MessageUtil;
-import de.erethon.commons.compatibility.Internals;
-import de.erethon.commons.javaplugin.DREPlugin;
-import de.erethon.commons.javaplugin.DREPluginSettings;
+import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.bedrock.command.ECommandCache;
+import de.erethon.bedrock.compatibility.Internals;
+import de.erethon.bedrock.plugin.EPlugin;
+import de.erethon.bedrock.plugin.EPluginSettings;
 import de.erethon.aether.commands.CommandCache;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 
 import java.io.File;
 
-public final class Aether extends DREPlugin {
+public final class Aether extends EPlugin {
 
     static Aether instance;
     public static File MOBDATA;
     public static File CREATURES;
     NamespacedKey key = new NamespacedKey(this, "aether");
-    CommandCache commands;
+    ECommandCache commands;
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
@@ -30,8 +31,7 @@ public final class Aether extends DREPlugin {
     EntityListener entityListener;
 
     public Aether() {
-        settings = DREPluginSettings.builder()
-                .paper(true)
+        settings = EPluginSettings.builder()
                 .economy(true)
                 .internals(Internals.v1_16_R3)
                 .build();

@@ -2,11 +2,11 @@ package de.erethon.aether.commands;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
-import de.erethon.commons.chat.MessageUtil;
-import de.erethon.commons.command.DRECommand;
+import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.bedrock.command.ECommand;
 import org.bukkit.command.CommandSender;
 
-public class ReloadCommand extends DRECommand {
+public class ReloadCommand extends ECommand {
 
     public ReloadCommand() {
         setCommand("reload");

@@ -2,7 +2,7 @@ package de.erethon.aether.creature;
 
 import de.erethon.aether.ai.pathfinder.GoalLoader;
 import de.erethon.aether.ai.pathfinder.goals.AEPathfinderGoal;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;

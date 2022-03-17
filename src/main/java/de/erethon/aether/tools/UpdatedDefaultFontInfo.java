@@ -4,7 +4,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
 
 /**
- * 1.16+ Version of {@link de.erethon.commons.chat.DefaultFontInfo}
+ * 1.16+ Version of {@link de.erethon.bedrock.chat.DefaultFontInfo}
  *
  * @author SirSpoodles, Sataniel, Fyreum
  */

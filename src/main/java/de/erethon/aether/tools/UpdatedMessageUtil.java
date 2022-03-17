@@ -1,9 +1,9 @@
 package de.erethon.aether.tools;
 
-import de.erethon.commons.chat.FatLetter;
-import de.erethon.commons.javaplugin.DREPlugin;
-import de.erethon.commons.kyori.adventure.text.minimessage.MiniMessage;
+import de.erethon.bedrock.chat.FatLetter;
+import de.erethon.bedrock.plugin.EPlugin;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -14,13 +14,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 1.16+ Version of {@link de.erethon.commons.chat.MessageUtil}
+ * 1.16+ Version of {@link de.erethon.bedrock.chat.MessageUtil}
  *
  * @author Sataniel, Fyreum
  */
 public class UpdatedMessageUtil {
 
-    private static final MiniMessage mm = MiniMessage.get();
+    private static final MiniMessage mm = MiniMessage.miniMessage();
     private static final Pattern HEX_COLOR_PATTERN = Pattern.compile("#[a-fA-F0-9]{6}");
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)&[0-9A-FK-ORX]");
 
@@ -30,7 +30,7 @@ public class UpdatedMessageUtil {
      * @param message the message String
      */
     public static void log(String message) {
-        log(DREPlugin.getInstance(), message);
+        log(EPlugin.getInstance(), message);
     }
 
     /**
@@ -49,7 +49,7 @@ public class UpdatedMessageUtil {
      * @param message the message Component
      */
     public static void log(Component message) {
-        log(DREPlugin.getInstance(), message);
+        log(EPlugin.getInstance(), message);
     }
 
     /**
@@ -338,7 +338,7 @@ public class UpdatedMessageUtil {
     public static Component parse(MiniMessage mm, String msg) {
         String fixed = fixColor(msg);
         String translated = ChatColor.translateAlternateColorCodes('&', fixed);
-        return (Component) mm.parse(translated);
+        return (Component) mm.deserialize(translated);
     }
 
     /**
@@ -348,17 +348,17 @@ public class UpdatedMessageUtil {
      * @return the serialized string
      */
     public static String serialize(Component msg) {
-        return mm.serialize((de.erethon.commons.kyori.adventure.text.Component) msg);
+        return mm.serialize(msg);
     }
 
     /**
-     * Calls the {@link MiniMessage#stripTokens(String input)} method.
+     * Calls the {@link MiniMessage#stripTags(String)} method.
      *
      * @param input the string to strip
      * @return the striped input
      */
     public static String stripTokens(String input) {
-        return mm.stripTokens(input);
+        return mm.stripTags(input);
     }
 
     /**

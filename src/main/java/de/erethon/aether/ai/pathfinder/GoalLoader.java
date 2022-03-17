@@ -1,7 +1,7 @@
 package de.erethon.aether.ai.pathfinder;
 
 import de.erethon.aether.ai.pathfinder.goals.*;
-import de.erethon.commons.chat.MessageUtil;
+import de.erethon.bedrock.chat.MessageUtil;
 
 import java.util.Arrays;
 import java.util.HashSet;

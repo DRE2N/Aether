@@ -8,8 +8,8 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
 import de.erethon.aether.tools.UpdatedMessageUtil;
-import de.erethon.commons.chat.MessageUtil;
-import de.erethon.commons.command.DRECommand;
+import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.bedrock.command.ECommand;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class TestCommand extends DRECommand implements Listener {
+public class TestCommand extends ECommand implements Listener {
     Aether plugin = Aether.getInstance();
     Map<UUID, BoundingBox> boundingBoxMap = new HashMap<>();
 
