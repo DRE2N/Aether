@@ -18,6 +18,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 
 import java.io.File;
+import java.io.IOException;
 
 public final class Aether extends EPlugin {
 
@@ -25,6 +26,7 @@ public final class Aether extends EPlugin {
     public static File MOBDATA;
     public static File CREATURES;
     public static File SPAWNERS;
+    public static File SKINS;
     NamespacedKey key = new NamespacedKey(this, "aether");
     ECommandCache commands;
     CreatureManager creatureManager;
@@ -68,6 +70,14 @@ public final class Aether extends EPlugin {
         if (!SPAWNERS.exists()) {
             SPAWNERS.mkdir();
         }
+        SKINS = new File(getDataFolder(), "skinCache.yml");
+        if (!SKINS.exists()) {
+            try {
+                SKINS.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         MessageUtil.log("Available creatures: ");
@@ -79,7 +89,7 @@ public final class Aether extends EPlugin {
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
         entityListener = new EntityListener();
-        skinCache = new SkinCache();
+        skinCache = new SkinCache(SKINS);
         skinCache.refresh();
 
 
@@ -105,6 +115,7 @@ public final class Aether extends EPlugin {
 
     @Override
     public void onDisable() {
+        skinCache.saveCache();
         activeCreatureManager.clearHealthBars();
         spawnerManager.stopSpawning();
     }

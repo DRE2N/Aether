@@ -10,7 +10,6 @@ import com.comphenix.protocol.wrappers.*;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.*;
 import de.erethon.aether.tools.packetwrapper.*;
-import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -92,7 +91,7 @@ public class AEPacketListener {
         info.setAction(EnumWrappers.PlayerInfoAction.ADD_PLAYER);
         List<PlayerInfoData> dataList = new ArrayList<>(info.getData());
         NPCData npc = plugin.getActiveCreatureManager().get(uuid).getNpc();
-        Skin skin = plugin.getSkinCache().get(npc.getSkinID());
+        Skin skin = plugin.getSkinCache().get(npc.getSkinLink());
         WrappedGameProfile profile = new WrappedGameProfile(uuid, name);
         if (skin != null) {
             profile.getProperties().get("textures").clear();

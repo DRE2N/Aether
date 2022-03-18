@@ -31,7 +31,9 @@ public class NPCData {
     private int maximumAir;
 
     // Players
-    private int skinID = 2047933517;
+    private String skinLink = "https://minesk.in/c39b10d504e0453788d0c81ec9ab970e";
+    private List<String> skins = new ArrayList<>();
+    Random random = new Random();
 
     // Attributes
     private double maxHealth = 20;
@@ -259,8 +261,12 @@ public class NPCData {
         return maximumAir;
     }
 
-    public int getSkinID() {
-        return skinID;
+    public String getSkinLink() {
+        if (skins.isEmpty()) {
+            return skinLink;
+        }
+        int index = random.nextInt(0, skins.size());
+        return skins.get(index);
     }
 
     public Set<AEPathfinderGoal> getGoals() {
@@ -287,7 +293,11 @@ public class NPCData {
         noDamageTicks = cfg.getInt("config.noDamageTicks", 20);
         maximumAir = cfg.getInt("config.maximumAir", 20);
         // Players
-        skinID = cfg.getInt("skin");
+        skinLink = cfg.getString("skin");
+        if (cfg.contains("skins")) {
+            skins = cfg.getStringList("skins");
+            MessageUtil.log("Loaded " + skins.size() + " skins.");
+        }
         // Attributes
         maxHealth = cfg.getDouble("config.attributes.health", 20);
         range = cfg.getDouble("config.attributes.range", 32);

@@ -1,2 +1,2 @@
 package de.erethon.aether.creature;
-public record Skin(int id, String texture, String signature) {}
+public record Skin(String link, String texture, String signature) {}

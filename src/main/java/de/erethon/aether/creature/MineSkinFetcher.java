@@ -1,89 +1,59 @@
-/*
- * Copyright (c) 2018 Jitse Boonstra
- */
-
 package de.erethon.aether.creature;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.Bukkit;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Scanner;
+import java.net.URLEncoder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Copied from NPCLib
- * @author Jitse Boonstra
- */
 public class MineSkinFetcher {
 
-    private static final String MINESKIN_API = "https://api.mineskin.org/get/id/";
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
 
-    public static void fetchSkinFromIdAsync(int id, Callback callback) {
+    public static void fetchSkinFromIdAsync(String linkUrl, Callback callback) {
+        if (linkUrl == null) {
+            MessageUtil.log("Trying to fetch invalid skin for NPC.");
+            return;
+        }
         EXECUTOR.execute(() -> {
+            DataOutputStream out = null;
+            BufferedReader reader = null;
             try {
-                StringBuilder builder = new StringBuilder();
-                HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(MINESKIN_API + id).openConnection();
-                httpURLConnection.setRequestMethod("GET");
-                httpURLConnection.setDoOutput(true);
-                httpURLConnection.setDoInput(true);
-                httpURLConnection.connect();
-
-                Scanner scanner = new Scanner(httpURLConnection.getInputStream());
-                while (scanner.hasNextLine()) {
-                    builder.append(scanner.nextLine());
-                }
-
-                scanner.close();
-                httpURLConnection.disconnect();
-
-                JsonObject jsonObject = (JsonObject) new JsonParser().parse(builder.toString());
-                JsonObject textures = jsonObject.get("data").getAsJsonObject().get("texture").getAsJsonObject();
-                String value = textures.get("value").getAsString();
-                String signature = textures.get("signature").getAsString();
-
-                callback.call(new Skin(id, value, signature));
+                URL target = new URL("https://api.mineskin.org/generate/url");
+                HttpURLConnection con = (HttpURLConnection) target.openConnection();
+                con.setRequestMethod("POST");
+                con.setDoOutput(true);
+                con.setConnectTimeout(1000);
+                con.setReadTimeout(30000);
+                out = new DataOutputStream(con.getOutputStream());
+                out.writeBytes("url=" + URLEncoder.encode(linkUrl, "UTF-8"));
+                out.close();
+                reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                JSONObject output = (JSONObject) new JSONParser().parse(reader);
+                JSONObject data = (JSONObject) output.get("data");
+                JSONObject texture = (JSONObject) data.get("texture");
+                String textureEncoded = (String) texture.get("value");
+                String signature = (String) texture.get("signature");
+                con.disconnect();
+                callback.call(new Skin(linkUrl, textureEncoded, signature));
             } catch (IOException exception) {
-                Bukkit.getLogger().severe("Could not fetch skin! (Id: " + id + "). Message: " + exception.getMessage());
+                Bukkit.getLogger().severe("Could not fetch skin! (Link: " + linkUrl + "). Message: " + exception.getMessage());
                 exception.printStackTrace();
                 callback.failed();
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
         });
-    }
-
-    public static void fetchSkinFromIdSync(int id, Callback callback) {
-        try {
-            StringBuilder builder = new StringBuilder();
-            HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(MINESKIN_API + id).openConnection();
-            httpURLConnection.setRequestMethod("GET");
-            httpURLConnection.setDoOutput(true);
-            httpURLConnection.setDoInput(true);
-            httpURLConnection.connect();
-
-            Scanner scanner = new Scanner(httpURLConnection.getInputStream());
-            while (scanner.hasNextLine()) {
-                builder.append(scanner.nextLine());
-            }
-
-            scanner.close();
-            httpURLConnection.disconnect();
-
-            JsonObject jsonObject = (JsonObject) new JsonParser().parse(builder.toString());
-            JsonObject textures = jsonObject.get("data").getAsJsonObject().get("texture").getAsJsonObject();
-            String value = textures.get("value").getAsString();
-            String signature = textures.get("signature").getAsString();
-
-            callback.call(new Skin(id, value, signature));
-        } catch (IOException exception) {
-            Bukkit.getLogger().severe("Could not fetch skin! (Id: " + id + "). Message: " + exception.getMessage());
-            exception.printStackTrace();
-            callback.failed();
-        }
     }
 
     public interface Callback {
