@@ -5,7 +5,6 @@ import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.spawning.SpawnerManager;
-import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommandCache;
 import de.erethon.bedrock.compatibility.Internals;

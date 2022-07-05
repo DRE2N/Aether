@@ -4,7 +4,6 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.tools.NMSUtils;
-import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.bedrock.chat.MessageUtil;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -52,7 +51,7 @@ public class ActiveNPC {
         if (npcID == null) {
             return;
         }
-        UpdatedMessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
+        MessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
         npcData = plugin.getCreatureManager().getByID(npcID);
         if (npcData == null) {
             MessageUtil.log(npcID + " is invalid.");

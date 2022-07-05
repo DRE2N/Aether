@@ -7,7 +7,6 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
-import de.erethon.aether.tools.UpdatedMessageUtil;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommand;
 import org.bukkit.Location;
