@@ -4,7 +4,6 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.events.CreatureInteractEvent;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -24,7 +23,6 @@ public class PlayerListener implements Listener {
         if (npc == null) {
             return;
         }
-        CreatureInteractEvent interactEvent = new CreatureInteractEvent(npc);
-        Bukkit.getPluginManager().callEvent(interactEvent);
+        new CreatureInteractEvent(event.getPlayer(), npc).callEvent();
     }
 }
