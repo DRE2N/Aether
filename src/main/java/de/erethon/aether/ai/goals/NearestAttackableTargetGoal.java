@@ -16,7 +16,7 @@ import java.util.Optional;
 public class NearestAttackableTargetGoal extends AEPathfinderGoal {
 
     Class target;
-    boolean alertSameTypeMobs;
+    boolean checkVisibility;
 
     public NearestAttackableTargetGoal() {
         goalClass = GoalClass.TARGET;
@@ -24,7 +24,9 @@ public class NearestAttackableTargetGoal extends AEPathfinderGoal {
 
     @Override
     public Goal get(LivingEntity entity) {
-        return new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>((Mob) entity, target, alertSameTypeMobs);
+        net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal nearestAttackableTargetGoal = new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>((Mob) entity, target, checkVisibility, false);
+        MessageUtil.log("TargetGoal: " + nearestAttackableTargetGoal.toString());
+        return nearestAttackableTargetGoal;
     }
 
     @Override
@@ -34,6 +36,6 @@ public class NearestAttackableTargetGoal extends AEPathfinderGoal {
             EntityType<?> entityType = byName.get();
             target = entityType.getClass();
         }
-        alertSameTypeMobs = Boolean.parseBoolean(args[1]);
+        checkVisibility = Boolean.parseBoolean(args[1]);
     }
 }

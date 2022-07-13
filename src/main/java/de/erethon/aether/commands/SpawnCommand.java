@@ -29,7 +29,7 @@ public class SpawnCommand extends ECommand {
             MessageUtil.sendMessage(commandSender, "&cDer NPC " + args[1] + " &cexistiert nicht.");
             return;
         }
-        ActiveNPC activeNPC = new ActiveNPC(npcData);
+
         Location location = null;
         int amount = 1;
         if (args.length > 2) {
@@ -46,6 +46,7 @@ public class SpawnCommand extends ECommand {
             int z = Integer.parseInt(args[6]);
             location = new Location(world, x, y, z);
         }
+        ActiveNPC activeNPC = new ActiveNPC(npcData);
         if (location == null) {
             Player player = (Player) commandSender;
             for (int i = 0; i <= amount; i++) {

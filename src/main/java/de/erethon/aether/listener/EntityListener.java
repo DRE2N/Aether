@@ -9,10 +9,13 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.InstancedNPC;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
+import de.erethon.bedrock.chat.MessageUtil;
 import io.papermc.paper.event.entity.EntityMoveEvent;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
+import org.bukkit.craftbukkit.v1_19_R1.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -57,7 +60,6 @@ public class EntityListener implements Listener {
             return;
         }
         creatures.updateHealthbarPosition(event.getEntity());
-        activeNPC.setAttacked(false);
     }
 
     @EventHandler
@@ -92,7 +94,16 @@ public class EntityListener implements Listener {
     // Combat actions
     @EventHandler
     public void onTarget(EntityTargetEvent event) {
-        ActiveNPC own = creatures.get(event.getEntity().getUniqueId());
+        CraftMob mob = (CraftMob) event.getEntity();
+        MessageUtil.log("--- Available ---");
+        for (WrappedGoal goal : mob.getHandle().targetSelector.getAvailableGoals()) {
+            MessageUtil.log("Target: " + goal.getGoal().toString());
+        }
+        MessageUtil.log("--- Running --- ");
+        for (WrappedGoal goal : mob.getHandle().targetSelector.getRunningGoals().toList()) {
+            MessageUtil.log("Target: " + goal.getGoal().toString());
+        }
+        /*ActiveNPC own = creatures.get(event.getEntity().getUniqueId());
         if (event.getTarget() == null) {
             return;
         }
@@ -102,7 +113,7 @@ public class EntityListener implements Listener {
         }
         if (own.getNpc().getFaction().equalsIgnoreCase(target.getNpc().getFaction())) {
             event.setCancelled(true);
-        }
+        }*/
     }
 
     @EventHandler
