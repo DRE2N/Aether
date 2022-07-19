@@ -30,7 +30,7 @@ java {
 
 dependencies {
     paperDevBundle("1.19-R0.1-SNAPSHOT")
-    implementation("de.erethon:bedrock:1.2.0") { isTransitive = false }
+    implementation("de.erethon:bedrock:1.2.3") { isTransitive = false }
     compileOnly("com.comphenix.protocol:ProtocolLib:5.0.0-SNAPSHOT")
     compileOnly("com.ticxo.modelengine:api:R2.5.0")
     // paperweightDevBundle("com.example.paperfork", "1.18.1-R0.1-SNAPSHOT")
@@ -82,7 +82,7 @@ tasks {
      */
     shadowJar {
         dependencies {
-            include(dependency("de.erethon:bedrock:1.2.0"))
+            include(dependency("de.erethon:bedrock:1.2.3"))
         }
         relocate("de.erethon.bedrock", "de.erethon.aether.bedrock")
     }
