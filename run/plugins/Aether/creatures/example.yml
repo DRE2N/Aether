@@ -1,12 +1,9 @@
 displayname: ExampleNPC
-baseType: vindicator # Real mob
-displayType: player # what gets displayed to the players
+baseType: zombie # Real mob
+displayType: zombie # what gets displayed to the players
 instancable: false # if this NPC can be instanced (one version per player)
-skin: 2047933517 # Mineskin ID, gets cached
+config:
+  model: test
 attributes:
   health: 5
   speed: 0.01
-ai:
-  goals:
-    - 0;melee_attack;1.2;true
-    - 1;random_stroll;1.0;1;false

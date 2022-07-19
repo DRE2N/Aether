@@ -1,5 +1,8 @@
 package de.erethon.aether.creature;
 
+import com.ticxo.modelengine.api.ModelEngineAPI;
+import com.ticxo.modelengine.api.model.ActiveModel;
+import com.ticxo.modelengine.api.model.ModeledEntity;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.listener.AEPacketListener;
@@ -75,6 +78,7 @@ public class ActiveNPC {
         baseEntity.getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.STRING, npcData.getID());
         setProperties();
         NMSUtils.addEntity(nmsEntity, location);
+
     }
 
     public void setProperties() {
@@ -102,7 +106,9 @@ public class ActiveNPC {
             baseEntity.setCustomNameVisible(true);
         }
         CraftEntity craftEntity = (CraftEntity) baseEntity;
-        Bukkit.getMobGoals().removeAllGoals((org.bukkit.entity.Mob) baseEntity);
+        if (!npcData.getGoals().isEmpty() || !npcData.getTargets().isEmpty()) {
+            Bukkit.getMobGoals().removeAllGoals((org.bukkit.entity.Mob) baseEntity);
+        }
         net.minecraft.world.entity.Mob mob = (Mob) craftEntity.getHandle();
         CraftLivingEntity entity = (CraftLivingEntity) craftEntity;
         for (AEPathfinderGoal aegoal : npcData.getGoals()) {
@@ -110,6 +116,14 @@ public class ActiveNPC {
         }
         for (AEPathfinderGoal aetarget : npcData.getTargets()) {
             addTarget(aetarget.getPrio(), aetarget.get(entity.getHandle()));
+        }
+        if (npcData.hasModel()) {
+            ActiveModel model = ModelEngineAPI.createActiveModel(npcData.getModelID());
+            ModeledEntity modelEngineEntity = ModelEngineAPI.createModeledEntity(baseEntity);
+            modelEngineEntity.addActiveModel(model);
+            modelEngineEntity.setInvisible(true);
+            modelEngineEntity.detectPlayers();
+            MessageUtil.log("Added model " + npcData.getModelID() + " to " + npcData.getID());
         }
     }
 

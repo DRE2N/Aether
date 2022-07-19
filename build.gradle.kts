@@ -2,6 +2,12 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 
 repositories {
     maven("https://erethon.de/repo")
+    maven {
+        url = uri("https://mvn.lumine.io/repository/maven-public")
+        metadataSources {
+            artifact() //Look directly for artifact
+        }
+    } // Model Engine
     maven("https://repo.dmulloy2.net/repository/public/")
 }
 plugins {
@@ -15,7 +21,7 @@ plugins {
 
 group = "de.erethon.aether"
 version = "1.0.0-SNAPSHOT"
-description = "Mob and NPC plugin for erethon"
+description = "Mob and NPC plugin for Erethon"
 
 java {
     // Configure the java toolchain. This allows gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.
@@ -26,6 +32,7 @@ dependencies {
     paperDevBundle("1.19-R0.1-SNAPSHOT")
     implementation("de.erethon:bedrock:1.2.0") { isTransitive = false }
     compileOnly("com.comphenix.protocol:ProtocolLib:5.0.0-SNAPSHOT")
+    compileOnly("com.ticxo.modelengine:api:R2.5.0")
     // paperweightDevBundle("com.example.paperfork", "1.18.1-R0.1-SNAPSHOT")
 
     // You will need to manually specify the full dependency if using the groovy gradle dsl

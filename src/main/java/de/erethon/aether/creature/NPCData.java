@@ -30,6 +30,8 @@ public class NPCData {
     private int noDamageTicks;
     private int maximumAir;
 
+    private String modelID = "";
+
     // Players
     private String skinLink = "https://minesk.in/c39b10d504e0453788d0c81ec9ab970e";
     private List<String> skins = new ArrayList<>();
@@ -277,6 +279,15 @@ public class NPCData {
         return targets;
     }
 
+
+    public String getModelID() {
+        return modelID;
+    }
+
+    public boolean hasModel() {
+        return !modelID.equals("");
+    }
+
     public void load() {
         // General
         MessageUtil.log("Loading npc " + ID);
@@ -284,6 +295,7 @@ public class NPCData {
         baseType = EntityType.valueOf(cfg.getString("baseType", "PIG").toUpperCase());
         displayType = EntityType.valueOf(cfg.getString("displayType", "PIG").toUpperCase());
         instancable = cfg.getBoolean("instancable", true);
+        modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);
         persistent = cfg.getBoolean("config.persistent", true);
         invulnerable = cfg.getBoolean("config.invulnerable", false);
