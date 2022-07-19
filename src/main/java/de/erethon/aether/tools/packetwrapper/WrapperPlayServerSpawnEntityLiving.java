@@ -20,6 +20,7 @@ package de.erethon.aether.tools.packetwrapper;
 
 import java.util.UUID;
 
+import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -30,12 +31,10 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.injector.PacketConstructor;
-import com.comphenix.protocol.utility.MinecraftVersion;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 
 public class WrapperPlayServerSpawnEntityLiving extends AbstractPacket {
-	public static final PacketType TYPE =
-			PacketType.Play.Server.SPAWN_ENTITY_LIVING;
+	public static final PacketType TYPE = PacketType.Play.Server.SPAWN_ENTITY;
 
 	private static PacketConstructor entityConstructor;
 
@@ -124,6 +123,7 @@ public class WrapperPlayServerSpawnEntityLiving extends AbstractPacket {
 	 */
 	@SuppressWarnings("deprecation")
 	public void setType(EntityType value) {
+		MessageUtil.log("type: " + value.name() + " id: " + value.getTypeId());
 		handle.getIntegers().write(1, (int) value.getTypeId());
 	}
 

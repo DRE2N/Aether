@@ -10,6 +10,8 @@ import com.comphenix.protocol.wrappers.*;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.*;
 import de.erethon.aether.tools.packetwrapper.*;
+import de.erethon.bedrock.chat.MessageUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -23,7 +25,7 @@ public class AEPacketListener {
     ActiveCreatureManager manager = plugin.getActiveCreatureManager();
 
     public AEPacketListener() {
-        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.SPAWN_ENTITY_LIVING) {
+        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.SPAWN_ENTITY) {
             @Override
             public void onPacketSending(PacketEvent event) {
                 onEntitySpawn(event);
@@ -52,6 +54,7 @@ public class AEPacketListener {
         if (activeNPC == null) {
             return;
         }
+        event.setCancelled(true);
         EntityType type = activeNPC.getNpc().getDisplayType();
         if (type == EntityType.PLAYER) {
             UUID uuid = wrapper.getEntity(event).getUniqueId();
@@ -63,7 +66,6 @@ public class AEPacketListener {
             namedEntitySpawn.setZ(wrapper.getZ());
             namedEntitySpawn.setEntityID(wrapper.getEntityID());
             namedEntitySpawn.sendPacket(event.getPlayer());
-            event.setCancelled(true);
             return;
         }
         if (!type.isAlive()) {
@@ -78,11 +80,12 @@ public class AEPacketListener {
             spawnEntity.setYaw(wrapper.getYaw());
             spawnEntity.setObjectData(0);
             spawnEntity.sendPacket(event.getPlayer());
-            event.setCancelled(true);
             return;
         }
         wrapper.setType(type);
-        event.setPacket(wrapper.getHandle());
+        MessageUtil.log("Set type to " + type.name());
+        MessageUtil.log(wrapper.getHandle().toString());
+        event.setPacket(wrapper.getHandle()); // TODO: Not working with 5.0
     }
 
     public static void doPlayerStuff(Player player, UUID uuid, String name) {
