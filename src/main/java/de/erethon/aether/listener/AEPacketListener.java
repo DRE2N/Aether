@@ -1,16 +1,11 @@
 package de.erethon.aether.listener;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.wrappers.*;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.*;
-import de.erethon.aether.tools.packetwrapper.*;
+import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
+import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -20,7 +15,7 @@ import java.util.*;
 
 public class AEPacketListener {
 
-    ProtocolManager protocol = ProtocolLibrary.getProtocolManager();
+    /*ProtocolManager protocol = ProtocolLibrary.getProtocolManager();
     Aether plugin = Aether.getInstance();
     ActiveCreatureManager manager = plugin.getActiveCreatureManager();
 
@@ -54,7 +49,6 @@ public class AEPacketListener {
         if (activeNPC == null) {
             return;
         }
-        event.setCancelled(true);
         EntityType type = activeNPC.getNpc().getDisplayType();
         if (type == EntityType.PLAYER) {
             UUID uuid = wrapper.getEntity(event).getUniqueId();
@@ -65,6 +59,7 @@ public class AEPacketListener {
             namedEntitySpawn.setY(wrapper.getY());
             namedEntitySpawn.setZ(wrapper.getZ());
             namedEntitySpawn.setEntityID(wrapper.getEntityID());
+            event.setCancelled(true);
             namedEntitySpawn.sendPacket(event.getPlayer());
             return;
         }
@@ -79,13 +74,22 @@ public class AEPacketListener {
             spawnEntity.setPitch(wrapper.getPitch());
             spawnEntity.setYaw(wrapper.getYaw());
             spawnEntity.setObjectData(0);
+            event.setCancelled(true);
             spawnEntity.sendPacket(event.getPlayer());
             return;
         }
-        wrapper.setType(type);
+        int id = -1;
+        Optional<net.minecraft.world.entity.EntityType<?>> types = net.minecraft.world.entity.EntityType.byString(type.getKey().asString());
+        if (types.isPresent()) {
+            net.minecraft.world.entity.EntityType<?> entityTypes = types.get();
+            id = Registry.ENTITY_TYPE.getId(entityTypes);
+        }
         MessageUtil.log("Set type to " + type.name());
-        MessageUtil.log(wrapper.getHandle().toString());
-        event.setPacket(wrapper.getHandle()); // TODO: Not working with 5.0
+        MessageUtil.log(event.getPacket().getIntegers().getValues().toString());
+        if (id != -1) {
+            event.getPacket().getIntegers().write(2, id);
+        }
+        MessageUtil.log(" ... " + event.getPacket().getIntegers().getValues().toString());
     }
 
     public static void doPlayerStuff(Player player, UUID uuid, String name) {
@@ -119,5 +123,5 @@ public class AEPacketListener {
             }
         };
         runLater.runTaskLater(Aether.getInstance(), 3);
-    }
+    }*/
 }

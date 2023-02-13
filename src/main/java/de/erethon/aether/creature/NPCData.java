@@ -1,12 +1,15 @@
 package de.erethon.aether.creature;
 
+import com.google.gson.Gson;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.bedrock.chat.MessageUtil;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BoundingBox;
 
@@ -292,8 +295,8 @@ public class NPCData {
         // General
         MessageUtil.log("Loading npc " + ID);
         displayName = cfg.getString("displayname", "");
-        baseType = EntityType.valueOf(cfg.getString("baseType", "PIG").toUpperCase());
-        displayType = EntityType.valueOf(cfg.getString("displayType", "PIG").toUpperCase());
+        baseType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("minecraft", cfg.getString("baseType", "pig")));
+        displayType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("minecraft", cfg.getString("displayType", "pig")));
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);
@@ -367,6 +370,18 @@ public class NPCData {
                 loot.add(new ItemStack(material, amount));
             }
         }
+        MessageUtil.log("Loaded NPC: " + this);
+    }
 
+    @Override
+    public String toString() {
+        return "NPCData{" +
+                "baseType=" + baseType +
+                ";displayType=" + displayType +
+                ";displayName=" + displayName +
+                ";instancable=" + instancable +
+                ";modelID=" + modelID +
+                ";persistent=" + persistent +
+                "}";
     }
 }

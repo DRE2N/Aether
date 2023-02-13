@@ -76,7 +76,7 @@ public class TestCommand extends ECommand implements Listener {
                 Mob mob = (Mob) entity;
                 mobs.add(mob);
             }
-            List<Location> locations = FormationTools.getLine(player.getTargetBlock(10).getLocation(), FormationDirection.X, mobs.size(), 2);
+            List<Location> locations = FormationTools.getLine(player.getTargetBlockExact(10).getLocation(), FormationDirection.X, mobs.size(), 2);
             MessageUtil.sendMessage(player, "Found " + mobs.size() + " mobs and created " + locations.size() + " points.");
             for (Location location : locations) {
                 if (mobs.isEmpty()) {

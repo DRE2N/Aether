@@ -1,6 +1,6 @@
 displayname: ExampleNPC
 baseType: zombie # Real mob
-displayType: zombie # what gets displayed to the players
+displayType: vindicator # what gets displayed to the players
 instancable: false # if this NPC can be instanced (one version per player)
 config:
   model: test

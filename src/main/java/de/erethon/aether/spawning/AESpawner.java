@@ -5,6 +5,8 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.bedrock.chat.MessageUtil;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.message.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -35,6 +37,8 @@ public class AESpawner {
     int cooldown = 30;
     int activationRange = 32;
 
+    private Class<? extends org.bukkit.entity.Entity> entityClass;
+
     BukkitRunnable runnable;
 
     public AESpawner(ConfigurationSection config) {
@@ -43,6 +47,12 @@ public class AESpawner {
     }
 
     public void start() {
+        Entity entity = npcData.getBaseType().create((Level) centerLocation.getWorld()); // Create dummy entity for bukkit stuff
+        if (entity == null) {
+            return;
+        }
+        entityClass = entity.getBukkitEntity().getClass();
+        entity.remove(Entity.RemovalReason.DISCARDED);
         runnable = new BukkitRunnable() {
             @Override
             public void run() {
@@ -63,7 +73,7 @@ public class AESpawner {
         if (centerLocation.getNearbyPlayers(activationRange).isEmpty()) {
             return;
         }
-        if (centerLocation.getNearbyEntitiesByType(npcData.getBaseType().getEntityClass(), maxMobsRange).size() > maxMobs) {
+        if (centerLocation.getNearbyEntitiesByType(entityClass, maxMobsRange).size() > maxMobs) {
             return;
         }
         Random random = new Random();

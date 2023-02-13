@@ -1,12 +1,10 @@
 package de.erethon.aether.animation;
 
-import de.erethon.aether.tools.packetwrapper.WrapperPlayServerAnimation;
-import de.erethon.aether.tools.packetwrapper.WrapperPlayServerEntityStatus;
 import net.minecraft.world.entity.LivingEntity;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftLivingEntity;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
@@ -26,8 +24,8 @@ public class AnimationUtils {
     }
 
     public static void sendAnimation(Entity entity, Player player, EntityAnimation anim) {
-        WrapperPlayServerAnimation animation = new WrapperPlayServerAnimation();
-        animation.setEntityID(entity.getEntityId());
+        //WrapperPlayServerAnimation animation = new WrapperPlayServerAnimation();
+        //animation.setEntityID(entity.getEntityId());
         int id = -1;
         switch (anim) {
             case SWAP_HANDS:
@@ -91,8 +89,6 @@ public class AnimationUtils {
                 return;
         }
         if (id != -1) {
-            animation.setAnimation(id);
-            animation.sendPacket(player);
         }
 
 
@@ -100,9 +96,6 @@ public class AnimationUtils {
 
     // Some animations are a status for whatever reason, so they use a different packet
     private static void sendStatus(Entity entity, Player player, byte id) {
-        WrapperPlayServerEntityStatus status = new WrapperPlayServerEntityStatus();
-        status.setEntityID(entity.getEntityId());
-        status.setEntityStatus(id);
-        status.sendPacket(player);
+
     }
 }

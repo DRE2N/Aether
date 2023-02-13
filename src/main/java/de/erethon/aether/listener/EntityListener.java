@@ -15,7 +15,7 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -95,14 +95,6 @@ public class EntityListener implements Listener {
     @EventHandler
     public void onTarget(EntityTargetEvent event) {
         CraftMob mob = (CraftMob) event.getEntity();
-        MessageUtil.log("--- Available ---");
-        for (WrappedGoal goal : mob.getHandle().targetSelector.getAvailableGoals()) {
-            MessageUtil.log("Target: " + goal.getGoal().toString());
-        }
-        MessageUtil.log("--- Running --- ");
-        for (WrappedGoal goal : mob.getHandle().targetSelector.getRunningGoals().toList()) {
-            MessageUtil.log("Target: " + goal.getGoal().toString());
-        }
         /*ActiveNPC own = creatures.get(event.getEntity().getUniqueId());
         if (event.getTarget() == null) {
             return;

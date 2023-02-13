@@ -18,10 +18,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_19_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -69,6 +69,7 @@ public class ActiveNPC {
     }
 
     public void spawn(Location location) {
+        MessageUtil.log("Spawning new active entity for " + npcData.getID());
         net.minecraft.world.entity.Entity nmsEntity = NMSUtils.spawnEntityWithoutSending(location, npcData.getBaseType());
         if (nmsEntity == null) {
             return;
@@ -77,12 +78,14 @@ public class ActiveNPC {
         plugin.getActiveCreatureManager().addActive(baseEntity, this);
         baseEntity.getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.STRING, npcData.getID());
         setProperties();
+        NMSUtils.setDisplayType(baseEntity, npcData);
         NMSUtils.addEntity(nmsEntity, location);
 
     }
 
     public void setProperties() {
         baseEntity.setSilent(true);
+        NMSUtils.setDisplayType(baseEntity, npcData);
         baseEntity.setGlowing(npcData.isGlowing());
         baseEntity.setGravity(npcData.isGravity());
         baseEntity.setInvulnerable(npcData.isInvulnerable());
@@ -95,12 +98,11 @@ public class ActiveNPC {
             livingBase.setMaximumNoDamageTicks(npcData.getNoDamageTicks());
             equip(living);
         }
-
-        if (npcData.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
+        /*if (npcData.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 AEPacketListener.doPlayerStuff(player, baseEntity.getUniqueId(), npcData.getDisplayName());
             }
-        }
+        }*/
         if (npcData.getDisplayName() != null) {
             baseEntity.setCustomName(npcData.getDisplayName());
             baseEntity.setCustomNameVisible(true);
@@ -120,9 +122,7 @@ public class ActiveNPC {
         if (npcData.hasModel()) {
             ActiveModel model = ModelEngineAPI.createActiveModel(npcData.getModelID());
             ModeledEntity modelEngineEntity = ModelEngineAPI.createModeledEntity(baseEntity);
-            modelEngineEntity.addActiveModel(model);
-            modelEngineEntity.setInvisible(true);
-            modelEngineEntity.detectPlayers();
+            modelEngineEntity.addModel(model, true);
             MessageUtil.log("Added model " + npcData.getModelID() + " to " + npcData.getID());
         }
     }

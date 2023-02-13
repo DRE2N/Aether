@@ -3,6 +3,7 @@ package de.erethon.aether.ai.goals;
 import de.erethon.aether.ai.GoalClass;
 import de.erethon.bedrock.chat.MessageUtil;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -25,13 +26,12 @@ public class NearestAttackableTargetGoal extends AEPathfinderGoal {
     @Override
     public Goal get(LivingEntity entity) {
         net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal nearestAttackableTargetGoal = new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>((Mob) entity, target, checkVisibility, false);
-        MessageUtil.log("TargetGoal: " + nearestAttackableTargetGoal.toString());
         return nearestAttackableTargetGoal;
     }
 
     @Override
     public void load(String[] args) {
-        Optional<EntityType<?>> byName = Registry.ENTITY_TYPE.getOptional(ResourceLocation.tryParse(args[0].toLowerCase()));
+        Optional<EntityType<?>> byName = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.tryParse(args[0].toLowerCase()));
         if (byName.isPresent()) {
             EntityType<?> entityType = byName.get();
             target = entityType.getClass();

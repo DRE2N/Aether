@@ -2,6 +2,7 @@ package de.erethon.aether.ai.goals;
 
 import de.erethon.aether.ai.GoalClass;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,7 +31,7 @@ public class AEAvoidTargetGoal extends AEPathfinderGoal {
     @Override
     public void load(String[] args) {
         isCreatureOnly = true;
-        Optional<EntityType<?>> byName = Registry.ENTITY_TYPE.getOptional(ResourceLocation.tryParse(args[0].toLowerCase()));
+        Optional<EntityType<?>> byName = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.tryParse(args[0].toLowerCase()));
         if (byName.isPresent()) {
             EntityType<?> entityType = byName.get();
             toAvoid = entityType.getClass();

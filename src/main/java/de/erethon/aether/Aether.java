@@ -4,6 +4,7 @@ import de.erethon.aether.creature.*;
 import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
+import de.erethon.aether.network.AetherPacketHandler;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommandCache;
@@ -11,22 +12,34 @@ import de.erethon.bedrock.compatibility.Internals;
 import de.erethon.bedrock.plugin.EPlugin;
 import de.erethon.bedrock.plugin.EPluginSettings;
 import de.erethon.aether.commands.CommandCache;
+import net.kyori.adventure.key.Key;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
 
-public final class Aether extends EPlugin {
+import static io.papermc.paper.network.ChannelInitializeListenerHolder.*;
+
+
+public final class Aether extends EPlugin implements Listener {
 
     static Aether instance;
+
     public static File MOBDATA;
     public static File CREATURES;
     public static File SPAWNERS;
     public static File SKINS;
     NamespacedKey key = new NamespacedKey(this, "aether");
+
+    private static final Key listenerKey = Key.key("aether", "listener");
+
+    private AetherPacketHandler packetHandler;
     ECommandCache commands;
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
@@ -57,6 +70,7 @@ public final class Aether extends EPlugin {
         }
         instance = this;
 
+
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
         }
@@ -81,8 +95,8 @@ public final class Aether extends EPlugin {
         creatureManager = new CreatureManager();
         MessageUtil.log("Available creatures: ");
         String creatures = "";
-        for (EntityType entityType : Registry.ENTITY_TYPE.stream().toList()) {
-            creatures = creatures + entityType.id + ", ";
+        for (EntityType entityType : BuiltInRegistries.ENTITY_TYPE.stream().distinct().toList()) {
+            creatures = creatures + entityType.getDescriptionId() + ", ";
         }
         MessageUtil.log(creatures);
         activeCreatureManager = new ActiveCreatureManager();
@@ -91,8 +105,8 @@ public final class Aether extends EPlugin {
         skinCache = new SkinCache(SKINS);
         skinCache.refresh();
 
-
-        packetListener = new AEPacketListener();
+        packetHandler = new AetherPacketHandler(this);
+        //addListener(listenerKey, channel -> channel.pipeline().addAfter("packet_handler", "aether_handler", packetHandler));
 
         //Bukkit.getPluginManager().registerEvents(npcManager, this);
         Bukkit.getPluginManager().registerEvents(playerListener, this);
@@ -114,6 +128,7 @@ public final class Aether extends EPlugin {
 
     @Override
     public void onDisable() {
+        if (hasListener(listenerKey)) removeListener(listenerKey);
         skinCache.saveCache();
         activeCreatureManager.clearHealthBars();
         spawnerManager.stopSpawning();

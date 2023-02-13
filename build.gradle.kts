@@ -9,7 +9,15 @@ repositories {
         }
     } // Model Engine
     maven("https://repo.dmulloy2.net/repository/public/")
+    maven("https://oss.sonatype.org/content/groups/public/")
+    maven("https://papermc.io/repo/repository/maven-public/")
+    maven("https://ci.emc.gs/nexus/content/groups/aikar/")
+    maven("https://repo.aikar.co/content/groups/aikar")
+    maven("https://repo.md-5.net/content/repositories/releases/")
+    maven("https://hub.spigotmc.org/nexus/content/groups/public/")
+    maven("https://jitpack.io")
 }
+
 plugins {
     `java-library`
     `maven-publish`
@@ -28,16 +36,12 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
-dependencies {
-    paperDevBundle("1.19-R0.1-SNAPSHOT")
-    implementation("de.erethon:bedrock:1.2.3") { isTransitive = false }
-    compileOnly("com.comphenix.protocol:ProtocolLib:5.0.0-SNAPSHOT")
-    compileOnly("com.ticxo.modelengine:api:R2.5.0")
-    // paperweightDevBundle("com.example.paperfork", "1.18.1-R0.1-SNAPSHOT")
+val papyrusVersion = "1.19.3-R0.1-SNAPSHOT"
 
-    // You will need to manually specify the full dependency if using the groovy gradle dsl
-    // (paperDevBundle and paperweightDevBundle functions do not work in groovy)
-    // paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.18.1-R0.1-SNAPSHOT")
+dependencies {
+    paperweightDevBundle("de.erethon.papyrus", papyrusVersion) { isChanging = true }
+    implementation("de.erethon:bedrock:1.2.3") { isTransitive = false }
+    compileOnly("com.ticxo.modelengine:api:B3.0.0")
 }
 
 publishing {
@@ -57,6 +61,15 @@ tasks {
     assemble {
         dependsOn(reobfJar)
         dependsOn(shadowJar)
+    }
+
+    runServer {
+        if (!project.buildDir.exists()) {
+            project.buildDir.mkdir()
+        }
+        val f = File(project.buildDir, "server.jar");
+        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-reobf.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
+        serverJar(f)
     }
 
     compileJava {
@@ -89,9 +102,8 @@ tasks {
     bukkit {
         load = BukkitPluginDescription.PluginLoadOrder.STARTUP
         main = "de.erethon.aether.Aether"
-        apiVersion = "1.18"
+        apiVersion = "1.19"
         authors = listOf("Malfrador")
-        depend = listOf("ProtocolLib")
         commands {
             register("aether") {
                 description = "Main command for Aether"
