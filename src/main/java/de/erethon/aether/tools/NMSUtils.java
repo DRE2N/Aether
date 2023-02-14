@@ -45,10 +45,8 @@ public class NMSUtils {
         if (type == null) {
             return;
         }
-        MessageUtil.log("Setting display type...");
         CraftEntity craftEntity = (CraftEntity) entity;
         craftEntity.getHandle().displayEntityType = type;
-        MessageUtil.log("Set display type for " + entity + " to " + type);
 
     }
 

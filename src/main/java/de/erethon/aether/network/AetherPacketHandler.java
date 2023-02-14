@@ -43,7 +43,6 @@ public class AetherPacketHandler extends ChannelDuplexHandler {
                     return;
                 }
                 if (addEntityPacket.getType() == EntityType.PLAYER) {
-                    MessageUtil.log("Detected player packet, updating info");
                     CraftWorld craftWorld = (CraftWorld) npc.getBaseEntity().getWorld();
                     ServerLevel level = craftWorld.getHandle();
                     CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(addEntityPacket.getUUID(), npc.getNpc().getDisplayName());
