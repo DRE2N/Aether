@@ -1,60 +1,68 @@
 package de.erethon.aether.network;
 
+import com.destroystokyo.paper.profile.CraftPlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.ActiveNPC;
+import de.erethon.aether.creature.Skin;
 import de.erethon.bedrock.chat.MessageUtil;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.MessageToByteEncoder;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.Connection;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import org.bukkit.craftbukkit.v1_19_R2.CraftWorld;
 
-public class AetherPacketHandler extends MessageToByteEncoder<Packet> {
+import java.util.List;
+
+public class AetherPacketHandler extends ChannelDuplexHandler {
 
     private final Aether aether;
+    private final ServerPlayer player;
     private final ActiveCreatureManager manager;
 
-    public AetherPacketHandler(Aether aether) {
+    public AetherPacketHandler(Aether aether, ServerPlayer player) {
         this.aether = aether;
         this.manager = aether.getActiveCreatureManager();
+        this.player = player;
     }
 
     @Override
-    public boolean acceptOutboundMessage(Object msg) throws Exception {
-        return msg instanceof ClientboundAddEntityPacket;
-    }
-
-    @Override
-    protected void encode(ChannelHandlerContext ctx, Packet msg, ByteBuf out) throws Exception {
-        final FriendlyByteBuf fbb = new FriendlyByteBuf(out);
-        if (msg instanceof ClientboundAddEntityPacket packet) {
-            encode(ctx, packet, fbb);
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (msg instanceof ClientboundAddEntityPacket addEntityPacket) {
+            ActiveNPC npc = manager.get(addEntityPacket.getUUID());
+            if (npc != null) {
+                if (npc.getNpc().isInstancable() && !npc.getViewers().contains(player.getBukkitEntity())) {
+                    return;
+                }
+                if (addEntityPacket.getType() == EntityType.PLAYER) {
+                    MessageUtil.log("Detected player packet, updating info");
+                    CraftWorld craftWorld = (CraftWorld) npc.getBaseEntity().getWorld();
+                    ServerLevel level = craftWorld.getHandle();
+                    CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(addEntityPacket.getUUID(), npc.getNpc().getDisplayName());
+                    Skin skin = aether.getSkinCache().get(npc.getNpc().getSkinLink());
+                    craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
+                    ServerPlayer fakePlayer = new ServerPlayer(MinecraftServer.getServer(), level, craftPlayerProfile.buildGameProfile());
+                    fakePlayer.setId(addEntityPacket.getId());
+                    fakePlayer.setPos(addEntityPacket.getX(), addEntityPacket.getY(), addEntityPacket.getZ());
+                    ClientboundPlayerInfoUpdatePacket infoUpdatePacket = ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(fakePlayer));
+                    ClientboundAddPlayerPacket playerPacket = new ClientboundAddPlayerPacket(fakePlayer);
+                    ClientboundPlayerInfoRemovePacket removePacket = new ClientboundPlayerInfoRemovePacket(List.of(playerPacket.getPlayerId()));
+                    player.connection.send(infoUpdatePacket);
+                    player.connection.send(playerPacket);
+                    player.connection.send(removePacket);
+                    return;
+                }
+            }
         }
+        super.write(ctx, msg, promise);
     }
 
-    private void encode(ChannelHandlerContext ctx, ClientboundAddEntityPacket packet, FriendlyByteBuf buf) {
-        ActiveNPC npc = manager.get(packet.getUUID());
-        MessageUtil.log("Found entity packet: " + packet.getType());
-        //writePacketId(ctx, packet, buf);
-        buf.writeId(BuiltInRegistries.ENTITY_TYPE, BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("minecraft", "pig")));
-
-        if (npc != null) {
-            MessageUtil.log("AE entity: " + packet.getType());
-            //writePacketId(ctx, packet, buf);
-            buf.writeId(BuiltInRegistries.ENTITY_TYPE, npc.getNpc().getDisplayType());
-        }
-    }
-
-    private void writePacketId(final ChannelHandlerContext ctx, final Packet<?> packet, final FriendlyByteBuf buf) {
-        buf.writeVarInt(ctx.channel().attr(Connection.ATTRIBUTE_PROTOCOL).get().getPacketId(PacketFlow.CLIENTBOUND, packet));
-    }
 }

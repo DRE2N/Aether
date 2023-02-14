@@ -1,7 +1,9 @@
 displayname: ExampleNPC
 baseType: zombie # Real mob
-displayType: vindicator # what gets displayed to the players
+displayType: player # what gets displayed to the players
 instancable: false # if this NPC can be instanced (one version per player)
+skins:
+  - "https://minesk.in/a18344561077460db4652944462303be"
 config:
   model: test
 attributes:
