@@ -6,6 +6,10 @@ skins:
   - "https://minesk.in/03ca0fa19c644e71810e1f6fc29eefd4"
 config:
   model: test
+spells:
+  onAttack: # onAttack, onDamaged, onDeath, onTarget
+    Backstab: # Spellbook spell name
+      chance: 20 # Chance this spell is triggered
 attributes:
   health: 5
   speed: 0.01
