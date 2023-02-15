@@ -11,6 +11,7 @@ import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
 import de.erethon.bedrock.chat.MessageUtil;
 import io.papermc.paper.event.entity.EntityMoveEvent;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -79,7 +80,13 @@ public class EntityListener implements Listener {
     public void onDmgByEntity(EntityDamageByEntityEvent event) {
         ActiveNPC activeNPC = creatures.get(event.getEntity().getUniqueId());
         if (activeNPC == null) {
-            return;
+            if (event.getEntity() instanceof Player && event.getDamager() instanceof LivingEntity) {
+                ActiveNPC activeEnemyNPC = creatures.get(event.getEntity().getUniqueId());
+                if (activeEnemyNPC != null) {
+                    activeEnemyNPC.onAttack();
+                    return;
+                }
+            }
         }
         creatures.showHealth(event.getEntity());
         activeNPC.setAttacked(true);
@@ -89,11 +96,14 @@ public class EntityListener implements Listener {
                 player.playSound(event.getEntity().getLocation(), sound, SoundCategory.VOICE, 1.0f, 1.0f);
             }
         }
+        activeNPC.onDamaged();
     }
 
     // Combat actions
     @EventHandler
     public void onTarget(EntityTargetEvent event) {
+        ActiveNPC activeNPC = creatures.get(event.getEntity().getUniqueId());
+        activeNPC.onTarget();
         CraftMob mob = (CraftMob) event.getEntity();
         /*ActiveNPC own = creatures.get(event.getEntity().getUniqueId());
         if (event.getTarget() == null) {
@@ -137,6 +147,7 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
+        activeNPC.onDeath();
         event.getDrops().clear();
         if (activeNPC instanceof InstancedNPC instanced) {
             for (ItemStack itemStack : instanced.getNpc().getLoot()) {

@@ -289,6 +289,12 @@ public class ActiveNPC {
         }
     }
 
+    public void onTarget() {
+        for (SpellCastEntry spell : npcData.getOnTargetSpells()) {
+            castSpell(spell);
+        }
+    }
+
     private void castSpell(SpellCastEntry entry) {
         if (!entry.canCast()) {
             return;
