@@ -5,9 +5,12 @@ import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.ModeledEntity;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
+import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.spellbook.api.SpellData;
+import de.erethon.spellbook.api.SpellbookSpell;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -266,6 +269,32 @@ public class ActiveNPC {
 
     public void setAttacked(boolean attacked) {
         isAttacked = attacked;
+    }
+
+    public void onDamaged() {
+        for (SpellCastEntry spell : npcData.getOnDamagedSpells()) {
+            castSpell(spell);
+        }
+    }
+
+    public void onAttack() {
+        for (SpellCastEntry spell : npcData.getOnAttackSpells()) {
+            castSpell(spell);
+        }
+    }
+
+    public void onDeath() {
+        for (SpellCastEntry spell : npcData.getOnDeathSpells()) {
+            castSpell(spell);
+        }
+    }
+
+    private void castSpell(SpellCastEntry entry) {
+        if (!entry.canCast()) {
+            return;
+        }
+        LivingEntity caster = (LivingEntity) this;
+        caster.cast(entry.getSpell());
     }
 
     public Set<Player> getViewers() {

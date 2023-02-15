@@ -3,10 +3,15 @@ package de.erethon.aether.creature;
 import com.google.gson.Gson;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
+import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.spellbook.api.SpellData;
+import de.erethon.spellbook.api.SpellLibrary;
+import de.erethon.spellbook.api.SpellbookAPI;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
@@ -73,6 +78,12 @@ public class NPCData {
     String faction;
     EntityType projectile;
     BoundingBox hitbox;
+
+    private Set<SpellCastEntry> onDamagedSpells = new HashSet<>();
+    private Set<SpellCastEntry> onTimerSpells = new HashSet<>();
+    private Set<SpellCastEntry> onAttackSpells = new HashSet<>();
+    private Set<SpellCastEntry> onDeathSpells = new HashSet<>();
+    private Set<SpellCastEntry> onTargetSpells = new HashSet<>();
 
     // AI
     private Set<AEPathfinderGoal> goals = new HashSet<>();
@@ -282,6 +293,25 @@ public class NPCData {
         return targets;
     }
 
+    public Set<SpellCastEntry> getOnDamagedSpells() {
+        return onDamagedSpells;
+    }
+
+    public Set<SpellCastEntry> getOnTimerSpells() {
+        return onTimerSpells;
+    }
+
+    public Set<SpellCastEntry> getOnAttackSpells() {
+        return onAttackSpells;
+    }
+
+    public Set<SpellCastEntry> getOnDeathSpells() {
+        return onDeathSpells;
+    }
+
+    public Set<SpellCastEntry> getOnTargetSpells() {
+        return onTargetSpells;
+    }
 
     public String getModelID() {
         return modelID;
@@ -342,6 +372,87 @@ public class NPCData {
         ambientMessages = cfg.getStringList("interaction.messages");
         randomTalker = cfg.getBoolean("interaction.randomTalker", false);
         // Combat
+        SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
+        if (cfg.contains("spells.onDamaged")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onDamaged");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                MessageUtil.log("No spells found for onDamaged in " + ID);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        continue;
+                    }
+                    entry.load(section.getConfigurationSection(string));
+                    onDamagedSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onTimer")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onTimer");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                MessageUtil.log("No spells found for onTimer in " + ID);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        continue;
+                    }
+                    entry.load(section.getConfigurationSection(string));
+                    onDamagedSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onAttack")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onAttack");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                MessageUtil.log("No spells found for onAttack in " + ID);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        continue;
+                    }
+                    entry.load(section.getConfigurationSection(string));
+                    onDamagedSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onDeath")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onDeath");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                MessageUtil.log("No spells found for onDeath in " + ID);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        continue;
+                    }
+                    entry.load(section.getConfigurationSection(string));
+                    onDamagedSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onTarget")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onTarget");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                MessageUtil.log("No spells found for onTarget in " + ID);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        continue;
+                    }
+                    entry.load(section.getConfigurationSection(string));
+                    onDamagedSpells.add(entry);
+                }
+            }
+        }
 
         // AI
         if (cfg.contains("ai.goals")) {
