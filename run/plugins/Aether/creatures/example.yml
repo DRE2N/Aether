@@ -3,7 +3,7 @@ baseType: zombie # Real mob
 displayType: player # what gets displayed to the players
 instancable: false # if this NPC can be instanced (one version per player)
 skins:
-  - "https://minesk.in/a18344561077460db4652944462303be"
+  - "https://minesk.in/03ca0fa19c644e71810e1f6fc29eefd4"
 config:
   model: test
 attributes:

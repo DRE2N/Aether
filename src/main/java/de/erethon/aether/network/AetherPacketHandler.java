@@ -14,11 +14,15 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.player.Player;
 import org.bukkit.craftbukkit.v1_19_R2.CraftWorld;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
 
@@ -47,16 +51,28 @@ public class AetherPacketHandler extends ChannelDuplexHandler {
                     ServerLevel level = craftWorld.getHandle();
                     CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(addEntityPacket.getUUID(), npc.getNpc().getDisplayName());
                     Skin skin = aether.getSkinCache().get(npc.getNpc().getSkinLink());
-                    craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
+                    if (skin != null) {
+                        craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
+                    }
                     ServerPlayer fakePlayer = new ServerPlayer(MinecraftServer.getServer(), level, craftPlayerProfile.buildGameProfile());
                     fakePlayer.setId(addEntityPacket.getId());
                     fakePlayer.setPos(addEntityPacket.getX(), addEntityPacket.getY(), addEntityPacket.getZ());
+                    fakePlayer.getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte)127); // Show all skin layers
+                    fakePlayer.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
                     ClientboundPlayerInfoUpdatePacket infoUpdatePacket = ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(fakePlayer));
                     ClientboundAddPlayerPacket playerPacket = new ClientboundAddPlayerPacket(fakePlayer);
                     ClientboundPlayerInfoRemovePacket removePacket = new ClientboundPlayerInfoRemovePacket(List.of(playerPacket.getPlayerId()));
+                    ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(addEntityPacket.getId(), fakePlayer.getEntityData().packDirty());
                     player.connection.send(infoUpdatePacket);
                     player.connection.send(playerPacket);
-                    player.connection.send(removePacket);
+                    player.connection.send(entityDataPacket);
+                    BukkitRunnable runnable = new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            player.connection.send(removePacket);
+                        }
+                    };
+                    runnable.runTaskLaterAsynchronously(aether, 2);
                     return;
                 }
             }
