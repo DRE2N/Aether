@@ -1,6 +1,7 @@
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 
 repositories {
+    mavenLocal()
     maven("https://erethon.de/repo")
     maven {
         url = uri("https://mvn.lumine.io/repository/maven-public")
@@ -41,7 +42,7 @@ val papyrusVersion = "1.19.3-R0.1-SNAPSHOT"
 dependencies {
     paperweightDevBundle("de.erethon.papyrus", papyrusVersion) { isChanging = true }
     implementation("de.erethon:bedrock:1.2.3") { isTransitive = false }
-    compileOnly("de.erethon.questsxl:questsxl:1.0.0-SNAPSHOT")
+    compileOnly("de.erethon.questsxl:QuestsXL:1.0.0-SNAPSHOT")
     compileOnly("com.ticxo.modelengine:api:B3.0.0")
 }
 

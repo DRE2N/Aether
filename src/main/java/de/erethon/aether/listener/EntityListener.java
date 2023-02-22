@@ -20,6 +20,7 @@ import org.bukkit.craftbukkit.v1_19_R2.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -94,6 +95,14 @@ public class EntityListener implements Listener {
             Sound sound = activeNPC.getNpc().getHurtSound();
             if (sound != null) {
                 player.playSound(event.getEntity().getLocation(), sound, SoundCategory.VOICE, 1.0f, 1.0f);
+            }
+            if (activeNPC.getNpc().getFaction() != null) {
+                for (Mob mob : activeNPC.getBaseEntity().getLocation().getNearbyEntitiesByType(Mob.class, 16)) {
+                    ActiveNPC nearbyActive = creatures.get(mob.getUniqueId());
+                    if (nearbyActive.getNpc().getFaction().equals(activeNPC.getNpc().getFaction())) {
+                        mob.setTarget(player);
+                    }
+                }
             }
         }
         activeNPC.onDamaged();
