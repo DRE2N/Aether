@@ -45,7 +45,7 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
         for (File file : Aether.SPAWNERS.listFiles()) {
             YamlConfiguration fileConfig = YamlConfiguration.loadConfiguration(file);
             for (String key : fileConfig.getKeys(false)) {
-                configuredSpawners.add(new AESpawner(fileConfig.getConfigurationSection(key)));
+                configuredSpawners.add(new AESpawner(fileConfig.getConfigurationSection(key), key));
             }
         }
         MessageUtil.log("Loaded " + configuredSpawners.size() + " spawners.");
@@ -75,6 +75,14 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
         int z = event.getChunk().getZ();
         Set<AESpawner> spawnersAtChunk = spawnersbyChunk.getOrDefault(new ChunkPos(x, z), new HashSet<>());
         activeSpawners.removeAll(spawnersAtChunk);
+    }
+
+    public void triggerSpawner(String id) {
+        for (AESpawner spawner : configuredSpawners) {
+            if (spawner.getId().equals(id)) {
+                spawner.spawn();
+            }
+        }
     }
 
     public void reloadSpawners() {

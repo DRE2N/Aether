@@ -20,6 +20,8 @@ public class AESpawner {
     private final CreatureManager creatureManager = plugin.getCreatureManager();
     private final ConfigurationSection config;
 
+    private String id;
+
     private NPCData npcData = null;
     private Location centerLocation;
     private int radius = 16;
@@ -35,8 +37,9 @@ public class AESpawner {
 
     private EntityType entityType;
 
-    public AESpawner(ConfigurationSection config) {
+    public AESpawner(ConfigurationSection config, String id) {
         this.config = config;
+        this.id = id;
         load();
     }
 
@@ -70,6 +73,10 @@ public class AESpawner {
 
     public boolean isTicking() {
         return isTicking;
+    }
+
+    public String getId() {
+        return id;
     }
 
     private void load() {
