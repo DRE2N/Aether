@@ -295,6 +295,9 @@ public class ActiveNPC {
             return;
         }
         LivingEntity caster = (LivingEntity) getBaseEntity();
+        if (entry.getSpell() == null) {
+            return;
+        }
         caster.cast(entry.getSpell());
     }
 

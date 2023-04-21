@@ -86,8 +86,8 @@ public class EntityListener implements Listener {
                     return;
                 }
             }
+            return;
         }
-        activeNPC.setAttacked(true);
         if (event.getDamager() instanceof Player player) {
             Sound sound = activeNPC.getNpc().getHurtSound();
             if (sound != null) {
@@ -96,6 +96,9 @@ public class EntityListener implements Listener {
             if (activeNPC.getNpc().getFaction() != null) {
                 for (Mob mob : activeNPC.getBaseEntity().getLocation().getNearbyEntitiesByType(Mob.class, 16)) {
                     ActiveNPC nearbyActive = creatures.get(mob.getUniqueId());
+                    if (nearbyActive == null) {
+                        continue;
+                    }
                     if (nearbyActive.getNpc().getFaction().equals(activeNPC.getNpc().getFaction())) {
                         mob.setTarget(player);
                     }
@@ -109,6 +112,9 @@ public class EntityListener implements Listener {
     @EventHandler
     public void onTarget(EntityTargetEvent event) {
         ActiveNPC activeNPC = creatures.get(event.getEntity().getUniqueId());
+        if (activeNPC == null) {
+            return;
+        }
         activeNPC.onTarget();
         CraftMob mob = (CraftMob) event.getEntity();
         /*ActiveNPC own = creatures.get(event.getEntity().getUniqueId());
@@ -131,6 +137,15 @@ public class EntityListener implements Listener {
             return;
         }
     }
+
+    @EventHandler
+    public void onTransform(EntityTransformEvent event) {
+        ActiveNPC activeNPC = creatures.get(event.getEntity().getUniqueId());
+        if (activeNPC == null) {
+            return;
+        }
+        event.setCancelled(true);
+}
 
     @EventHandler
     public void onShoot(EntityShootBowEvent event) {
