@@ -16,7 +16,7 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.craftbukkit.v1_19_R2.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -61,7 +61,6 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
-        creatures.updateHealthbarPosition(event.getEntity());
     }
 
     @EventHandler
@@ -73,7 +72,6 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
-        creatures.showHealth(event.getEntity());
         activeNPC.setAttacked(true);
     }
 
@@ -89,7 +87,6 @@ public class EntityListener implements Listener {
                 }
             }
         }
-        creatures.showHealth(event.getEntity());
         activeNPC.setAttacked(true);
         if (event.getDamager() instanceof Player player) {
             Sound sound = activeNPC.getNpc().getHurtSound();
@@ -181,7 +178,6 @@ public class EntityListener implements Listener {
             CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(activeNPC, event.getEntity().getKiller());
             Bukkit.getPluginManager().callEvent(creatureDeathEvent);
         }
-        creatures.removeHealthbar(event.getEntity());
         creatures.remove(event.getEntity().getUniqueId());
 
     }
@@ -195,7 +191,6 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
-        creatures.removeHealthbar(event.getEntity());
     }
 
 }

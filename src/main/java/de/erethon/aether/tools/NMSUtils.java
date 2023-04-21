@@ -11,8 +11,8 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_19_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R2.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftEntity;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
 import java.util.Optional;
@@ -48,6 +48,15 @@ public class NMSUtils {
         CraftEntity craftEntity = (CraftEntity) entity;
         craftEntity.getHandle().displayEntityType = type;
 
+    }
+
+    public static EntityType getDisplayType(org.bukkit.entity.Entity entity) {
+        CraftEntity craftEntity = (CraftEntity) entity;
+        EntityType type = craftEntity.getHandle().displayEntityType;
+        if (type == null) {
+            return EntityType.PIG;
+        }
+        return type;
     }
 
     public static void addEntity(Entity entity, Location location) {
