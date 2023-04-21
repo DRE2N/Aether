@@ -87,6 +87,8 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
 
     public void reloadSpawners() {
         configuredSpawners.clear();
+        spawnersbyChunk.clear();
+        activeSpawners.clear();
         loadSpawners();
     }
 
