@@ -4,7 +4,6 @@ import de.erethon.aether.commands.CommandCache;
 import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
-import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.network.AetherPacketHandler;
@@ -39,7 +38,6 @@ public final class Aether extends EPlugin implements Listener {
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
     PlayerListener playerListener;
-    AEPacketListener packetListener;
     EntityListener entityListener;
     SpawnerManager spawnerManager;
 
@@ -121,7 +119,6 @@ public final class Aether extends EPlugin implements Listener {
     @Override
     public void onDisable() {
         skinCache.saveCache();
-        activeCreatureManager.clearHealthBars();
         spawnerManager.stopSpawning();
     }
 
