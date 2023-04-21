@@ -101,10 +101,10 @@ tasks {
         relocate("de.erethon.bedrock", "de.erethon.aether.bedrock")
     }
     bukkit {
-        load = BukkitPluginDescription.PluginLoadOrder.STARTUP
         main = "de.erethon.aether.Aether"
         apiVersion = "1.19"
         authors = listOf("Malfrador")
+        load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
         commands {
             register("aether") {
                 description = "Main command for Aether"

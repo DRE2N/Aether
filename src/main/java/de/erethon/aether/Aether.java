@@ -106,9 +106,6 @@ public final class Aether extends EPlugin implements Listener {
         setCommandCache(commands);
         commands.register(this);
         spawnerManager = new SpawnerManager();
-        spawnerManager.loadSpawners();
-        spawnerManager.startSpawning();
-
 
         //npcManager.loadFiles();
         System.setProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", "false");
@@ -119,7 +116,6 @@ public final class Aether extends EPlugin implements Listener {
     @Override
     public void onDisable() {
         skinCache.saveCache();
-        spawnerManager.stopSpawning();
     }
 
     public static void debug(String string) {

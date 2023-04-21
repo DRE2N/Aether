@@ -1,0 +1,16 @@
+test:
+  id: example
+  loc:
+    world: world
+    x: 5
+    y: 100
+    z: 17
+  isTicking: true
+  radius: 10
+  radiusY: 5
+  mobsPerSpawn: 2
+  chance: 100.0
+  maxMobs: 10
+  maxMobsRange: 32
+  cooldown: 30
+  activationRange: 32

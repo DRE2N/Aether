@@ -5,75 +5,49 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.bedrock.chat.MessageUtil;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import org.apache.logging.log4j.message.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.checkerframework.checker.units.qual.A;
+import org.bukkit.craftbukkit.v1_19_R3.util.CraftMagicNumbers;
+import org.bukkit.entity.EntityType;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class AESpawner {
 
-    Aether plugin = Aether.getInstance();
-    CreatureManager creatureManager = plugin.getCreatureManager();
-    ConfigurationSection config;
+    private final Aether plugin = Aether.getInstance();
+    private final CreatureManager creatureManager = plugin.getCreatureManager();
+    private final ConfigurationSection config;
 
-    NPCData npcData = null;
-    Location centerLocation;
-    int radius = 16;
-    int radiusY = 4;
-    int mobsPerSpawn = 1;
-    double probability = 1.00;
-    int maxMobs = 10;
-    int maxMobsRange = 16;
-    int cooldown = 30;
-    int activationRange = 32;
+    private NPCData npcData = null;
+    private Location centerLocation;
+    private int radius = 16;
+    private int radiusY = 4;
+    private int mobsPerSpawn = 1;
+    private double probability = 1.00;
+    private int maxMobs = 10;
+    private int maxMobsRange = 16;
+    private int maxMobsRangeY = 8;
+    private int cooldown = 30;
+    private int activationRange = 32;
+    private boolean isTicking = true;
 
-    private Class<? extends org.bukkit.entity.Entity> entityClass;
-
-    BukkitRunnable runnable;
+    private EntityType entityType;
 
     public AESpawner(ConfigurationSection config) {
         this.config = config;
         load();
     }
 
-    public void start() {
-        Entity entity = npcData.getBaseType().create((Level) centerLocation.getWorld()); // Create dummy entity for bukkit stuff
-        if (entity == null) {
-            return;
-        }
-        entityClass = entity.getBukkitEntity().getClass();
-        entity.remove(Entity.RemovalReason.DISCARDED);
-        runnable = new BukkitRunnable() {
-            @Override
-            public void run() {
-                tick();
-            }
-        };
-        runnable.runTaskTimer(plugin, cooldown * 20L, cooldown * 20L);
-    }
-
-    public void stop() {
-        runnable.cancel();
-    }
-
-    public void tick() {
+    public void spawn() {
         if (centerLocation.getWorld() == null || !centerLocation.isChunkLoaded()) {
             return;
         }
         if (centerLocation.getNearbyPlayers(activationRange).isEmpty()) {
             return;
         }
-        if (centerLocation.getNearbyEntitiesByType(entityClass, maxMobsRange).size() > maxMobs) {
+        if (centerLocation.getNearbyLivingEntities(maxMobsRange, maxMobsRangeY, e -> e.getType().equals(entityType)).size() >= maxMobs) {
             return;
         }
         Random random = new Random();
@@ -90,13 +64,23 @@ public class AESpawner {
         }
     }
 
+    public Location getCenterLocation() {
+        return centerLocation;
+    }
+
+    public boolean isTicking() {
+        return isTicking;
+    }
+
     private void load() {
         npcData = creatureManager.getByID(config.getString("id"));
         World world = Bukkit.getWorld(config.getString("loc.world", "Erethon"));
         int x = config.getInt("loc.x", 0);
         int y = config.getInt("loc.y", 64);
         int z = config.getInt("loc.z", 0);
+        isTicking = config.getBoolean("isTicking", true);
         centerLocation = new Location(world, x, y, z);
+        MessageUtil.log("Loaded spawner " + config.getName() + " at " + centerLocation.toString());
         radius = config.getInt("radius", 16);
         radiusY = config.getInt("radiusY", 4);
         mobsPerSpawn = config.getInt("mobsPerSpawn", 1);
@@ -105,5 +89,6 @@ public class AESpawner {
         maxMobsRange = config.getInt("maxMobsRange", 16);
         cooldown = config.getInt("cooldown", 30);
         activationRange = config.getInt("activationRange", 32);
+        entityType = CraftMagicNumbers.getEntityType(npcData.getBaseType());
     }
 }
