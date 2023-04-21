@@ -6,25 +6,21 @@ import com.ticxo.modelengine.api.model.ModeledEntity;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
-import de.erethon.aether.listener.AEPacketListener;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
-import de.erethon.spellbook.api.SpellData;
-import de.erethon.spellbook.api.SpellbookSpell;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_19_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R2.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_19_R2.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_19_R2.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -49,6 +45,7 @@ public class ActiveNPC {
     Set<Player> viewers = new HashSet<>();
 
     public ActiveNPC(NPCData npcData) {
+        MessageUtil.log("Creating new active entity for " + npcData.getID());
         this.npcData = npcData;
     }
 
@@ -57,10 +54,9 @@ public class ActiveNPC {
         if (npcID == null) {
             return;
         }
-        MessageUtil.log("Found " + npcID + " in world, updating & adding to manager...");
         npcData = plugin.getCreatureManager().getByID(npcID);
         if (npcData == null) {
-            MessageUtil.log(npcID + " is invalid.");
+            MessageUtil.log(npcID + " is invalid. (UUID: " + entity.getUniqueId() + ")");
             return;
         }
         baseEntity = entity;
@@ -72,7 +68,6 @@ public class ActiveNPC {
     }
 
     public void spawn(Location location) {
-        MessageUtil.log("Spawning new active entity for " + npcData.getID());
         net.minecraft.world.entity.Entity nmsEntity = NMSUtils.spawnEntityWithoutSending(location, npcData.getBaseType());
         if (nmsEntity == null) {
             return;
@@ -299,7 +294,7 @@ public class ActiveNPC {
         if (!entry.canCast()) {
             return;
         }
-        LivingEntity caster = (LivingEntity) this;
+        LivingEntity caster = (LivingEntity) getBaseEntity();
         caster.cast(entry.getSpell());
     }
 

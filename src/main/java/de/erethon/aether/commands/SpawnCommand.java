@@ -46,15 +46,16 @@ public class SpawnCommand extends ECommand {
             int z = Integer.parseInt(args[6]);
             location = new Location(world, x, y, z);
         }
-        ActiveNPC activeNPC = new ActiveNPC(npcData);
         if (location == null) {
             Player player = (Player) commandSender;
             for (int i = 0; i <= amount; i++) {
+                ActiveNPC activeNPC = new ActiveNPC(npcData);
                 activeNPC.spawn(player.getLocation());
             }
             return;
         }
         for (int i = 0; i <= amount; i++) {
+            ActiveNPC activeNPC = new ActiveNPC(npcData);
             activeNPC.spawn(location);
         }
     }
