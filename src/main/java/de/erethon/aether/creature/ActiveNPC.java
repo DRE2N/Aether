@@ -17,10 +17,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_19_R3.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_19_R3.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -45,7 +45,6 @@ public class ActiveNPC {
     Set<Player> viewers = new HashSet<>();
 
     public ActiveNPC(NPCData npcData) {
-        MessageUtil.log("Creating new active entity for " + npcData.getID());
         this.npcData = npcData;
     }
 
@@ -60,6 +59,7 @@ public class ActiveNPC {
             return;
         }
         baseEntity = entity;
+        setProperties();
     }
 
     public ActiveNPC(NPCData npcData, String id) {
@@ -256,6 +256,21 @@ public class ActiveNPC {
 
     public Entity getBaseEntity() {
         return baseEntity;
+    }
+
+    public net.minecraft.world.entity.Mob getNMSMob() {
+        return (net.minecraft.world.entity.Mob) ((CraftEntity) baseEntity).getHandle();
+    }
+
+    public net.minecraft.world.entity.Entity getNMSEntity(Level level) {
+        net.minecraft.world.entity.Entity entity = npcData.getBaseType().create(level);
+        baseEntity = entity.getBukkitEntity();
+        plugin.getActiveCreatureManager().addActive(baseEntity, this);
+        baseEntity.getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.STRING, npcData.getID());
+        setProperties();
+        entity.spawnReason = CreatureSpawnEvent.SpawnReason.NATURAL;
+        NMSUtils.setDisplayType(baseEntity, npcData);
+        return entity;
     }
 
     public boolean isAttacked() {

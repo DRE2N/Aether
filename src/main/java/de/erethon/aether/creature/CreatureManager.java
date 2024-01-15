@@ -26,6 +26,7 @@ public class CreatureManager {
                 return npcData;
             }
         }
+        MessageUtil.log("Could not find creature with id " + id + "!");
         return null;
     }
 

@@ -63,6 +63,7 @@ public final class Aether extends EPlugin implements Listener {
         instance = this;
 
 
+
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
         }

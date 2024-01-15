@@ -8,7 +8,7 @@ import de.erethon.aether.network.AetherPacketHandler;
 import de.erethon.bedrock.chat.MessageUtil;
 import io.netty.channel.ChannelPipeline;
 import net.minecraft.server.level.ServerPlayer;
-import org.bukkit.craftbukkit.v1_19_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

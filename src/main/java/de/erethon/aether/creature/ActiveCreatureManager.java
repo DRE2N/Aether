@@ -22,8 +22,6 @@ public class ActiveCreatureManager {
 
     ConcurrentHashMap<UUID, ActiveNPC> globalNPCs = new ConcurrentHashMap<>(16);
     ConcurrentHashMap<Player, HashMap<String, InstancedNPC>> instancedNPCs = new ConcurrentHashMap<>();
-    HashMap<Entity, Entity> healthBars = new HashMap<>(16);
-    HashMap<Entity, List<Entity>> textBars = new HashMap<>(8);
 
     public ActiveCreatureManager() {
         ambientSoundTask.runTaskTimer(Aether.getInstance(), 20, 40);
