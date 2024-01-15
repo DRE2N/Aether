@@ -13,3 +13,9 @@ spells:
 attributes:
   health: 5
   speed: 0.01
+equipment:
+  hand: diamond_sword
+  helmet: diamond_helmet
+  chest: diamond_chestplate
+  leggings: diamond_leggings
+  boots: diamond_boots
