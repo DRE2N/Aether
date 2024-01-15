@@ -9,14 +9,13 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.InstancedNPC;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
-import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.hephaestus.events.MobSpawnEntityCreateEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.craftbukkit.v1_19_R3.entity.CraftMob;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -24,7 +23,12 @@ import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -52,7 +56,7 @@ public class EntityListener implements Listener {
         activeNPC.setProperties();
     }
 
-    @EventHandler
+    /*@EventHandler
     public void onEntityMove(EntityMoveEvent event) {
         if (event.getEntity() instanceof Player) {
             return;
@@ -61,7 +65,7 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
-    }
+    }*/
 
     @EventHandler
     public void onEntityDamageGeneric(EntityDamageEvent event) {
@@ -206,6 +210,11 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
+    }
+
+    @EventHandler
+    public void onMobSpawn(MobSpawnEntityCreateEvent event) {
+        event.mob = (net.minecraft.world.entity.Mob) new ActiveNPC(plugin.getCreatureManager().getByID("example")).getNMSEntity(event.world);
     }
 
 }
