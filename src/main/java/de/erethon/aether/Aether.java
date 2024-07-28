@@ -6,6 +6,8 @@ import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
+import de.erethon.aether.models.ModelRegistry;
+import de.erethon.aether.models.ModelViewPersistenceHandlerImpl;
 import de.erethon.aether.network.AetherPacketHandler;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -18,6 +20,8 @@ import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.Listener;
+import team.unnamed.hephaestus.bukkit.BukkitModelEngine;
+import team.unnamed.hephaestus.bukkit.BukkitModelEngineAdapt;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +31,7 @@ public final class Aether extends EPlugin implements Listener {
     static Aether instance;
 
     public static File MOBDATA;
+    public static File MODELS;
     public static File CREATURES;
     public static File SPAWNERS;
     public static File SKINS;
@@ -40,6 +45,10 @@ public final class Aether extends EPlugin implements Listener {
     PlayerListener playerListener;
     EntityListener entityListener;
     SpawnerManager spawnerManager;
+
+    final ModelRegistry modelRegistry = new ModelRegistry();
+    private BukkitModelEngine engine;
+
 
     public Aether() {
         settings = EPluginSettings.builder()
@@ -62,11 +71,17 @@ public final class Aether extends EPlugin implements Listener {
         }
         instance = this;
 
-
-
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
         }
+
+        MODELS = new File(getDataFolder(), "models");
+        if (!MODELS.exists()) {
+            MODELS.mkdir();
+        }
+        modelRegistry.loadFromFolder(MODELS);
+        engine = BukkitModelEngineAdapt.create(this, new ModelViewPersistenceHandlerImpl(modelRegistry));
+
 
         CREATURES = new File(getDataFolder(), "creatures");
         if (!CREATURES.exists()) {
@@ -141,6 +156,14 @@ public final class Aether extends EPlugin implements Listener {
 
     public SkinCache getSkinCache() {
         return skinCache;
+    }
+
+    public ModelRegistry getModelRegistry() {
+        return modelRegistry;
+    }
+
+    public BukkitModelEngine getModelEngine() {
+        return engine;
     }
 
     public NamespacedKey getKey() {

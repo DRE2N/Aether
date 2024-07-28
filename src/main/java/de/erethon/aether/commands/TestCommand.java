@@ -16,6 +16,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.event.Listener;
 import org.bukkit.util.BoundingBox;
+import team.unnamed.hephaestus.Model;
+import team.unnamed.hephaestus.bukkit.ModelView;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +44,13 @@ public class TestCommand extends ECommand implements Listener {
     public void onExecute(String[] args, CommandSender commandSender) {
         Player player = (Player) commandSender;
         World world = player.getWorld();
-        if (args[1].equals("hide")) {
+        if (args[1].equals("model")) {
+            Model model = plugin.getModelRegistry().model(args[2]);
+            if (model == null) {
+                MessageUtil.sendMessage(player, "Model not found.");
+                return;
+            }
+            ModelView view = plugin.getModelEngine().createViewAndTrack(model, player.getLocation());
             return;
         }
         if (args[1].equals("show")) {
@@ -87,17 +95,16 @@ public class TestCommand extends ECommand implements Listener {
                 mob.setCustomName("Moving to " + location.getBlockX() + "/" + location.getBlockZ());
                 PaperMobGoals goals = new PaperMobGoals();
                 GoalKey<Creature> key = VanillaGoal.RANDOM_STROLL;
-                GoalKey<Creature> key1 = VanillaGoal.RANDOM_STROLL_LAND;
+                GoalKey<Creature> key1 = VanillaGoal.WATER_AVOIDING_RANDOM_STROLL;
                 Pig pig = (Pig) mob;
                 goals.removeGoal(pig, key);
                 goals.removeAllGoals(pig);
                 mob.teleport(location);
-                world.spawnParticle(Particle.VILLAGER_HAPPY, location, 1);
+                world.spawnParticle(Particle.HAPPY_VILLAGER, location, 1);
                 mobs.remove(mob);
             }
             return;
         }
-        MessageUtil.sendMessage(player, "Spawned test formation.");
     }
 
     /*public void entityMove(EntityMoveEvent event) {

@@ -9,13 +9,12 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.InstancedNPC;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
-import de.erethon.hephaestus.events.MobSpawnEntityCreateEvent;
 import io.papermc.paper.event.entity.EntityMoveEvent;
 import net.minecraft.world.entity.LivingEntity;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftMob;
+import org.bukkit.craftbukkit.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
@@ -176,7 +175,7 @@ public class EntityListener implements Listener {
         event.getDrops().clear();
         if (activeNPC instanceof InstancedNPC instanced) {
             for (ItemStack itemStack : instanced.getNpc().getLoot()) {
-                Entity entity = event.getEntity().getWorld().spawnEntity(event.getEntity().getLocation(), EntityType.DROPPED_ITEM);
+                Entity entity = event.getEntity().getWorld().spawnEntity(event.getEntity().getLocation(), EntityType.ITEM);
                 Item item = (Item) entity;
                 item.setItemStack(itemStack);
                 if (instanced.getViewers() == null || instanced.getViewers().isEmpty()) {
@@ -210,11 +209,6 @@ public class EntityListener implements Listener {
         if (activeNPC == null) {
             return;
         }
-    }
-
-    @EventHandler
-    public void onMobSpawn(MobSpawnEntityCreateEvent event) {
-        event.mob = (net.minecraft.world.entity.Mob) new ActiveNPC(plugin.getCreatureManager().getByID("example")).getNMSEntity(event.world);
     }
 
 }
