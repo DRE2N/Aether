@@ -1,4 +1,4 @@
-package de.erethon.aether.ai.goals.formations;
+package de.erethon.aether.ai.goals.custom.formations;
 
 import net.minecraft.world.entity.ai.goal.Goal;
 
