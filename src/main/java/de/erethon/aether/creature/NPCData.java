@@ -325,8 +325,8 @@ public class NPCData {
         // General
         MessageUtil.log("Loading npc " + ID);
         displayName = cfg.getString("displayname", "");
-        baseType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("minecraft", cfg.getString("baseType", "pig")));
-        displayType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation("minecraft", cfg.getString("displayType", "pig")));
+        baseType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("baseType", "pig")));
+        displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);

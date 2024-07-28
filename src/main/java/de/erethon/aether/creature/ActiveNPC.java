@@ -1,8 +1,5 @@
 package de.erethon.aether.creature;
 
-import com.ticxo.modelengine.api.ModelEngineAPI;
-import com.ticxo.modelengine.api.model.ActiveModel;
-import com.ticxo.modelengine.api.model.ModeledEntity;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
@@ -17,10 +14,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftMob;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.entity.CraftMob;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -116,12 +113,6 @@ public class ActiveNPC {
         }
         for (AEPathfinderGoal aetarget : npcData.getTargets()) {
             addTarget(aetarget.getPrio(), aetarget.get(entity.getHandle()));
-        }
-        if (npcData.hasModel()) {
-            ActiveModel model = ModelEngineAPI.createActiveModel(npcData.getModelID());
-            ModeledEntity modelEngineEntity = ModelEngineAPI.createModeledEntity(baseEntity);
-            modelEngineEntity.addModel(model, true);
-            MessageUtil.log("Added model " + npcData.getModelID() + " to " + npcData.getID());
         }
     }
 

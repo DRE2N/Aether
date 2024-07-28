@@ -25,7 +25,7 @@ import net.minecraft.world.entity.player.ChatVisiblity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import org.bukkit.GameMode;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.CraftWorld;
 
 import javax.annotation.Nullable;
 import java.util.EnumSet;
@@ -69,10 +69,10 @@ public class AetherPacketHandler extends ChannelDuplexHandler {
                             ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                                     EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
                                     new ClientboundPlayerInfoUpdatePacket.Entry(fakePlayer.getUUID(), fakePlayer.getGameProfile(), false, 0, GameType.SURVIVAL, Component.empty(), null));
-                            ClientboundAddEntityPacket playerPacket = new ClientboundAddEntityPacket(fakePlayer);
+                            //ClientboundAddEntityPacket playerPacket = new ClientboundAddEntityPacket(fakePlayer);
                             ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(addEntityPacket.getId(), fakePlayer.getEntityData().packDirty());
                             player.connection.send(infoUpdatePacket);
-                            player.connection.send(playerPacket);
+                            //player.connection.send(playerPacket);
                             player.connection.send(entityDataPacket);
                             return;
                         }

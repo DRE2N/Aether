@@ -3,14 +3,10 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 repositories {
     mavenLocal()
     maven("https://erethon.de/repo")
-    maven {
-        url = uri("https://mvn.lumine.io/repository/maven-public")
-        metadataSources {
-            artifact() //Look directly for artifact
-        }
-    } // Model Engine
+    maven("https://repo.unnamed.team/repository/unnamed-public/")
     maven("https://repo.dmulloy2.net/repository/public/")
     maven("https://oss.sonatype.org/content/groups/public/")
+    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven("https://papermc.io/repo/repository/maven-public/")
     maven("https://ci.emc.gs/nexus/content/groups/aikar/")
     maven("https://repo.aikar.co/content/groups/aikar")
@@ -22,9 +18,9 @@ repositories {
 plugins {
     `java-library`
     `maven-publish`
-    id("io.papermc.paperweight.userdev") version "1.5.11"
+    id("io.papermc.paperweight.userdev") version "1.7.1"
     id("xyz.jpenilla.run-paper") version "1.0.6" // Adds runServer and runMojangMappedServer tasks for testing
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("io.github.goooler.shadow") version "8.1.5"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
 }
 
@@ -34,15 +30,21 @@ description = "Mob and NPC plugin for Erethon"
 
 java {
     // Configure the java toolchain. This allows gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-val papyrusVersion = "1.20.4-R0.1-SNAPSHOT"
+val papyrusVersion = "1.21-R0.1-SNAPSHOT"
 
 dependencies {
     paperweightDevBundle("de.erethon.papyrus", papyrusVersion) { isChanging = true }
-    implementation("de.erethon:bedrock:1.2.3") { isTransitive = false }
-    compileOnly("com.ticxo.modelengine:api:B3.0.0")
+    implementation("de.erethon:bedrock:1.4.0") { isTransitive = false }
+
+    implementation("team.unnamed:hephaestus-api:0.11.1-dev-SNAPSHOT")
+    implementation("team.unnamed:hephaestus-reader-blockbench:0.11.1-dev-SNAPSHOT")
+    implementation("team.unnamed:hephaestus-runtime-bukkit-api:0.11.1-dev-SNAPSHOT")
+    implementation("team.unnamed:hephaestus-runtime-bukkit-adapt:0.11.1-dev-SNAPSHOT")
+    implementation("org.javassist:javassist:3.27.0-GA") // Needed for models
+
 }
 
 publishing {
@@ -69,40 +71,32 @@ tasks {
             project.buildDir.mkdir()
         }
         val f = File(project.buildDir, "server.jar");
-        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-reobf.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
+        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
     }
 
     compileJava {
-        options.encoding = Charsets.UTF_8.name() // We want UTF-8 for everything
-
-        // Set the release flag. This configures what version bytecode the compiler will emit, as well as what JDK APIs are usable.
-        // See https://openjdk.java.net/jeps/247 for more information.
-        options.release.set(17)
+        options.encoding = Charsets.UTF_8.name()
+        options.release.set(21)
     }
     javadoc {
-        options.encoding = Charsets.UTF_8.name() // We want UTF-8 for everything
+        options.encoding = Charsets.UTF_8.name()
     }
     processResources {
-        filteringCharset = Charsets.UTF_8.name() // We want UTF-8 for everything
+        filteringCharset = Charsets.UTF_8.name()
     }
 
-    /*
-    reobfJar {
-      // This is an example of how you might change the output location for reobfJar. It's recommended not to do this
-      // for a variety of reasons, however it's asked frequently enough that an example of how to do it is included here.
-      outputJar.set(layout.buildDirectory.file("libs/PaperweightTestPlugin-${project.version}.jar"))
-    }
-     */
     shadowJar {
         dependencies {
-            include(dependency("de.erethon:bedrock:1.2.3"))
+            include(dependency("de.erethon:bedrock:.*"))
+            include(dependency("team.unnamed:.*:.*"))
+            include(dependency("org.javassist:javassist:.*"))
         }
         relocate("de.erethon.bedrock", "de.erethon.aether.bedrock")
     }
     bukkit {
         main = "de.erethon.aether.Aether"
-        apiVersion = "1.19"
+        apiVersion = "1.21"
         authors = listOf("Malfrador")
         load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
         commands {
