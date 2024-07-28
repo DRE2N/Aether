@@ -30,6 +30,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.HashSet;
 import java.util.Set;
 
+@Deprecated
 public class ActiveNPC {
 
     Aether plugin = Aether.getInstance();
@@ -65,6 +66,7 @@ public class ActiveNPC {
     }
 
     public void spawn(Location location) {
+        return; /*
         net.minecraft.world.entity.Entity nmsEntity = NMSUtils.spawnEntityWithoutSending(location, npcData.getBaseType());
         if (nmsEntity == null) {
             return;
@@ -75,7 +77,7 @@ public class ActiveNPC {
         setProperties();
         NMSUtils.setDisplayType(baseEntity, npcData);
         NMSUtils.addEntity(nmsEntity, location);
-
+        */
     }
 
     public void setProperties() {
@@ -251,17 +253,6 @@ public class ActiveNPC {
 
     public net.minecraft.world.entity.Mob getNMSMob() {
         return (net.minecraft.world.entity.Mob) ((CraftEntity) baseEntity).getHandle();
-    }
-
-    public net.minecraft.world.entity.Entity getNMSEntity(Level level) {
-        net.minecraft.world.entity.Entity entity = npcData.getBaseType().create(level);
-        baseEntity = entity.getBukkitEntity();
-        plugin.getActiveCreatureManager().addActive(baseEntity, this);
-        baseEntity.getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.STRING, npcData.getID());
-        setProperties();
-        entity.spawnReason = CreatureSpawnEvent.SpawnReason.NATURAL;
-        NMSUtils.setDisplayType(baseEntity, npcData);
-        return entity;
     }
 
     public boolean isAttacked() {

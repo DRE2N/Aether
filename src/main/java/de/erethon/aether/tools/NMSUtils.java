@@ -4,6 +4,7 @@ import de.erethon.aether.creature.NPCData;
 import de.erethon.bedrock.chat.MessageUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -63,6 +64,10 @@ public class NMSUtils {
         entity.getBukkitEntity().teleport(location);
         Level world = entity.getCommandSenderWorld();
         world.addFreshEntity(entity, CreatureSpawnEvent.SpawnReason.CUSTOM);
+    }
+
+    public static ClientboundAddEntityPacket getAddEntityPacketWithType(Entity entity, EntityType<?> type) {
+        return new ClientboundAddEntityPacket(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), type, 0, entity.getDeltaMovement(), entity.getYHeadRot(), entity);
     }
 
 }

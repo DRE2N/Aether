@@ -1,6 +1,7 @@
 package de.erethon.aether.creature;
 
 import com.google.gson.Gson;
+import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
@@ -10,22 +11,26 @@ import de.erethon.spellbook.api.SpellLibrary;
 import de.erethon.spellbook.api.SpellbookAPI;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 
 import java.util.*;
 
 public class NPCData {
 
+    private static final Aether plugin = Aether.getInstance();
+
     // General
     private String ID;
     ConfigurationSection cfg;
-    private EntityType baseType;
+    private Class entityClass;
     private EntityType displayType;
     private String displayName = "npc";
     private boolean instancable = true;
@@ -93,8 +98,7 @@ public class NPCData {
     private int dropXP = 0;
     private Set<ItemStack> loot = new HashSet<>();
 
-    public NPCData(EntityType baseType, EntityType displayType) {
-        this.baseType = baseType;
+    public NPCData(EntityType displayType) {
         this.displayType = displayType;
         loot.add(new ItemStack(Material.BEDROCK));
     }
@@ -103,14 +107,6 @@ public class NPCData {
         this.cfg = cfg;
         this.ID = id;
         load();
-    }
-
-    public EntityType getBaseType() {
-        return baseType;
-    }
-
-    public void setBaseType(EntityType baseType) {
-        this.baseType = baseType;
     }
 
     public EntityType getDisplayType() {
@@ -322,10 +318,18 @@ public class NPCData {
     }
 
     public void load() {
-        // General
         MessageUtil.log("Loading npc " + ID);
+        // Loading
+        String classString = cfg.getString("class", "de.erethon.aether.creature.AetherBaseMob");
+        try {
+            Map.Entry<Plugin, Class<? extends Entity >> entry = Map.entry(plugin, (Class<? extends Entity>) Class.forName(classString));
+            EntityType.customEntities.put(ID, entry);
+        } catch (ClassNotFoundException e) {
+            MessageUtil.log("Could not find class " + classString + " for " + ID + "! Unable to load entity.");
+            throw new RuntimeException(e);
+        }
+        // General
         displayName = cfg.getString("displayname", "");
-        baseType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("baseType", "pig")));
         displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
@@ -488,7 +492,7 @@ public class NPCData {
     @Override
     public String toString() {
         return "NPCData{" +
-                "baseType=" + baseType +
+                "class=" + entityClass +
                 ";displayType=" + displayType +
                 ";displayName=" + displayName +
                 ";instancable=" + instancable +
