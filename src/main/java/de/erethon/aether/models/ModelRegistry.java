@@ -37,6 +37,7 @@ public class ModelRegistry {
                 try {
                     Model model = BBModelReader.blockbench().read(file);
                     registerModel(model);
+                    MessageUtil.log("Loaded model " + model.name() + " from file " + file.getName());
                 }
                 catch (Exception e) {
                     MessageUtil.log("Failed to load model from file: " + file.getName() + ": " + e.getMessage());
@@ -44,6 +45,7 @@ public class ModelRegistry {
                 }
             }
         }
+        MessageUtil.log("Loaded " + models.size() + " models from folder " + folder.getName());
     }
 
 }

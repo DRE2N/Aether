@@ -3,8 +3,7 @@ displayType: vindicator  # what gets displayed to the players
 instancable: false # if this NPC can be instanced (one version per player)
 skins:
   - "https://minesk.in/03ca0fa19c644e71810e1f6fc29eefd4"
-config:
-  model: test
+model: redstone_monstrosity
 spells:
   onAttack: # onAttack, onDamaged, onDeath, onTarget
     Backstab: # Spellbook spell name

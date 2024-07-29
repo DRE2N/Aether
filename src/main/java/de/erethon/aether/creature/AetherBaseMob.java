@@ -55,6 +55,7 @@ public class AetherBaseMob extends PathfinderMob {
     private Aether plugin = Aether.getInstance();
     private NPCData data;
     private ModelView modelView;
+    private Model model;
     private Entity dataEntity;
 
     // Constructor for entity loading
@@ -70,6 +71,10 @@ public class AetherBaseMob extends PathfinderMob {
 
     public void addToWorld() {
         level().addFreshEntity(this);
+        dataEntity.tracker = tracker;
+        if (model != null) {
+            modelView = plugin.getModelEngine().spawn(model, getBukkitEntity());
+        }
     }
 
     @Override
@@ -168,22 +173,20 @@ public class AetherBaseMob extends PathfinderMob {
     }
 
     private void initStuff() {
+        dataEntity = data.getDisplayType().create(level());
+        dataEntity.setId(getId());
+        dataEntity.setUUID(getUUID());
         if (data.getModelID() != null) {
-            Model model = plugin.getModelRegistry().model(data.getModelID());
+            model = plugin.getModelRegistry().model(data.getModelID());
             if (model == null) {
                 plugin.getLogger().warning("Failed to load model for " + data.getModelID());
-            } else {
-                modelView = plugin.getModelEngine().spawn(model, getBukkitEntity());
             }
         }
-        dataEntity = data.getDisplayType().create(level());
         if (dataEntity == null) {
             plugin.getLogger().warning("Failed to create entity for " + data.getDisplayType());
             remove(RemovalReason.DISCARDED);
             return;
         }
-        dataEntity.setId(getId());
-        dataEntity.setUUID(getUUID());
         registerAetherGoals();
         dataEntity.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         getAttribute(Attributes.MAX_HEALTH).setBaseValue(data.getMaxHealth());
