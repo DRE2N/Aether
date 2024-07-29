@@ -101,7 +101,6 @@ public class ActiveNPC {
             }
         }*/
         if (npcData.getDisplayName() != null) {
-            baseEntity.setCustomName(npcData.getDisplayName());
             baseEntity.setCustomNameVisible(true);
         }
         CraftEntity craftEntity = (CraftEntity) baseEntity;

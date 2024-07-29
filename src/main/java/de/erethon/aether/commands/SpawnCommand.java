@@ -2,6 +2,7 @@ package de.erethon.aether.commands;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
+import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommand;
@@ -31,7 +32,7 @@ public class SpawnCommand extends ECommand {
         }
 
         Location location = null;
-        int amount = 1;
+        int amount = 0;
         if (args.length > 2) {
             amount = Integer.parseInt(args[2]);
         }
@@ -49,8 +50,10 @@ public class SpawnCommand extends ECommand {
         if (location == null) {
             Player player = (Player) commandSender;
             for (int i = 0; i <= amount; i++) {
-                ActiveNPC activeNPC = new ActiveNPC(npcData);
-                activeNPC.spawn(player.getLocation());
+                MessageUtil.sendMessage(player, "&aNPC gespawnt: Type: " + npcData.getDisplayType());
+                AetherBaseMob activeNPC = new AetherBaseMob(npcData, player.getWorld());
+                activeNPC.setPos(player.getX(), player.getY(), player.getZ());
+                activeNPC.addToWorld();
             }
             return;
         }

@@ -24,7 +24,7 @@ public class PlayerListener implements Listener {
     Aether plugin = Aether.getInstance();
     ActiveCreatureManager manager = plugin.getActiveCreatureManager();
 
-    @EventHandler
+    /*@EventHandler
     public void onLogin(PlayerJoinEvent event) {
         CraftPlayer bukkitPlayer = (CraftPlayer) event.getPlayer();
         ServerPlayer serverPlayer = bukkitPlayer.getHandle();
@@ -32,7 +32,7 @@ public class PlayerListener implements Listener {
         ChannelPipeline pipeline = serverPlayer.connection.connection.channel.pipeline();
         pipeline.addAfter("packet_handler", "aether_handler", packetHandler);
         MessageUtil.log("Added handler to " + pipeline.names());
-    }
+    }*/
 
     @EventHandler
     public void onInteract(PlayerInteractEntityEvent event) {

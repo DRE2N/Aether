@@ -36,25 +36,6 @@ public class EntityListener implements Listener {
     Aether plugin = Aether.getInstance();
     ActiveCreatureManager creatures = plugin.getActiveCreatureManager();
 
-    @EventHandler
-    public void onEntityAdd(EntityAddToWorldEvent event) {
-        if (event.getEntity() instanceof Player) {
-            return;
-        }
-        if (creatures.get(event.getEntity().getUniqueId()) != null) {
-            return;
-        }
-        if (event.getEntity().getPersistentDataContainer().isEmpty()) {
-            return;
-        }
-        if (!event.getEntity().getPersistentDataContainer().has(plugin.getKey(), PersistentDataType.STRING)) {
-            return;
-        }
-        ActiveNPC activeNPC = new ActiveNPC(event.getEntity());
-        creatures.addActive(event.getEntity(), activeNPC);
-        activeNPC.setProperties();
-    }
-
     /*@EventHandler
     public void onEntityMove(EntityMoveEvent event) {
         if (event.getEntity() instanceof Player) {

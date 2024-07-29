@@ -96,6 +96,5 @@ public class AESpawner {
         maxMobsRange = config.getInt("maxMobsRange", 16);
         cooldown = config.getInt("cooldown", 30);
         activationRange = config.getInt("activationRange", 32);
-        entityType = CraftMagicNumbers.getEntityType(npcData.getBaseType());
     }
 }

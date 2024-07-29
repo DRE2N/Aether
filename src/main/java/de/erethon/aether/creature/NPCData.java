@@ -9,6 +9,8 @@ import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.spellbook.api.SpellData;
 import de.erethon.spellbook.api.SpellLibrary;
 import de.erethon.spellbook.api.SpellbookAPI;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -20,6 +22,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -32,7 +35,7 @@ public class NPCData {
     ConfigurationSection cfg;
     private Class entityClass;
     private EntityType displayType;
-    private String displayName = "npc";
+    private Component displayName = Component.text("NPC");
     private boolean instancable = true;
     private boolean hasCollision = true;
     private boolean persistent = true;
@@ -98,7 +101,7 @@ public class NPCData {
     private int dropXP = 0;
     private Set<ItemStack> loot = new HashSet<>();
 
-    public NPCData(EntityType displayType) {
+    public NPCData(EntityType<?> displayType) {
         this.displayType = displayType;
         loot.add(new ItemStack(Material.BEDROCK));
     }
@@ -109,15 +112,15 @@ public class NPCData {
         load();
     }
 
-    public EntityType getDisplayType() {
+    public @NotNull EntityType<?> getDisplayType() {
         return displayType;
     }
 
-    public void setDisplayType(EntityType displayType) {
+    public void setDisplayType(EntityType<?> displayType) {
         this.displayType = displayType;
     }
 
-    public String getDisplayName() {
+    public Component getDisplayName() {
         return displayName;
     }
 
@@ -125,9 +128,6 @@ public class NPCData {
         return instancable;
     }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
 
     public String getID() {
         return ID;
@@ -329,7 +329,7 @@ public class NPCData {
             throw new RuntimeException(e);
         }
         // General
-        displayName = cfg.getString("displayname", "");
+        displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
         displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");

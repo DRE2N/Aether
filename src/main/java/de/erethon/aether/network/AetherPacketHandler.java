@@ -17,6 +17,7 @@ import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
@@ -53,7 +54,7 @@ public class AetherPacketHandler extends ChannelDuplexHandler {
                         if (npc.getNpc().isInstancable() && !npc.getViewers().contains(player.getBukkitEntity())) {
                             return;
                         }
-                        if (NMSUtils.getDisplayType(npc.getBaseEntity()) == EntityType.PLAYER) {
+                        /*if (NMSUtils.getDisplayType(npc.getBaseEntity()) == EntityType.PLAYER) {
                             CraftWorld craftWorld = (CraftWorld) npc.getBaseEntity().getWorld();
                             ServerLevel level = craftWorld.getHandle();
                             CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(addEntityPacket.getUUID(), npc.getNpc().getDisplayName());
@@ -69,13 +70,13 @@ public class AetherPacketHandler extends ChannelDuplexHandler {
                             ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                                     EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
                                     new ClientboundPlayerInfoUpdatePacket.Entry(fakePlayer.getUUID(), fakePlayer.getGameProfile(), false, 0, GameType.SURVIVAL, Component.empty(), null));
-                            //ClientboundAddEntityPacket playerPacket = new ClientboundAddEntityPacket(fakePlayer);
+
                             ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(addEntityPacket.getId(), fakePlayer.getEntityData().packDirty());
                             player.connection.send(infoUpdatePacket);
-                            //player.connection.send(playerPacket);
+                           //player.connection.send(playerPacket);
                             player.connection.send(entityDataPacket);
                             return;
-                        }
+                        }*/
                 }
             };
             });
