@@ -5,6 +5,7 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.tools.NMSUtils;
+import de.erethon.bedrock.chat.MessageUtil;
 import io.papermc.paper.adventure.PaperAdventure;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -20,12 +21,10 @@ import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
@@ -35,10 +34,10 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.player.ChatVisiblity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftSound;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -46,9 +45,13 @@ import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.jetbrains.annotations.NotNull;
 import team.unnamed.hephaestus.Model;
+import team.unnamed.hephaestus.animation.Animation;
 import team.unnamed.hephaestus.bukkit.ModelView;
+import team.unnamed.hephaestus.view.track.ModelViewTrackingRule;
 
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public class AetherBaseMob extends PathfinderMob {
 
@@ -57,6 +60,10 @@ public class AetherBaseMob extends PathfinderMob {
     private ModelView modelView;
     private Model model;
     private Entity dataEntity;
+
+   Consumer<Packet<?>> packetConsumer = packet -> {
+
+   };
 
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
@@ -69,17 +76,29 @@ public class AetherBaseMob extends PathfinderMob {
         initStuff();
     }
 
+
+
     public void addToWorld() {
-        level().addFreshEntity(this);
-        dataEntity.tracker = tracker;
+        if (dataEntity == null) {
+            return;
+        }
+        dataEntity.setPos(getX(), getY(), getZ());
+        dataEntity.setId(getId());
+        ServerLevel level = (ServerLevel) level();
+        level.addFreshEntity(this);
         if (model != null) {
-            modelView = plugin.getModelEngine().spawn(model, getBukkitEntity());
+            modelView = plugin.getModelEngine().spawn(model, this.getBukkitEntity(), ModelViewTrackingRule.all());
+            for (Map.Entry<String, Animation> animation : model.animations().entrySet()) {
+                MessageUtil.log("Animation: " + animation.getKey());
+            }
+            modelView.animationPlayer().add(model.animations().get("attack"));
         }
     }
 
     @Override
     public void tick() {
         super.tick();
+        dataEntity.setPos(getX(), getY(), getZ());
         if (modelView != null) {
             modelView.tickAnimations();
         }
@@ -88,21 +107,20 @@ public class AetherBaseMob extends PathfinderMob {
     @Override
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
         if (dataEntity instanceof Player player) {
-            for (ServerPlayerConnection connection : tracker.seenBy) {
-                CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(dataEntity.getUUID(), data.getDisplayName().examinableName());
+            for (ServerPlayerConnection connection : moonrise$getTrackedEntity().seenBy) {
+                CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(dataEntity.getUUID(), "NPC");
                 Skin skin = plugin.getSkinCache().get(data.getSkinLink());
                 if (skin != null) {
                     craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
                 }
-                ServerPlayer fakePlayer = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), craftPlayerProfile.buildGameProfile(), new ClientInformation("en", 0, ChatVisiblity.SYSTEM, false, 1, HumanoidArm.RIGHT, false, false));
-                fakePlayer.getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte) 127); // Show all skin layers
-                fakePlayer.setId(dataEntity.getId());
-                fakePlayer.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
+                player.getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte) 127); // Show all skin layers
+                player.setId(dataEntity.getId());
+                player.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
                 ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
-                        new ClientboundPlayerInfoUpdatePacket.Entry(fakePlayer.getUUID(), fakePlayer.getGameProfile(), false, 0, GameType.SURVIVAL, Component.empty(), null));
+                        new ClientboundPlayerInfoUpdatePacket.Entry(player.getUUID(), player.getGameProfile(), false, 0, GameType.SURVIVAL, Component.empty(), null));
 
-                ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(fakePlayer.getId(), fakePlayer.getEntityData().packDirty());
+                ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(player.getId(), player.getEntityData().packDirty());
                 connection.send(infoUpdatePacket);
                 connection.send(entityDataPacket);
             }
@@ -119,7 +137,13 @@ public class AetherBaseMob extends PathfinderMob {
     }
 
     @Override
+    public void refreshEntityData(@NotNull ServerPlayer to) {
+        dataEntity.refreshEntityData(to);
+    }
+
+    @Override
     public CraftEntity getBukkitEntity() {
+
         if (dataEntity == null) {
             return EntityType.PIG.create(level()).getBukkitEntity();
         }
@@ -174,8 +198,11 @@ public class AetherBaseMob extends PathfinderMob {
 
     private void initStuff() {
         dataEntity = data.getDisplayType().create(level());
-        dataEntity.setId(getId());
-        dataEntity.setUUID(getUUID());
+        if (data.getDisplayType() == EntityType.PLAYER) {
+            dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault());
+        }
+        ServerLevel level = (ServerLevel) level();
+        level.chunkSource.removeEntity(this);
         if (data.getModelID() != null) {
             model = plugin.getModelRegistry().model(data.getModelID());
             if (model == null) {

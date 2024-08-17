@@ -5,6 +5,7 @@ import com.destroystokyo.paper.entity.ai.PaperMobGoals;
 import com.destroystokyo.paper.entity.ai.VanillaGoal;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
+import de.erethon.aether.creature.AetherModelEntity;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -13,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.*;
 import org.bukkit.event.Listener;
 import org.bukkit.util.BoundingBox;
@@ -32,8 +34,8 @@ public class TestCommand extends ECommand implements Listener {
     public TestCommand() {
         setCommand("test");
         setAliases("t");
-        setMinArgs(-1);
-        setMaxArgs(-1);
+        setMinArgs(1);
+        setMaxArgs(5);
         setPlayerCommand(true);
         setHelp("Help.");
         setPermission("mxl.test");
@@ -53,7 +55,10 @@ public class TestCommand extends ECommand implements Listener {
             ModelView view = plugin.getModelEngine().createViewAndTrack(model, player.getLocation());
             return;
         }
-        if (args[1].equals("show")) {
+        if (args[1].equals("test")) {
+            Model model = plugin.getModelRegistry().model("redstone_monstrosity");
+            ModelView view = plugin.getModelEngine().spawn(model, player);
+            MessageUtil.sendMessage(player, "Spawned " + view);
             return;
         }
         if (args[1].equals("text")) {

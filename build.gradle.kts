@@ -33,7 +33,7 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-val papyrusVersion = "1.21-R0.1-SNAPSHOT"
+val papyrusVersion = "1.21.1-R0.1-SNAPSHOT"
 
 dependencies {
     paperweightDevBundle("de.erethon.papyrus", papyrusVersion) { isChanging = true }
@@ -71,7 +71,7 @@ tasks {
             project.buildDir.mkdir()
         }
         val f = File(project.buildDir, "server.jar");
-        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
+        //uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
     }
 
