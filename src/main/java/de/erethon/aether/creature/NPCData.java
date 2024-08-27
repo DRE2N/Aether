@@ -380,7 +380,7 @@ public class NPCData {
         ambientMessages = cfg.getStringList("interaction.messages");
         randomTalker = cfg.getBoolean("interaction.randomTalker", false);
         // Combat
-        faction = cfg.getString("faction", null);
+        faction = cfg.getString("team", null);
         SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
         if (cfg.contains("spells.onDamaged")) {
             ConfigurationSection section = cfg.getConfigurationSection("spells.onDamaged");
