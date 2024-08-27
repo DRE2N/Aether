@@ -34,15 +34,4 @@ public class PlayerListener implements Listener {
         MessageUtil.log("Added handler to " + pipeline.names());
     }*/
 
-    @EventHandler
-    public void onInteract(PlayerInteractEntityEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) {
-            return;
-        }
-        ActiveNPC npc = manager.get(event.getRightClicked().getUniqueId());
-        if (npc == null) {
-            return;
-        }
-        new CreatureInteractEvent(event.getPlayer(), npc).callEvent();
-    }
 }
