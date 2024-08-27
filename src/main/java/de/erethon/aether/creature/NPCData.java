@@ -6,6 +6,8 @@ import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.hephaestus.items.HItem;
+import de.erethon.hephaestus.items.HItemLibrary;
 import de.erethon.spellbook.api.SpellData;
 import de.erethon.spellbook.api.SpellLibrary;
 import de.erethon.spellbook.api.SpellbookAPI;
@@ -17,6 +19,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
@@ -66,12 +69,12 @@ public class NPCData {
     private double attackSpeed = 10;
 
     // Equipment
-    private Material mainHand;
-    private Material offHand;
-    private Material helmet;
-    private Material chest;
-    private Material leggings;
-    private Material boots;
+    private HItem mainHand;
+    private HItem offHand;
+    private HItem helmet;
+    private HItem chest;
+    private HItem leggings;
+    private HItem boots;
 
     // Sounds & Messages
     private Sound attackSound;
@@ -177,27 +180,27 @@ public class NPCData {
         return attackSpeed;
     }
 
-    public Material getMainHand() {
+    public HItem getMainHand() {
         return mainHand;
     }
 
-    public Material getOffHand() {
+    public HItem getOffHand() {
         return offHand;
     }
 
-    public Material getHelmet() {
+    public HItem getHelmet() {
         return helmet;
     }
 
-    public Material getChest() {
+    public HItem getChest() {
         return chest;
     }
 
-    public Material getLeggings() {
+    public HItem getLeggings() {
         return leggings;
     }
 
-    public Material getBoots() {
+    public HItem getBoots() {
         return boots;
     }
 
@@ -359,12 +362,13 @@ public class NPCData {
         attackSpeed = cfg.getDouble("config.attributes.attackSpeed", 4);
         flyingSpeed = cfg.getDouble("config.attributes.flyingSpeed", 0.4);
         // Equipment
-        mainHand = Material.valueOf(cfg.getString("equipment.hand", "AIR").toUpperCase());
-        offHand = Material.valueOf(cfg.getString("equipment.offhand", "AIR").toUpperCase());
-        helmet = Material.valueOf(cfg.getString("equipment.helmet", "AIR").toUpperCase());
-        chest = Material.valueOf(cfg.getString("equipment.chest", "AIR").toUpperCase());
-        leggings = Material.valueOf(cfg.getString("equipment.leggings", "AIR").toUpperCase());
-        boots = Material.valueOf(cfg.getString("equipment.boots", "AIR").toUpperCase());
+        HItemLibrary itemLibrary = plugin.getItemLibrary();
+        mainHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.hand", "minecraft:air")));
+        offHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.offhand", "minecraft:air")));
+        helmet = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.helmet", "minecraft:air")));
+        chest = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.chest", "minecraft:air")));
+        leggings = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.leggings", "minecraft:air")));
+        boots = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.boots", "minecraft:air")));
         // Sounds & Messages
         if (cfg.contains("interaction.sounds")) {
             attackSound = Sound.valueOf(cfg.getString("interaction.sounds.attack"));

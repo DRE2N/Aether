@@ -4,14 +4,18 @@ import com.destroystokyo.paper.profile.CraftPlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
+import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.papyrus.CraftPDamageType;
 import io.papermc.paper.adventure.PaperAdventure;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -23,8 +27,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
@@ -34,6 +41,7 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -43,6 +51,9 @@ import org.bukkit.craftbukkit.CraftSound;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import team.unnamed.hephaestus.Model;
 import team.unnamed.hephaestus.animation.Animation;
@@ -60,6 +71,8 @@ public class AetherBaseMob extends PathfinderMob {
     private ModelView modelView;
     private Model model;
     private Entity dataEntity;
+
+    private boolean isTalking = false;
 
    Consumer<Packet<?>> packetConsumer = packet -> {
 
@@ -118,7 +131,7 @@ public class AetherBaseMob extends PathfinderMob {
                 player.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
                 ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
-                        new ClientboundPlayerInfoUpdatePacket.Entry(player.getUUID(), player.getGameProfile(), false, 0, GameType.SURVIVAL, Component.empty(), null));
+                        new ClientboundPlayerInfoUpdatePacket.Entry(player.getUUID(), player.getGameProfile(), false, 0, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), null));
 
                 ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(player.getId(), player.getEntityData().packDirty());
                 connection.send(infoUpdatePacket);
@@ -143,8 +156,7 @@ public class AetherBaseMob extends PathfinderMob {
 
     @Override
     public CraftEntity getBukkitEntity() {
-
-        if (dataEntity == null) {
+        if (dataEntity == null) { // Workaround for initialization issues
             return EntityType.PIG.create(level()).getBukkitEntity();
         }
         return dataEntity.getBukkitEntity();
@@ -159,11 +171,90 @@ public class AetherBaseMob extends PathfinderMob {
         }
     }
 
-    public CraftLivingEntity getBukkitLivingEntity() {
-        if (dataEntity instanceof LivingEntity livingEntity) {
+    // Spells
+    private void castSpell(SpellCastEntry entry) {
+        if (!entry.canCast()) {
+            return;
+        }
+        org.bukkit.entity.LivingEntity caster = getBukkitLivingEntity();
+        if (entry.getSpell() == null) {
+            return;
+        }
+        if (getTarget() != null) {
+            lookAt(getTarget(), Float.MAX_VALUE, Float.MAX_VALUE); // I hope large values are enough
+        }
+        caster.cast(entry.getSpell());
+    }
+
+    @Override
+    public boolean doHurtTarget(Entity target, CraftPDamageType type) {
+        for (SpellCastEntry spell : data.getOnAttackSpells()) {
+            castSpell(spell);
+        }
+        return super.doHurtTarget(target, type);
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount, CraftPDamageType type) {
+        for (SpellCastEntry spell : data.getOnDamagedSpells()) {
+            castSpell(spell);
+        }
+        return super.hurt(source, amount, type);
+    }
+
+    @Override
+    public void die(DamageSource damageSource) {
+        super.die(damageSource);
+        for (SpellCastEntry spell : data.getOnDeathSpells()) {
+            castSpell(spell);
+        }
+    }
+
+    @Override
+    public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason, boolean fireEvent) {
+        boolean bool = super.setTarget(entityliving, reason, fireEvent);
+        for (SpellCastEntry spell : data.getOnTargetSpells()) {
+            castSpell(spell);
+        }
+        return bool;
+    }
+
+    // Dialogue stuff
+    public void displayTextAboveHead(org.bukkit.entity.Player player, String text, int timeout) {
+        if (isTalking) {
+            return;
+        }
+        isTalking = true;
+        String[] strings = text.split(";");
+        Display.TextDisplay textDisplay = EntityType.TEXT_DISPLAY.create(level());
+        textDisplay.persist = false;
+        textDisplay.visibleByDefault = false;
+        textDisplay.setPos(getX(), getY() + 2, getZ());
+        MiniMessage mm = MiniMessage.miniMessage();
+        Component component = Component.empty();
+        for (String string : strings) {
+            component = component.append(mm.deserialize(string)).append(Component.newline());
+        }
+        textDisplay.setText(PaperAdventure.asVanilla(component));
+        level().addFreshEntity(textDisplay);
+        addPassenger(textDisplay);
+        player.showEntity(Aether.getInstance(), textDisplay.getBukkitEntity());
+        BukkitRunnable removeStand = new BukkitRunnable() {
+            @Override
+            public void run() {
+                textDisplay.remove(RemovalReason.DISCARDED);
+                isTalking = false;
+            }
+        };
+        removeStand.runTaskLater(plugin, timeout * 20L);
+    }
+
+
+    public @NotNull CraftLivingEntity getBukkitLivingEntity() {
+        if (dataEntity instanceof LivingEntity livingEntity) { // Workaround for initialization issues
             return livingEntity.getBukkitLivingEntity();
         }
-        return EntityType.PIG.create(level()).getBukkitLivingEntity();
+        return EntityType.PIG.create(level()).getBukkitLivingEntity(); // never reached anyway
     }
 
 
@@ -216,6 +307,12 @@ public class AetherBaseMob extends PathfinderMob {
         }
         registerAetherGoals();
         dataEntity.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
+        setGlowingTag(data.isGlowing());
+        setNoGravity(!data.isGravity());
+        setInvulnerable(data.isInvulnerable());
+        setPersistenceRequired(data.isPersistent());
+        collides = data.hasCollision();
+        maxAirTicks = data.getMaximumAir();
         getAttribute(Attributes.MAX_HEALTH).setBaseValue(data.getMaxHealth());
         getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(data.getMovementSpeed());
         getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(data.getDamage());
@@ -226,6 +323,13 @@ public class AetherBaseMob extends PathfinderMob {
         getAttribute(Attributes.ATTACK_SPEED).setBaseValue(data.getAttackSpeed());
         getAttribute(Attributes.ARMOR).setBaseValue(data.getArmor());
         getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(data.getArmorToughness());
+        // Love how bukkit and vanilla names don't match here lol
+        setItemSlot(EquipmentSlot.MAINHAND, data.getMainHand().rollRandomStack().getVanillaStack());
+        setItemSlot(EquipmentSlot.OFFHAND, data.getOffHand().rollRandomStack().getVanillaStack());
+        setItemSlot(EquipmentSlot.HEAD, data.getHelmet().rollRandomStack().getVanillaStack());
+        setItemSlot(EquipmentSlot.CHEST, data.getChest().rollRandomStack().getVanillaStack());
+        setItemSlot(EquipmentSlot.LEGS, data.getLeggings().rollRandomStack().getVanillaStack());
+        setItemSlot(EquipmentSlot.FEET, data.getBoots().rollRandomStack().getVanillaStack());
     }
 
     @Override

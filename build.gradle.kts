@@ -44,6 +44,7 @@ dependencies {
     implementation("team.unnamed:hephaestus-runtime-bukkit-api:0.11.1-dev-SNAPSHOT")
     implementation("team.unnamed:hephaestus-runtime-bukkit-adapt:0.11.1-dev-SNAPSHOT")
     implementation("org.javassist:javassist:3.27.0-GA") // Needed for models
+    compileOnly("de.erethon.hephaestus:Hephaestus:1.0-SNAPSHOT")
 
 }
 

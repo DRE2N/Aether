@@ -15,6 +15,8 @@ import de.erethon.bedrock.command.ECommandCache;
 import de.erethon.bedrock.compatibility.Internals;
 import de.erethon.bedrock.plugin.EPlugin;
 import de.erethon.bedrock.plugin.EPluginSettings;
+import de.erethon.hephaestus.Hephaestus;
+import de.erethon.hephaestus.items.HItemLibrary;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
@@ -37,7 +39,6 @@ public final class Aether extends EPlugin implements Listener {
     public static File SKINS;
     NamespacedKey key = new NamespacedKey(this, "aether");
 
-    private AetherPacketHandler packetHandler;
     ECommandCache commands;
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
@@ -49,6 +50,9 @@ public final class Aether extends EPlugin implements Listener {
     final ModelRegistry modelRegistry = new ModelRegistry();
     private BukkitModelEngine engine;
 
+    private Hephaestus hephaestusPlugin;
+    private HItemLibrary hitemLibrary;
+
 
     public Aether() {
         settings = EPluginSettings.builder()
@@ -59,6 +63,8 @@ public final class Aether extends EPlugin implements Listener {
 
     @Override
     public void onLoad() {
+        hephaestusPlugin = (Hephaestus) Bukkit.getPluginManager().getPlugin("Hephaestus");
+        hitemLibrary = hephaestusPlugin.getLibrary();
     }
 
     @Override
@@ -164,6 +170,10 @@ public final class Aether extends EPlugin implements Listener {
 
     public BukkitModelEngine getModelEngine() {
         return engine;
+    }
+
+    public HItemLibrary getItemLibrary() {
+        return hitemLibrary;
     }
 
     public NamespacedKey getKey() {
