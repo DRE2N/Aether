@@ -5,6 +5,8 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
+import de.erethon.aether.events.CreatureDeathEvent;
+import de.erethon.aether.events.CreatureInteractEvent;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.papyrus.CraftPDamageType;
@@ -15,7 +17,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -27,6 +28,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -41,7 +44,6 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -51,7 +53,6 @@ import org.bukkit.craftbukkit.CraftSound;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
-import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -71,6 +72,7 @@ public class AetherBaseMob extends PathfinderMob {
     private ModelView modelView;
     private Model model;
     private Entity dataEntity;
+    private int version = 0;
 
     private boolean isTalking = false;
 
@@ -86,7 +88,8 @@ public class AetherBaseMob extends PathfinderMob {
     public AetherBaseMob(NPCData data, World world) {
         super((EntityType<? extends PathfinderMob>) data.getDisplayType(), ((CraftWorld) world).getHandle());
         this.data = data;
-        initStuff();
+        onLoad();
+        onFirstSpawn();
     }
 
 
@@ -208,6 +211,10 @@ public class AetherBaseMob extends PathfinderMob {
         for (SpellCastEntry spell : data.getOnDeathSpells()) {
             castSpell(spell);
         }
+        if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.Player player) {
+            CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
+            Bukkit.getPluginManager().callEvent(creatureDeathEvent);
+        }
     }
 
     @Override
@@ -217,6 +224,13 @@ public class AetherBaseMob extends PathfinderMob {
             castSpell(spell);
         }
         return bool;
+    }
+
+    @Override
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
+        Bukkit.getPluginManager().callEvent(event);
+        return super.mobInteract(player, hand);
     }
 
     // Dialogue stuff
@@ -284,10 +298,15 @@ public class AetherBaseMob extends PathfinderMob {
             remove(RemovalReason.DISCARDED);
             return;
         }
-        initStuff();
+        version = nbt.getInt("aether-mob-version");
+        onLoad();
+        if (version <= data.getCurrentVersion()) {
+            plugin.getLogger().warning("Entity " + data.getID() + " (" + getUUID() + ") is outdated. Updating...");
+            onFirstSpawn();
+        }
     }
 
-    private void initStuff() {
+    private void onLoad() {
         dataEntity = data.getDisplayType().create(level());
         if (data.getDisplayType() == EntityType.PLAYER) {
             dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault());
@@ -306,6 +325,9 @@ public class AetherBaseMob extends PathfinderMob {
             return;
         }
         registerAetherGoals();
+    }
+
+    private void onFirstSpawn() {
         dataEntity.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         setGlowingTag(data.isGlowing());
         setNoGravity(!data.isGravity());
@@ -332,9 +354,14 @@ public class AetherBaseMob extends PathfinderMob {
         setItemSlot(EquipmentSlot.FEET, data.getBoots().rollRandomStack().getVanillaStack());
     }
 
+    public NPCData getData() {
+        return data;
+    }
+
     @Override
     public void addAdditionalSaveData(CompoundTag nbt) {
         super.addAdditionalSaveData(nbt);
         nbt.putString("papyrus-entity-id", data.getID());
+        nbt.putInt("aether-mob-version", version);
     }
 }

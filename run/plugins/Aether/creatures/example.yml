@@ -1,5 +1,6 @@
-displayname: ExampleNPC # Optional. The name of the NPC, displayed above the NPC
 displayType: vindicator  # Required. What gets displayed to the players
+displayname: ExampleNPC # Optional. The name of the NPC, displayed above the NPC
+version: 0 # Optional. If you change this, all NPCs of this type will recreate themselves on the next load. Required to be changed when changing attributes or equipment, as the changes will not be applied otherwise
 #class: Optional. Can be used to specify a different class for the NPC. Currently unused, as we don't have bosses yet
 skins: # Optional. A list of skins to use. The NPC will randomly choose one when spawned
   - "https://minesk.in/03ca0fa19c644e71810e1f6fc29eefd4"

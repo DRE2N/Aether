@@ -35,6 +35,7 @@ public class NPCData {
 
     // General
     private String ID;
+    private int currentVersion = 0;
     ConfigurationSection cfg;
     private Class entityClass;
     private EntityType displayType;
@@ -131,6 +132,9 @@ public class NPCData {
         return instancable;
     }
 
+    public int getCurrentVersion() {
+        return currentVersion;
+    }
 
     public String getID() {
         return ID;
@@ -333,6 +337,7 @@ public class NPCData {
         }
         // General
         displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
+        currentVersion = cfg.getInt("version", 0);
         displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
