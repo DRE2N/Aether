@@ -93,7 +93,6 @@ public class ActiveNPC {
             livingBase.setCollidable(npcData.hasCollision());
             livingBase.setMaximumAir(npcData.getMaximumAir());
             livingBase.setMaximumNoDamageTicks(npcData.getNoDamageTicks());
-            equip(living);
         }
         /*if (npcData.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -159,16 +158,6 @@ public class ActiveNPC {
             }
         };
         removeStand.runTaskLater(plugin, timeout * 20L);
-    }
-
-    public void equip(LivingEntity entity) {
-        EntityEquipment eq = entity.getEquipment();
-        eq.setItemInMainHand(new ItemStack(npcData.getMainHand()));
-        eq.setItemInOffHand(new ItemStack(npcData.getOffHand()));
-        eq.setHelmet(new ItemStack(npcData.getHelmet()));
-        eq.setChestplate(new ItemStack(npcData.getChest()));
-        eq.setLeggings(new ItemStack(npcData.getLeggings()));
-        eq.setBoots(new ItemStack(npcData.getBoots()));
     }
 
     public void setAttributes(LivingEntity living) {

@@ -346,12 +346,24 @@ public class AetherBaseMob extends PathfinderMob {
         getAttribute(Attributes.ARMOR).setBaseValue(data.getArmor());
         getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(data.getArmorToughness());
         // Love how bukkit and vanilla names don't match here lol
-        setItemSlot(EquipmentSlot.MAINHAND, data.getMainHand().rollRandomStack().getVanillaStack());
-        setItemSlot(EquipmentSlot.OFFHAND, data.getOffHand().rollRandomStack().getVanillaStack());
-        setItemSlot(EquipmentSlot.HEAD, data.getHelmet().rollRandomStack().getVanillaStack());
-        setItemSlot(EquipmentSlot.CHEST, data.getChest().rollRandomStack().getVanillaStack());
-        setItemSlot(EquipmentSlot.LEGS, data.getLeggings().rollRandomStack().getVanillaStack());
-        setItemSlot(EquipmentSlot.FEET, data.getBoots().rollRandomStack().getVanillaStack());
+        if (data.getMainHand() != null) {
+            setItemSlot(EquipmentSlot.MAINHAND, data.getMainHand().rollRandomStack().getVanillaStack());
+        }
+        if (data.getOffHand() != null) {
+            setItemSlot(EquipmentSlot.OFFHAND, data.getOffHand().rollRandomStack().getVanillaStack());
+        }
+        if (data.getHelmet() != null) {
+            setItemSlot(EquipmentSlot.HEAD, data.getHelmet().rollRandomStack().getVanillaStack());
+        }
+        if (data.getChest() != null) {
+            setItemSlot(EquipmentSlot.CHEST, data.getChest().rollRandomStack().getVanillaStack());
+        }
+        if (data.getLeggings() != null) {
+            setItemSlot(EquipmentSlot.LEGS, data.getLeggings().rollRandomStack().getVanillaStack());
+        }
+        if (data.getBoots() != null) {
+            setItemSlot(EquipmentSlot.FEET, data.getBoots().rollRandomStack().getVanillaStack());
+        }
     }
 
     public NPCData getData() {
