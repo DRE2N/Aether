@@ -18,6 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -61,7 +62,7 @@ public class NPCData {
     private double maxHealth = 20;
     private double range = 32;
     private double knockbackResistance;
-    private double movementSpeed = 0.2;
+    private double movementSpeed = 0.4;
     private double flyingSpeed = 2;
     private double damage = 2;
     private double armor;
@@ -114,6 +115,10 @@ public class NPCData {
         this.cfg = cfg;
         this.ID = id;
         load();
+    }
+
+    public AetherBaseMob spawn(Location location) {
+        return new AetherBaseMob(this, location.getWorld());
     }
 
     public @NotNull EntityType<?> getDisplayType() {

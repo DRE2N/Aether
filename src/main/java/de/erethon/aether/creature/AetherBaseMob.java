@@ -92,8 +92,6 @@ public class AetherBaseMob extends PathfinderMob {
         onFirstSpawn();
     }
 
-
-
     public void addToWorld() {
         if (dataEntity == null) {
             return;
@@ -274,9 +272,9 @@ public class AetherBaseMob extends PathfinderMob {
 
     private void registerAetherGoals() {
         if (data.getGoals().isEmpty() && data.getTargets().isEmpty()) {
-            goalSelector.addGoal(0, new RandomStrollGoal(this, 0.5));
+            goalSelector.addGoal(0, new RandomStrollGoal(this, 1));
             goalSelector.addGoal(1, new RandomLookAroundGoal(this));
-            goalSelector.addGoal(2, new MeleeAttackGoal(this, 0.8, false));
+            goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false));
             targetSelector.addGoal(0, new HurtByTargetGoal(this));
             targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
             return;
