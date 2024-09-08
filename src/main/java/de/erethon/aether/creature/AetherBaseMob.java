@@ -319,6 +319,8 @@ public class AetherBaseMob extends PathfinderMob {
         dataEntity = data.getDisplayType().create(level());
         if (data.getDisplayType() == EntityType.PLAYER) {
             dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault());
+            ServerPlayer player = (ServerPlayer) dataEntity;
+            player.moonrise$setRealPlayer(false);
         }
         ServerLevel level = (ServerLevel) level();
         level.chunkSource.removeEntity(this);
