@@ -1,6 +1,5 @@
 package de.erethon.aether.creature;
 
-import com.google.gson.Gson;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
@@ -8,11 +7,10 @@ import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.hephaestus.items.HItemLibrary;
-import de.erethon.spellbook.api.SpellData;
 import de.erethon.spellbook.api.SpellLibrary;
-import de.erethon.spellbook.api.SpellbookAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,7 +18,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -87,6 +84,8 @@ public class NPCData {
     String faction;
     EntityType projectile;
     BoundingBox hitbox;
+    private BlockPos homeLocation;
+    private int homeRange;
 
     private Set<SpellCastEntry> onDamagedSpells = new HashSet<>();
     private Set<SpellCastEntry> onTimerSpells = new HashSet<>();
@@ -286,6 +285,14 @@ public class NPCData {
         return onTargetSpells;
     }
 
+    public BlockPos getHomeLocation() {
+        return homeLocation;
+    }
+
+    public int getHomeRange() {
+        return homeRange;
+    }
+
     public String getModelID() {
         return modelID;
     }
@@ -448,6 +455,16 @@ public class NPCData {
                     entry.load(section.getConfigurationSection(string));
                     onDamagedSpells.add(entry);
                 }
+            }
+        }
+
+        if (cfg.contains("homeLocation")) {
+            ConfigurationSection section = cfg.getConfigurationSection("homeLocation");
+            if (section == null) {
+                MessageUtil.log("No home location found for " + ID);
+            } else {
+                homeLocation = new BlockPos(section.getInt("x"), section.getInt("y"), section.getInt("z"));
+                homeRange = section.getInt("range", 32);
             }
         }
 

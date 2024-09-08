@@ -334,6 +334,9 @@ public class AetherBaseMob extends PathfinderMob {
             return;
         }
         registerAetherGoals();
+        if (data.getHomeLocation() != null) {
+            restrictTo(data.getHomeLocation(), data.getHomeRange());
+        }
     }
 
     private void onFirstSpawn() {
