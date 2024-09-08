@@ -58,6 +58,7 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import team.unnamed.hephaestus.Model;
@@ -342,6 +343,7 @@ public class AetherBaseMob extends PathfinderMob {
     }
 
     private void onFirstSpawn() {
+        getBukkitEntity().getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.BOOLEAN, true);
         dataEntity.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         setGlowingTag(data.isGlowing());
