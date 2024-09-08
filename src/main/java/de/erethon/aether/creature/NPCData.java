@@ -13,10 +13,14 @@ import de.erethon.spellbook.api.SpellLibrary;
 import de.erethon.spellbook.api.SpellbookAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -56,19 +60,11 @@ public class NPCData {
     // Players
     private String skinLink = "https://minesk.in/c39b10d504e0453788d0c81ec9ab970e";
     private List<String> skins = new ArrayList<>();
+    private int skinLayers = 127;
     Random random = new Random();
 
     // Attributes
-    private double maxHealth = 20;
-    private double range = 32;
-    private double knockbackResistance;
-    private double movementSpeed = 0.4;
-    private double flyingSpeed = 2;
-    private double damage = 2;
-    private double armor;
-    private double armorToughness;
-    private double knockback;
-    private double attackSpeed = 10;
+    private final Map<Holder<Attribute>, Double> attributes = new HashMap<>();
 
     // Equipment
     private HItem mainHand;
@@ -153,40 +149,12 @@ public class NPCData {
         return hitbox;
     }
 
-    public double getMaxHealth() {
-        return maxHealth;
+    public double getAttribute(Holder<Attribute> attribute) {
+        return attributes.getOrDefault(attribute, 0.0);
     }
 
-    public double getRange() {
-        return range;
-    }
-
-    public double getKnockbackResistance() {
-        return knockbackResistance;
-    }
-
-    public double getMovementSpeed() {
-        return movementSpeed;
-    }
-
-    public double getDamage() {
-        return damage;
-    }
-
-    public double getArmor() {
-        return armor;
-    }
-
-    public double getArmorToughness() {
-        return armorToughness;
-    }
-
-    public double getKnockback() {
-        return knockback;
-    }
-
-    public double getAttackSpeed() {
-        return attackSpeed;
+    public Map<Holder<Attribute>, Double> getAttributes() {
+        return attributes;
     }
 
     public HItem getMainHand() {
@@ -217,9 +185,6 @@ public class NPCData {
         return projectile;
     }
 
-    public double getFlyingSpeed() {
-        return flyingSpeed;
-    }
 
     public String getFaction() {
         return faction;
@@ -361,16 +326,29 @@ public class NPCData {
             MessageUtil.log("Loaded " + skins.size() + " skins.");
         }
         // Attributes
-        maxHealth = cfg.getDouble("config.attributes.health", 20);
-        range = cfg.getDouble("config.attributes.range", 32);
-        knockbackResistance = cfg.getDouble("config.attributes.knockbackResistance", 0);
-        movementSpeed = cfg.getDouble("config.attributes.speed", 0.2);
-        damage = cfg.getDouble("config.attributes.damage", 2);
-        armor = cfg.getDouble("config.attributes.armor", 0);
-        armorToughness = cfg.getDouble("config.attributes.armorToughness", 0);
-        knockback = cfg.getDouble("config.attributes.knockback", 0);
-        attackSpeed = cfg.getDouble("config.attributes.attackSpeed", 4);
-        flyingSpeed = cfg.getDouble("config.attributes.flyingSpeed", 0.4);
+        if (cfg.contains("attributes") && cfg.isConfigurationSection("attributes")) {
+            Registry<Attribute> attributeRegistry = BuiltInRegistries.ATTRIBUTE;
+            for (String key : cfg.getConfigurationSection("attributes").getKeys(false)) {
+                ConfigurationSection section = cfg.getConfigurationSection("attributes." + key);
+                if (section == null) {
+                    MessageUtil.log("No configuration found for " + key + " in " + ID);
+                    continue;
+                }
+                String id = section.getString("id");
+                if (id == null) {
+                    MessageUtil.log("No id found for attribute " + key + " in " + ID);
+                    continue;
+                }
+                Double value = section.getDouble("value", 0.0);
+                Attribute attribute = attributeRegistry.get(ResourceLocation.fromNamespaceAndPath("minecraft", id));
+                if (attribute == null) {
+                    MessageUtil.log("Could not find attribute " + key + " in " + ID);
+                    continue;
+                }
+                Holder<Attribute> attributeHolder = attributeRegistry.wrapAsHolder(attribute);
+                attributes.put(attributeHolder, value);
+            }
+        }
         // Equipment
         HItemLibrary itemLibrary = plugin.getItemLibrary();
         mainHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.hand", "minecraft:air")));

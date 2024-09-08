@@ -161,51 +161,6 @@ public class ActiveNPC {
     }
 
     public void setAttributes(LivingEntity living) {
-        // Health
-        if (living.getAttribute(Attribute.GENERIC_MAX_HEALTH) == null) {
-            living.registerAttribute(Attribute.GENERIC_MAX_HEALTH);
-        }
-        living.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(npcData.getMaxHealth());
-        // Range
-        if (living.getAttribute(Attribute.GENERIC_FOLLOW_RANGE) == null) {
-            living.registerAttribute(Attribute.GENERIC_FOLLOW_RANGE);
-        }
-        living.getAttribute(Attribute.GENERIC_FOLLOW_RANGE).setBaseValue(npcData.getRange());
-        // knockback resistance
-        if (living.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE) == null) {
-            living.registerAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
-        }
-        living.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE).setBaseValue(npcData.getKnockbackResistance());
-        // Movement speed
-        if (living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED) == null) {
-            living.registerAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
-        }
-        living.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(npcData.getMovementSpeed());
-        // Damage
-        if (living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE) == null) {
-            living.registerAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-        }
-        living.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(npcData.getDamage());
-        // Armor
-        if (living.getAttribute(Attribute.GENERIC_ARMOR) == null) {
-            living.registerAttribute(Attribute.GENERIC_ARMOR);
-        }
-        living.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(npcData.getArmor());
-        // Toughness
-        if (living.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS) == null) {
-            living.registerAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS);
-        }
-        living.getAttribute(Attribute.GENERIC_ARMOR_TOUGHNESS).setBaseValue(npcData.getArmorToughness());
-        // Knockback
-        if (living.getAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK) == null) {
-            living.registerAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK);
-        }
-        living.getAttribute(Attribute.GENERIC_ATTACK_KNOCKBACK).setBaseValue(npcData.getKnockback());
-        // Attack speed
-        if (living.getAttribute(Attribute.GENERIC_ATTACK_SPEED) == null) {
-            living.registerAttribute(Attribute.GENERIC_ATTACK_SPEED);
-        }
-        living.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(npcData.getAttackSpeed());
     }
 
     public void addGoal(int prio, Goal goal) {

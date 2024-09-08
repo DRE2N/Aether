@@ -1,3 +1,16 @@
 displayType: player
 skins:
   - "https://minesk.in/03ca0fa19c644e71810e1f6fc29eefd4"
+attributes:
+  0:
+    id: "generic.max_health"
+    value: 20
+  1:
+    id: "generic.movement_speed"
+    value: 0.4
+  2:
+    id: "advantage.physical"
+    value: 50
+  3:
+    id: "generic.attack_damage"
+    value: 20
