@@ -13,10 +13,13 @@ import de.erethon.papyrus.CraftPDamageType;
 import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -38,6 +41,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -62,6 +66,7 @@ import team.unnamed.hephaestus.bukkit.ModelView;
 import team.unnamed.hephaestus.view.track.ModelViewTrackingRule;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -122,7 +127,7 @@ public class AetherBaseMob extends PathfinderMob {
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
         if (dataEntity instanceof Player player) {
             for (ServerPlayerConnection connection : moonrise$getTrackedEntity().seenBy) {
-                CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(dataEntity.getUUID(), "NPC");
+                CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(data.getDisplayName()));
                 Skin skin = plugin.getSkinCache().get(data.getSkinLink());
                 if (skin != null) {
                     craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
@@ -132,11 +137,17 @@ public class AetherBaseMob extends PathfinderMob {
                 player.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
                 ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
-                        new ClientboundPlayerInfoUpdatePacket.Entry(player.getUUID(), player.getGameProfile(), false, 0, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), null));
+                        new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), null));
 
                 ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(player.getId(), player.getEntityData().packDirty());
                 connection.send(infoUpdatePacket);
-                connection.send(entityDataPacket);
+                BukkitRunnable entityDataPacketSender = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        connection.send(entityDataPacket);
+                    }
+                };
+                entityDataPacketSender.runTaskLater(plugin, 3);
             }
         }
         return NMSUtils.getAddEntityPacketWithType(this, dataEntity.getType());
@@ -292,7 +303,7 @@ public class AetherBaseMob extends PathfinderMob {
         super.readAdditionalSaveData(nbt);
         data = plugin.getCreatureManager().getByID(nbt.getString("papyrus-entity-id"));
         if (data == null) {
-            plugin.getLogger().warning("Failed to load entity data for " + nbt.getString("papyrus-entity-id" + " for entity " + this));
+            plugin.getLogger().warning("Failed to load entity data for " + nbt.getString("papyrus-entity-id") + " for entity " + this);
             remove(RemovalReason.DISCARDED);
             return;
         }
@@ -333,16 +344,12 @@ public class AetherBaseMob extends PathfinderMob {
         setPersistenceRequired(data.isPersistent());
         collides = data.hasCollision();
         maxAirTicks = data.getMaximumAir();
-        getAttribute(Attributes.MAX_HEALTH).setBaseValue(data.getMaxHealth());
-        getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(data.getMovementSpeed());
-        getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(data.getDamage());
-        getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(data.getRange());
-        getAttribute(Attributes.ARMOR).setBaseValue(data.getArmor());
-        getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(data.getKnockbackResistance());
-        getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(data.getKnockback());
-        getAttribute(Attributes.ATTACK_SPEED).setBaseValue(data.getAttackSpeed());
-        getAttribute(Attributes.ARMOR).setBaseValue(data.getArmor());
-        getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(data.getArmorToughness());
+        for (Map.Entry<Holder<Attribute>, Double> entry : data.getAttributes().entrySet()) {
+            if (getAttribute(entry.getKey()) == null) {
+                continue;
+            }
+            getAttribute(entry.getKey()).setBaseValue(entry.getValue());
+        }
         // Love how bukkit and vanilla names don't match here lol
         if (data.getMainHand() != null) {
             setItemSlot(EquipmentSlot.MAINHAND, data.getMainHand().rollRandomStack().getVanillaStack());
