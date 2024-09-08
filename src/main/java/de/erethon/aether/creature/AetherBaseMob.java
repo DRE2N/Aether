@@ -343,6 +343,7 @@ public class AetherBaseMob extends PathfinderMob {
 
     private void onFirstSpawn() {
         dataEntity.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
+        setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         setGlowingTag(data.isGlowing());
         setNoGravity(!data.isGravity());
         setInvulnerable(data.isInvulnerable());

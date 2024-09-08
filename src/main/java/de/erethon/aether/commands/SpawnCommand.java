@@ -25,6 +25,10 @@ public class SpawnCommand extends ECommand {
     }
     @Override
     public void onExecute(String[] args, CommandSender commandSender) {
+        if (args[1] == null) {
+            MessageUtil.sendMessage(commandSender, "&cBitte gebe einen NPC an.");
+            return;
+        }
         NPCData npcData = Aether.getInstance().getCreatureManager().getByID(args[1]);
         if (npcData == null) {
             MessageUtil.sendMessage(commandSender, "&cDer NPC " + args[1] + " &cexistiert nicht.");
