@@ -14,6 +14,7 @@ public class ReloadCommand extends ECommand {
         setMinArgs(0);
         setMaxArgs(0);
         setPlayerCommand(true);
+        setConsoleCommand(true);
         setHelp("Help.");
         setPermission("aether.reload");
     }
@@ -21,13 +22,7 @@ public class ReloadCommand extends ECommand {
     @Override
     public void onExecute(String[] strings, CommandSender commandSender) {
         MessageUtil.sendMessage(commandSender, "&aReloading...");
-        Aether.getInstance().getCreatureManager().reload();
-        for (ActiveNPC activeNPC : Aether.getInstance().getActiveCreatureManager().getGlobalNPCs().values()) {
-            try { // sometimes NPCs get unloaded by the server during the reload
-                activeNPC.setProperties();
-            } catch (Exception ignored) {}
-        }
-        Aether.getInstance().getSpawnerManager().reloadSpawners();
+        Aether.getInstance().reload();
         MessageUtil.sendMessage(commandSender, "&aReload complete!");
     }
 }

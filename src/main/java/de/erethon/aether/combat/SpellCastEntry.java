@@ -1,5 +1,6 @@
 package de.erethon.aether.combat;
 
+import de.erethon.aether.Aether;
 import de.erethon.spellbook.api.SpellData;
 import de.erethon.spellbook.api.SpellLibrary;
 import org.bukkit.Bukkit;
@@ -21,8 +22,12 @@ public class SpellCastEntry {
         return spell;
     }
 
-    public void load(ConfigurationSection section) {
+    public void load(String loadingID, ConfigurationSection section) {
         spell = library.getSpellByID(section.getName());
+        if (spell == null) {
+            Aether.addException(loadingID, "Spell not found: " + section.getName(), "Check if the Spellbook spell exists and is loaded", null);
+            return;
+        }
         chance = section.getInt("chance");
     }
 }

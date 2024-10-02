@@ -45,7 +45,12 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
         for (File file : Aether.SPAWNERS.listFiles()) {
             YamlConfiguration fileConfig = YamlConfiguration.loadConfiguration(file);
             for (String key : fileConfig.getKeys(false)) {
-                configuredSpawners.add(new AESpawner(fileConfig.getConfigurationSection(key), key));
+                try {
+                    configuredSpawners.add(new AESpawner(fileConfig.getConfigurationSection(key), key));
+                } catch (Exception e) {
+                    Aether.addException("SpawnerManager.loadSpawners", "Error while loading spawner " + key, "Error while loading spawner " + key, e);
+                    e.printStackTrace();
+                }
             }
         }
         MessageUtil.log("Loaded " + configuredSpawners.size() + " spawners.");

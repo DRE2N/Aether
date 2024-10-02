@@ -46,9 +46,7 @@ public class CreatureManager {
                 loadSub(file);
                 continue;
             }
-            YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-            String id = file.getName().replaceAll(".yml", "");
-            creatures.add(new NPCData(configuration, id));
+            loadNPCFile(file);
         }
         MessageUtil.log("Loaded " + creatures.size() + " creatures.");
     }
@@ -61,9 +59,27 @@ public class CreatureManager {
             if (f.isDirectory()) {
                 loadSub(f);
             }
-            YamlConfiguration configuration = YamlConfiguration.loadConfiguration(f);
-            String id = f.getName().replaceAll(".yml", "");
+            loadNPCFile(file);
+        }
+    }
+
+    private void loadNPCFile(File file) {
+        YamlConfiguration configuration;
+        try {
+            configuration = YamlConfiguration.loadConfiguration(file);
+        } catch (Exception e) {
+            Aether.addException("YamlConfiguration", "Error loading NPC file " + file.getName(), "Make sure its a valid YAML file", e);
+            MessageUtil.log("Error loading NPC file " + file.getName());
+            e.printStackTrace();
+            return;
+        }
+        String id = file.getName().replaceAll(".yml", "");
+        try {
             creatures.add(new NPCData(configuration, id));
+        } catch (Exception e) {
+            Aether.addException("NPCData", "Error loading NPC data" + id, "Check the file for errors", e);
+            MessageUtil.log("Error loading NPC data " + id);
+            e.printStackTrace();
         }
     }
 

@@ -1,5 +1,6 @@
 package de.erethon.aether.ai;
 
+import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.*;
 import de.erethon.aether.ai.goals.HurtByTargetGoal;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -37,8 +38,22 @@ public class GoalLoader {
         for (String cfgString : cfg) {
             MessageUtil.log("Raw: " + cfgString);
             String[] split = cfgString.split(";");
-            int priority = Integer.parseInt(split[0]);
-            AIGoalType goalType = AIGoalType.valueOf(split[1].toUpperCase());
+            int priority;
+            try {
+                priority = Integer.parseInt(split[0]);
+            }
+            catch (NumberFormatException e) {
+                Aether.addException("GoalLoader", "Invalid priority: " + split[0], "Check if the priority is a valid number. Format: '<prio>;<goal_name>;<goal_config>'", e);
+                continue;
+            }
+            AIGoalType goalType;
+            try {
+                goalType = AIGoalType.valueOf(split[1].toUpperCase());
+            }
+            catch (IllegalArgumentException e) {
+                Aether.addException("GoalLoader", "Invalid goal type: " + split[1], "Check if the goal type is a valid goal type. Format: '<prio>;<goal_name>;<goal_config>'", e);
+                continue;
+            }
             AEPathfinderGoal goal = null;
             MessageUtil.log("Split1: " + Arrays.toString(split));
             switch (goalType) {
@@ -93,11 +108,19 @@ public class GoalLoader {
                 case RESTRICT_SUN -> {
                     goal = new RestrictSunGoal();
                 }
-                default -> throw new IllegalStateException("Unexpected value: " + goalType);
+                default -> {
+                    Aether.addException("GoalLoader", "Invalid goal type: " + split[1], "This goal simply does not exist", null);
+                }
             }
             String[] args = Arrays.copyOfRange(split, 2,split.length);
             MessageUtil.log("SplitArgs: " + Arrays.toString(args));
-            goal.load(args);
+            try {
+                goal.load(args);
+            }
+            catch (Exception e) {
+                Aether.addException("GoalLoader", "Error loading goal " + split[1], "Check if the goal config is correct", e);
+                continue;
+            }
             goal.setPrio(priority);
             goals.add(goal);
         }

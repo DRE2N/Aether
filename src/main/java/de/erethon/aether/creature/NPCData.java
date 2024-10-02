@@ -38,6 +38,7 @@ public class NPCData {
     // General
     private String ID;
     private int currentVersion = 0;
+    private boolean isValid = false;
     ConfigurationSection cfg;
     private Class entityClass;
     private EntityType displayType;
@@ -99,11 +100,10 @@ public class NPCData {
 
     // Loot
     private int dropXP = 0;
-    private Set<ItemStack> loot = new HashSet<>();
+    private Set<HItem> loot = new HashSet<>();
 
     public NPCData(EntityType<?> displayType) {
         this.displayType = displayType;
-        loot.add(new ItemStack(Material.BEDROCK));
     }
 
     public NPCData(ConfigurationSection cfg, String id) {
@@ -113,6 +113,10 @@ public class NPCData {
     }
 
     public AetherBaseMob spawn(Location location) {
+        if (!isValid) {
+            MessageUtil.log("Tried to spawn invalid NPC " + ID);
+            return null;
+        }
         return new AetherBaseMob(this, location.getWorld());
     }
 
@@ -134,6 +138,10 @@ public class NPCData {
 
     public int getCurrentVersion() {
         return currentVersion;
+    }
+
+    public boolean isValid() {
+        return isValid;
     }
 
     public String getID() {
@@ -213,7 +221,7 @@ public class NPCData {
         return dropXP;
     }
 
-    public Collection<? extends org.bukkit.inventory.ItemStack> getLoot() {
+    public Set<HItem> getLoot() {
         return loot;
     }
 
@@ -309,13 +317,18 @@ public class NPCData {
             Map.Entry<Plugin, Class<? extends Entity >> entry = Map.entry(plugin, (Class<? extends Entity>) Class.forName(classString));
             EntityType.customEntities.put(ID, entry);
         } catch (ClassNotFoundException e) {
-            MessageUtil.log("Could not find class " + classString + " for " + ID + "! Unable to load entity.");
-            throw new RuntimeException(e);
+            Aether.addException(ID, "Could not find class " + classString, "Ensure the class exists", null);
+            return;
         }
         // General
         displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
         currentVersion = cfg.getInt("version", 0);
-        displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
+        try {
+            displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find displayType " + cfg.getString("displayType", "pig"), "Ensure the displayType exists in vanilla", e);
+            return;
+        }
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);
@@ -338,57 +351,120 @@ public class NPCData {
             for (String key : cfg.getConfigurationSection("attributes").getKeys(false)) {
                 ConfigurationSection section = cfg.getConfigurationSection("attributes." + key);
                 if (section == null) {
-                    MessageUtil.log("No configuration found for " + key + " in " + ID);
+                    Aether.addException(ID, "No configuration found for attribute " + key, "Ensure the attribute exists (see docs)", null);
                     continue;
                 }
                 String id = section.getString("id");
                 if (id == null) {
-                    MessageUtil.log("No id found for attribute " + key + " in " + ID);
+                    Aether.addException(ID, "No id found for attribute " + key, "Ensure the section includes 'id: '", null);
                     continue;
                 }
                 Double value = section.getDouble("value", 0.0);
-                Attribute attribute = attributeRegistry.get(ResourceLocation.fromNamespaceAndPath("minecraft", id));
-                if (attribute == null) {
-                    MessageUtil.log("Could not find attribute " + key + " in " + ID);
+                if (value == 0.0) {
+                    Aether.addException(ID, "No value found for attribute " + key, "Ensure the section includes 'value: '", null);
                     continue;
                 }
-                Holder<Attribute> attributeHolder = attributeRegistry.wrapAsHolder(attribute);
+                Attribute attribute;
+                try {
+                    attribute = attributeRegistry.get(ResourceLocation.fromNamespaceAndPath("minecraft", id));
+                } catch (Exception e) {
+                    Aether.addException(ID, "Could not find attribute " + id, "Ensure the attribute exists", e);
+                    continue;
+                }
+                Holder<Attribute> attributeHolder;
+                try {
+                    attributeHolder = attributeRegistry.wrapAsHolder(attribute);
+                } catch (Exception e) {
+                    Aether.addException(ID, "Unable to find holder for attribute " + id, "Please report this error", e);
+                    continue;
+                }
                 attributes.put(attributeHolder, value);
             }
         }
-        // Equipment
+        // Equipment - Critical, return if it fails
         HItemLibrary itemLibrary = plugin.getItemLibrary();
-        mainHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.hand", "minecraft:air")));
-        offHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.offhand", "minecraft:air")));
-        helmet = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.helmet", "minecraft:air")));
-        chest = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.chest", "minecraft:air")));
-        leggings = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.leggings", "minecraft:air")));
-        boots = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.boots", "minecraft:air")));
-        // Sounds & Messages
+        if (itemLibrary == null) {
+            Aether.addException(ID, "No item library found", "Ensure Hephaestus is installed and working", null);
+        }
+        try {
+            mainHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.hand", "minecraft:air")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find hand item " + cfg.getString("equipment.hand", "minecraft:air"), "Ensure the item exists in the item library", e);
+        }
+        try {
+            offHand = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.offhand", "minecraft:air")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find offhand item " + cfg.getString("equipment.offhand", "minecraft:air"), "Ensure the item exists in the item library", e);
+        }
+        try {
+            helmet = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.helmet", "minecraft:air")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find helmet item " + cfg.getString("equipment.helmet", "minecraft:air"), "Ensure the item exists in the item library", e);
+        }
+        try {
+            chest = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.chest", "minecraft:air")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find chest item " + cfg.getString("equipment.chest", "minecraft:air"), "Ensure the item exists in the item library", e);
+        }
+        try {
+            leggings = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.leggings", "minecraft:air")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find leggings item " + cfg.getString("equipment.leggings", "minecraft:air"), "Ensure the item exists in the item library", e);
+        }
+        try {
+            boots = itemLibrary.get(NamespacedKey.fromString(cfg.getString("equipment.boots", "minecraft:air")));
+        } catch (Exception e) {
+            Aether.addException(ID, "Could not find boots item " + cfg.getString("equipment.boots", "minecraft:air"), "Ensure the item exists in the item library", e);
+        }
+        // Sounds & Messages - We can ignore these
         if (cfg.contains("interaction.sounds")) {
-            attackSound = Sound.valueOf(cfg.getString("interaction.sounds.attack"));
-            ambientSound = Sound.valueOf(cfg.getString("interaction.sounds.ambient", null));
-            shootSound = Sound.valueOf(cfg.getString("interaction.sounds.shoot", null));
-            deathSound = Sound.valueOf(cfg.getString("interaction.sounds.death", null));
-            hurtSound = Sound.valueOf(cfg.getString("interaction.sounds.hurt", null));
+            try {
+                attackSound = Sound.valueOf(cfg.getString("interaction.sounds.attack"));
+            } catch (Exception e) {
+                Aether.addException(ID, "Could not find attack sound " + cfg.getString("interaction.sounds.attack"), "Ensure the sound exists in the server", e);
+            }
+            try {
+                ambientSound = Sound.valueOf(cfg.getString("interaction.sounds.ambient"));
+            } catch (Exception e) {
+                Aether.addException(ID, "Could not find ambient sound " + cfg.getString("interaction.sounds.ambient"), "Ensure the sound exists in the server", e);
+            }
+            try {
+                shootSound = Sound.valueOf(cfg.getString("interaction.sounds.shoot"));
+            } catch (Exception e) {
+                Aether.addException(ID, "Could not find shoot sound " + cfg.getString("interaction.sounds.shoot"), "Ensure the sound exists in the server", e);
+            }
+            try {
+                deathSound = Sound.valueOf(cfg.getString("interaction.sounds.death"));
+            } catch (Exception e) {
+                Aether.addException(ID, "Could not find death sound " + cfg.getString("interaction.sounds.death"), "Ensure the sound exists in the server", e);
+            }
+            try {
+                hurtSound = Sound.valueOf(cfg.getString("interaction.sounds.hurt"));
+            } catch (Exception e) {
+                Aether.addException(ID, "Could not find hurt sound " + cfg.getString("interaction.sounds.hurt"), "Ensure the sound exists in the server", e);
+            }
         }
         ambientMessages = cfg.getStringList("interaction.messages");
         randomTalker = cfg.getBoolean("interaction.randomTalker", false);
         // Combat
         faction = cfg.getString("team", null);
         SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
+        if (spellbook == null) {
+            Aether.addException(ID, "No Spellbook found", "Are you running Papyrus?", null);
+            return; // Very critical lol
+        }
         if (cfg.contains("spells.onDamaged")) {
             ConfigurationSection section = cfg.getConfigurationSection("spells.onDamaged");
             if (section == null || section.getKeys(false).isEmpty()) {
-                MessageUtil.log("No spells found for onDamaged in " + ID);
+                Aether.addException(ID, "No spells found for onDamaged", "Ensure the configuration is correct and not empty", null);
             } else {
                 for (String string : section.getKeys(false)) {
                     SpellCastEntry entry = new SpellCastEntry();
                     if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        Aether.addException(ID, "No onDamaged config found for spell " + string, "Ensure the configuration is correct", null);
                         continue;
                     }
-                    entry.load(section.getConfigurationSection(string));
+                    entry.load(ID + " onDamaged", section.getConfigurationSection(string));
                     onDamagedSpells.add(entry);
                 }
             }
@@ -396,15 +472,15 @@ public class NPCData {
         if (cfg.contains("spells.onTimer")) {
             ConfigurationSection section = cfg.getConfigurationSection("spells.onTimer");
             if (section == null || section.getKeys(false).isEmpty()) {
-                MessageUtil.log("No spells found for onTimer in " + ID);
+                Aether.addException(ID, "No spells found for onTimer", "Ensure the configuration is correct and not empty", null);
             } else {
                 for (String string : section.getKeys(false)) {
                     SpellCastEntry entry = new SpellCastEntry();
                     if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        Aether.addException(ID, "No onTimer config found for spell " + string, "Ensure the configuration is correct", null);
                         continue;
                     }
-                    entry.load(section.getConfigurationSection(string));
+                    entry.load(ID + " onTimer", section.getConfigurationSection(string));
                     onDamagedSpells.add(entry);
                 }
             }
@@ -412,15 +488,15 @@ public class NPCData {
         if (cfg.contains("spells.onAttack")) {
             ConfigurationSection section = cfg.getConfigurationSection("spells.onAttack");
             if (section == null || section.getKeys(false).isEmpty()) {
-                MessageUtil.log("No spells found for onAttack in " + ID);
+                Aether.addException(ID, "No spells found for onAttack", "Ensure the configuration is correct and not empty", null);
             } else {
                 for (String string : section.getKeys(false)) {
                     SpellCastEntry entry = new SpellCastEntry();
                     if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        Aether.addException(ID, "No onAttack config found for spell " + string, "Ensure the configuration is correct", null);
                         continue;
                     }
-                    entry.load(section.getConfigurationSection(string));
+                    entry.load(ID + " onAttack", section.getConfigurationSection(string));
                     onDamagedSpells.add(entry);
                 }
             }
@@ -428,15 +504,15 @@ public class NPCData {
         if (cfg.contains("spells.onDeath")) {
             ConfigurationSection section = cfg.getConfigurationSection("spells.onDeath");
             if (section == null || section.getKeys(false).isEmpty()) {
-                MessageUtil.log("No spells found for onDeath in " + ID);
+                Aether.addException(ID, "No spells found for onDeath", "Ensure the configuration is correct and not empty", null);
             } else {
                 for (String string : section.getKeys(false)) {
                     SpellCastEntry entry = new SpellCastEntry();
                     if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        Aether.addException(ID, "No onDeath config found for spell " + string, "Ensure the configuration is correct", null);
                         continue;
                     }
-                    entry.load(section.getConfigurationSection(string));
+                    entry.load(ID + " onDeath", section.getConfigurationSection(string));
                     onDamagedSpells.add(entry);
                 }
             }
@@ -444,15 +520,15 @@ public class NPCData {
         if (cfg.contains("spells.onTarget")) {
             ConfigurationSection section = cfg.getConfigurationSection("spells.onTarget");
             if (section == null || section.getKeys(false).isEmpty()) {
-                MessageUtil.log("No spells found for onTarget in " + ID);
+                Aether.addException(ID, "No spells found for onTarget", "Ensure the configuration is correct and not empty", null);
             } else {
                 for (String string : section.getKeys(false)) {
                     SpellCastEntry entry = new SpellCastEntry();
                     if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for " + string + " in " + ID);
+                        MessageUtil.log("No configuration found for spell " + string + " in " + ID);
                         continue;
                     }
-                    entry.load(section.getConfigurationSection(string));
+                    entry.load(ID + " onTarget", section.getConfigurationSection(string));
                     onDamagedSpells.add(entry);
                 }
             }
@@ -461,7 +537,7 @@ public class NPCData {
         if (cfg.contains("homeLocation")) {
             ConfigurationSection section = cfg.getConfigurationSection("homeLocation");
             if (section == null) {
-                MessageUtil.log("No home location found for " + ID);
+                Aether.addException(ID, "No configuration found for homeLocation", "Ensure the configuration is correct and not empty", null);
             } else {
                 homeLocation = new BlockPos(section.getInt("x"), section.getInt("y"), section.getInt("z"));
                 homeRange = section.getInt("range", 32);
@@ -473,6 +549,8 @@ public class NPCData {
             try {
                 goals = GoalLoader.loadGoals(cfg.getStringList("ai.goals"));
             } catch (Exception e) {
+                Aether.addException(ID, "Error loading goals", "Ensure the goals are properly configured", e);
+                MessageUtil.log("Error loading goals for " + ID);
                 e.printStackTrace();
             }
         }
@@ -480,6 +558,8 @@ public class NPCData {
             try {
                 targets = GoalLoader.loadGoals(cfg.getStringList("ai.targets"));
             } catch (Exception e) {
+                Aether.addException(ID, "Error loading targets", "Ensure the targets are properly configured", e);
+                MessageUtil.log("Error loading targets for " + ID);
                 e.printStackTrace();
             }
         }
@@ -487,15 +567,20 @@ public class NPCData {
         // Loot
         dropXP = cfg.getInt("loot.xp", 0);
         if (cfg.contains("loot.items")) {
-            Set<ItemStack> loot = new HashSet<>();
+            Set<HItem> loot = new HashSet<>();
             for (String s : cfg.getStringList("loot.items")) {
-                String[] split = s.split(":");
-                Material material = Material.valueOf(split[0]);
-                int amount = Integer.parseInt(split[1]);
-                loot.add(new ItemStack(material, amount));
+                String[] split = s.split(";");
+                HItem hitem = plugin.getItemLibrary().get(NamespacedKey.fromString(split[0]));
+                if (hitem == null) {
+                    Aether.addException(ID, "Could not find item " + split[0], "Ensure the item exists in the item library", null);
+                    return;
+                }
+                loot.add(hitem);
             }
+            this.loot = loot;
         }
         MessageUtil.log("Loaded NPC: " + this);
+        isValid = true;
     }
 
     @Override
