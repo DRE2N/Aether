@@ -9,6 +9,7 @@ import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.CreatureInteractEvent;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.hephaestus.items.HItem;
 import de.erethon.papyrus.CraftPDamageType;
 import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.Component;
@@ -48,6 +49,7 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -113,6 +115,7 @@ public class AetherBaseMob extends PathfinderMob {
             }
             modelView.animationPlayer().add(model.animations().get("attack"));
         }
+        drops.clear();
     }
 
     @Override
@@ -224,6 +227,10 @@ public class AetherBaseMob extends PathfinderMob {
         if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.Player player) {
             CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
             Bukkit.getPluginManager().callEvent(creatureDeathEvent);
+        }
+        for (HItem item : data.getLoot()) {
+            ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
+            level().addFreshEntity(itemEntity);
         }
     }
 
