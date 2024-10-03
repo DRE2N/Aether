@@ -44,13 +44,19 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.behavior.MeleeAttack;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
@@ -73,7 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class AetherBaseMob extends PathfinderMob {
+public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
 
     private Aether plugin = Aether.getInstance();
     private NPCData data;
@@ -125,6 +131,10 @@ public class AetherBaseMob extends PathfinderMob {
         if (modelView != null) {
             modelView.tickAnimations();
         }
+    }
+
+    private void logDebug(String message) {
+        getBukkitEntity().getLocation().getNearbyPlayers(8).forEach(p -> p.sendMessage(Component.text("[DEBUG] " + message)));
     }
 
     @Override
@@ -190,22 +200,27 @@ public class AetherBaseMob extends PathfinderMob {
     // Spells
     private void castSpell(SpellCastEntry entry) {
         if (!entry.canCast()) {
+            logDebug("Failed to cast spell: Chance not met");
             return;
         }
         org.bukkit.entity.LivingEntity caster = getBukkitLivingEntity();
         if (entry.getSpell() == null) {
+            logDebug("Failed to cast spell: Spell is null");
             return;
         }
         if (getTarget() != null) {
             lookAt(getTarget(), Float.MAX_VALUE, Float.MAX_VALUE); // I hope large values are enough
+            logDebug("Looking at target...");
         }
-        caster.cast(entry.getSpell());
+        entry.getSpell().queue((org.bukkit.entity.LivingEntity) this.getBukkitEntity());
+        logDebug("Cast spell " + entry.getSpell().getName() + "!");
     }
 
     @Override
     public boolean doHurtTarget(Entity target, CraftPDamageType type) {
         for (SpellCastEntry spell : data.getOnAttackSpells()) {
             castSpell(spell);
+            logDebug("Casting onAttack spell " + spell.getSpell().getName());
         }
         return super.doHurtTarget(target, type);
     }
@@ -214,6 +229,7 @@ public class AetherBaseMob extends PathfinderMob {
     public boolean hurt(DamageSource source, float amount, CraftPDamageType type) {
         for (SpellCastEntry spell : data.getOnDamagedSpells()) {
             castSpell(spell);
+            logDebug("Casting onHurt spell " + spell.getSpell().getName());
         }
         return super.hurt(source, amount, type);
     }
@@ -223,6 +239,7 @@ public class AetherBaseMob extends PathfinderMob {
         super.die(damageSource);
         for (SpellCastEntry spell : data.getOnDeathSpells()) {
             castSpell(spell);
+            logDebug("Casting onDeath spell " + spell.getSpell().getName());
         }
         if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.Player player) {
             CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
@@ -230,6 +247,7 @@ public class AetherBaseMob extends PathfinderMob {
         }
         for (HItem item : data.getLoot()) {
             ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
+            logDebug("Dropping loot " + item.getNameKey());
             level().addFreshEntity(itemEntity);
         }
     }
@@ -239,6 +257,7 @@ public class AetherBaseMob extends PathfinderMob {
         boolean bool = super.setTarget(entityliving, reason, fireEvent);
         for (SpellCastEntry spell : data.getOnTargetSpells()) {
             castSpell(spell);
+            logDebug("Casting onTarget spell " + spell.getSpell().getName());
         }
         return bool;
     }
@@ -388,6 +407,21 @@ public class AetherBaseMob extends PathfinderMob {
 
     public NPCData getData() {
         return data;
+    }
+
+    @Override
+    public void performRangedAttack(LivingEntity target, float pullProgress) {
+        // Copied from AbstractSkeleton
+        ItemStack itemstack = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW));
+        ItemStack itemstack1 = this.getProjectile(itemstack);
+        AbstractArrow entityarrow = ProjectileUtil.getMobArrow(this, itemstack1, pullProgress, itemstack);
+        double d0 = target.getX() - this.getX();
+        double d1 = target.getY(0.3333333333333333D) - entityarrow.getY();
+        double d2 = target.getZ() - this.getZ();
+        double d3 = Math.sqrt(d0 * d0 + d2 * d2);
+        entityarrow.shoot(d0, d1 + d3 * 0.20000000298023224D, d2, 1.6F, (float) (14 - this.level().getDifficulty().getId() * 4));
+        this.level().addFreshEntity(entityarrow);
+        this.playSound(SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
     }
 
     @Override
