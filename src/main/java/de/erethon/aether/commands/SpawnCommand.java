@@ -12,6 +12,9 @@ import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SpawnCommand extends ECommand {
 
     public SpawnCommand() {
@@ -54,16 +57,35 @@ public class SpawnCommand extends ECommand {
         if (location == null) {
             Player player = (Player) commandSender;
             for (int i = 0; i <= amount; i++) {
-                MessageUtil.sendMessage(player, "&aNPC gespawnt: Type: " + npcData.getDisplayType());
-                AetherBaseMob activeNPC = new AetherBaseMob(npcData, player.getWorld());
-                activeNPC.setPos(player.getX(), player.getY(), player.getZ());
-                activeNPC.addToWorld();
+                try {
+                    AetherBaseMob activeNPC = new AetherBaseMob(npcData, player.getWorld());
+                    activeNPC.setPos(player.getX(), player.getY(), player.getZ());
+                    activeNPC.addToWorld();
+                    MessageUtil.sendMessage(commandSender, "&aNPC " + npcData.getID() + " gespawnt. BaseClass: " + activeNPC.getClass().getSimpleName());
+                } catch (Exception e) {
+                    MessageUtil.sendMessage(commandSender, "&cFehler beim Spawnen des NPCs: " + e.getMessage());
+                    MessageUtil.log("Error while spawning NPC " + npcData.getID()+ " for " + player.getName());
+                    e.printStackTrace();
+                }
             }
-            return;
-        }
-        for (int i = 0; i <= amount; i++) {
-            ActiveNPC activeNPC = new ActiveNPC(npcData);
-            activeNPC.spawn(location);
         }
     }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, String[] args) {
+        // Copied from QXL Dialogues because I have no idea how this works
+        if (args.length == 2) {
+            List<String> completes = new ArrayList<>();
+            for (NPCData dialogue : Aether.getInstance().getCreatureManager().getCreatures()) {
+                if (dialogue.getID().toLowerCase().startsWith(args[1].toLowerCase())) {
+                    completes.add(dialogue.getID());
+                }
+            }
+            return completes;
+        }
+        return null;
+    }
+
+
+
 }

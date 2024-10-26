@@ -1,14 +1,13 @@
 package de.erethon.aether.ai.goals;
 
 import de.erethon.aether.ai.GoalClass;
-import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 
-public class HurtByTargetGoal extends AEPathfinderGoal {
+public class HurtByTarget extends AEPathfinderGoal {
 
-    public HurtByTargetGoal() {
+    public HurtByTarget() {
         goalClass = GoalClass.TARGET;
     }
 

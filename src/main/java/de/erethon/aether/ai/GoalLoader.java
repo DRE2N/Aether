@@ -2,7 +2,7 @@ package de.erethon.aether.ai;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.*;
-import de.erethon.aether.ai.goals.HurtByTargetGoal;
+import de.erethon.aether.ai.goals.HurtByTarget;
 import de.erethon.bedrock.chat.MessageUtil;
 
 import java.util.Arrays;
@@ -73,7 +73,7 @@ public class GoalLoader {
                     goal = new FloatGoal();
                 }
                 case HURT_TARGET -> {
-                    goal = new HurtByTargetGoal();
+                    goal = new HurtByTarget();
                 }
                 case LEAP_AT -> {
                     goal = new LeapAtTargetGoal();
@@ -85,7 +85,7 @@ public class GoalLoader {
                     goal = new MeleeAttackGoal();
                 }
                 case NEAREST_ATTACKABLE -> {
-                    goal = new NearestAttackableTargetGoal();
+                    goal = new NearestAttackableTarget();
                 }
                 case PANIC -> {
                     goal = new PanicGoal();
