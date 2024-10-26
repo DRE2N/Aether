@@ -5,7 +5,9 @@ import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class CreatureManager {
@@ -30,9 +32,18 @@ public class CreatureManager {
         return null;
     }
 
+    public List<String> getIDs() {
+        List<String> ids = new ArrayList<>();
+        for (NPCData npcData : creatures) {
+            ids.add(npcData.getID());
+        }
+        return ids;
+    }
+
     public void reload() {
         creatures.clear();
         load();
+        loadDelayed();
     }
 
     public void load() {
@@ -49,6 +60,12 @@ public class CreatureManager {
             loadNPCFile(file);
         }
         MessageUtil.log("Loaded " + creatures.size() + " creatures.");
+    }
+
+    public void loadDelayed() { // Spellbook
+        for (NPCData creature : creatures) {
+            creature.loadDelayed();
+        }
     }
 
     public void loadSub(File file) {
