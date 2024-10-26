@@ -19,6 +19,9 @@ import de.erethon.bedrock.plugin.EPlugin;
 import de.erethon.bedrock.plugin.EPluginSettings;
 import de.erethon.hephaestus.Hephaestus;
 import de.erethon.hephaestus.items.HItemLibrary;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+import io.papermc.paper.network.ChannelInitializeListenerHolder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -27,17 +30,47 @@ import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.server.ServerLoadEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import team.unnamed.hephaestus.bukkit.BukkitModelEngine;
 import team.unnamed.hephaestus.bukkit.BukkitModelEngineAdapt;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+import io.papermc.paper.network.ChannelInitializeListenerHolder;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.kyori.adventure.key.Key;
+import net.minecraft.core.RegistrySynchronization;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.worldgen.DimensionTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+import net.minecraft.world.level.dimension.DimensionType;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.framework.qual.DefaultQualifier;
+
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public final class Aether extends EPlugin implements Listener {
 
@@ -65,6 +98,9 @@ public final class Aether extends EPlugin implements Listener {
     private HItemLibrary hitemLibrary;
 
     private static final List<ErrorEntry> errors = new ArrayList<>();
+
+    public static final byte[] AIR_SECTION = new byte[]{0, 0, 0, 0, 0, 0, 39, 0};
+    public static final int ADDED_SECTIONS = 256;
 
     public Aether() {
         settings = EPluginSettings.builder()
@@ -153,12 +189,10 @@ public final class Aether extends EPlugin implements Listener {
         setCommandCache(commands);
         commands.register(this);
         spawnerManager = new SpawnerManager();
-
-        //npcManager.loadFiles();
-        System.setProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", "false");
-        MessageUtil.log("Warn for legacy formatting: " + System.getProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected"));
-
+        Bukkit.getPluginManager().registerEvents(this, this);
+        this.getServer().getPluginManager().registerEvents(this, this);
     }
+
 
     @Override
     public void onDisable() {
@@ -176,6 +210,21 @@ public final class Aether extends EPlugin implements Listener {
         for (ErrorEntry error : errors) {
             sendNiceErrorToAdmins(error);
         }
+    }
+
+    @EventHandler
+    private void onFinishStartup(ServerLoadEvent event) {
+        if (event.getType() != ServerLoadEvent.LoadType.STARTUP) {
+            return;
+        }
+        BukkitRunnable runnable = new BukkitRunnable() {
+            @Override
+            public void run() {
+                creatureManager.loadDelayed();
+            }
+        };
+        runnable.runTaskLater(this, 60);
+        MessageUtil.broadcastMessageIf("<green>Aether has started up and is now ready.", player -> player.hasPermission("aether.admin"));
     }
     
     private void sendNiceErrorToAdmins(ErrorEntry entry) {

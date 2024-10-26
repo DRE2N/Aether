@@ -212,15 +212,19 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
             lookAt(getTarget(), Float.MAX_VALUE, Float.MAX_VALUE); // I hope large values are enough
             logDebug("Looking at target...");
         }
-        entry.getSpell().queue((org.bukkit.entity.LivingEntity) this.getBukkitEntity());
+        entry.getSpell().queue(caster);
         logDebug("Cast spell " + entry.getSpell().getName() + "!");
     }
 
     @Override
     public boolean doHurtTarget(Entity target, CraftPDamageType type) {
         for (SpellCastEntry spell : data.getOnAttackSpells()) {
-            castSpell(spell);
+            if (spell.getSpell() == null) {
+                logDebug("Spell " + spell + " does not exist");
+                continue;
+            }
             logDebug("Casting onAttack spell " + spell.getSpell().getName());
+            castSpell(spell);
         }
         return super.doHurtTarget(target, type);
     }
@@ -228,8 +232,12 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
     @Override
     public boolean hurt(DamageSource source, float amount, CraftPDamageType type) {
         for (SpellCastEntry spell : data.getOnDamagedSpells()) {
-            castSpell(spell);
+            if (spell.getSpell() == null) {
+                logDebug("Spell " + spell + " does not exist");
+                continue;
+            }
             logDebug("Casting onHurt spell " + spell.getSpell().getName());
+            castSpell(spell);
         }
         return super.hurt(source, amount, type);
     }
@@ -238,8 +246,12 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
     public void die(DamageSource damageSource) {
         super.die(damageSource);
         for (SpellCastEntry spell : data.getOnDeathSpells()) {
-            castSpell(spell);
+            if (spell.getSpell() == null) {
+                logDebug("Spell " + spell + " does not exist");
+                continue;
+            }
             logDebug("Casting onDeath spell " + spell.getSpell().getName());
+            castSpell(spell);
         }
         if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.Player player) {
             CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
@@ -256,8 +268,12 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
     public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason, boolean fireEvent) {
         boolean bool = super.setTarget(entityliving, reason, fireEvent);
         for (SpellCastEntry spell : data.getOnTargetSpells()) {
-            castSpell(spell);
+            if (spell.getSpell() == null) {
+                logDebug("Spell " + spell + " does not exist");
+                continue;
+            }
             logDebug("Casting onTarget spell " + spell.getSpell().getName());
+            castSpell(spell);
         }
         return bool;
     }
@@ -319,9 +335,11 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
         }
         for (AEPathfinderGoal aeGoal : data.getGoals()) {
             goalSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
+            MessageUtil.log("Added goal " + aeGoal.get(this).getClass().getSimpleName() + " to " + getData().getID());
         }
         for (AEPathfinderGoal aeGoal : data.getTargets()) {
             targetSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
+            MessageUtil.log("Added target " + aeGoal.get(this).getClass().getSimpleName() + " to " + getData().getID());
         }
     }
 
@@ -353,9 +371,6 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
         level.chunkSource.removeEntity(this);
         if (data.getModelID() != null) {
             model = plugin.getModelRegistry().model(data.getModelID());
-            if (model == null) {
-                plugin.getLogger().warning("Failed to load model for " + data.getModelID());
-            }
         }
         if (dataEntity == null) {
             plugin.getLogger().warning("Failed to create entity for " + data.getDisplayType());

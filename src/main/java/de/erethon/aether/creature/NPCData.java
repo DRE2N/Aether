@@ -88,11 +88,11 @@ public class NPCData {
     private BlockPos homeLocation;
     private int homeRange;
 
-    private Set<SpellCastEntry> onDamagedSpells = new HashSet<>();
-    private Set<SpellCastEntry> onTimerSpells = new HashSet<>();
-    private Set<SpellCastEntry> onAttackSpells = new HashSet<>();
-    private Set<SpellCastEntry> onDeathSpells = new HashSet<>();
-    private Set<SpellCastEntry> onTargetSpells = new HashSet<>();
+    private final Set<SpellCastEntry> onDamagedSpells = new HashSet<>();
+    private final Set<SpellCastEntry> onTimerSpells = new HashSet<>();
+    private final Set<SpellCastEntry> onAttackSpells = new HashSet<>();
+    private final Set<SpellCastEntry> onDeathSpells = new HashSet<>();
+    private final Set<SpellCastEntry> onTargetSpells = new HashSet<>();
 
     // AI
     private Set<AEPathfinderGoal> goals = new HashSet<>();
@@ -448,91 +448,6 @@ public class NPCData {
         randomTalker = cfg.getBoolean("interaction.randomTalker", false);
         // Combat
         faction = cfg.getString("team", null);
-        SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
-        if (spellbook == null) {
-            Aether.addException(ID, "No Spellbook found", "Are you running Papyrus?", null);
-            return; // Very critical lol
-        }
-        if (cfg.contains("spells.onDamaged")) {
-            ConfigurationSection section = cfg.getConfigurationSection("spells.onDamaged");
-            if (section == null || section.getKeys(false).isEmpty()) {
-                Aether.addException(ID, "No spells found for onDamaged", "Ensure the configuration is correct and not empty", null);
-            } else {
-                for (String string : section.getKeys(false)) {
-                    SpellCastEntry entry = new SpellCastEntry();
-                    if (section.getConfigurationSection(string) == null) {
-                        Aether.addException(ID, "No onDamaged config found for spell " + string, "Ensure the configuration is correct", null);
-                        continue;
-                    }
-                    entry.load(ID + " onDamaged", section.getConfigurationSection(string));
-                    onDamagedSpells.add(entry);
-                }
-            }
-        }
-        if (cfg.contains("spells.onTimer")) {
-            ConfigurationSection section = cfg.getConfigurationSection("spells.onTimer");
-            if (section == null || section.getKeys(false).isEmpty()) {
-                Aether.addException(ID, "No spells found for onTimer", "Ensure the configuration is correct and not empty", null);
-            } else {
-                for (String string : section.getKeys(false)) {
-                    SpellCastEntry entry = new SpellCastEntry();
-                    if (section.getConfigurationSection(string) == null) {
-                        Aether.addException(ID, "No onTimer config found for spell " + string, "Ensure the configuration is correct", null);
-                        continue;
-                    }
-                    entry.load(ID + " onTimer", section.getConfigurationSection(string));
-                    onDamagedSpells.add(entry);
-                }
-            }
-        }
-        if (cfg.contains("spells.onAttack")) {
-            ConfigurationSection section = cfg.getConfigurationSection("spells.onAttack");
-            if (section == null || section.getKeys(false).isEmpty()) {
-                Aether.addException(ID, "No spells found for onAttack", "Ensure the configuration is correct and not empty", null);
-            } else {
-                for (String string : section.getKeys(false)) {
-                    SpellCastEntry entry = new SpellCastEntry();
-                    if (section.getConfigurationSection(string) == null) {
-                        Aether.addException(ID, "No onAttack config found for spell " + string, "Ensure the configuration is correct", null);
-                        continue;
-                    }
-                    entry.load(ID + " onAttack", section.getConfigurationSection(string));
-                    onDamagedSpells.add(entry);
-                }
-            }
-        }
-        if (cfg.contains("spells.onDeath")) {
-            ConfigurationSection section = cfg.getConfigurationSection("spells.onDeath");
-            if (section == null || section.getKeys(false).isEmpty()) {
-                Aether.addException(ID, "No spells found for onDeath", "Ensure the configuration is correct and not empty", null);
-            } else {
-                for (String string : section.getKeys(false)) {
-                    SpellCastEntry entry = new SpellCastEntry();
-                    if (section.getConfigurationSection(string) == null) {
-                        Aether.addException(ID, "No onDeath config found for spell " + string, "Ensure the configuration is correct", null);
-                        continue;
-                    }
-                    entry.load(ID + " onDeath", section.getConfigurationSection(string));
-                    onDamagedSpells.add(entry);
-                }
-            }
-        }
-        if (cfg.contains("spells.onTarget")) {
-            ConfigurationSection section = cfg.getConfigurationSection("spells.onTarget");
-            if (section == null || section.getKeys(false).isEmpty()) {
-                Aether.addException(ID, "No spells found for onTarget", "Ensure the configuration is correct and not empty", null);
-            } else {
-                for (String string : section.getKeys(false)) {
-                    SpellCastEntry entry = new SpellCastEntry();
-                    if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for spell " + string + " in " + ID);
-                        continue;
-                    }
-                    entry.load(ID + " onTarget", section.getConfigurationSection(string));
-                    onDamagedSpells.add(entry);
-                }
-            }
-        }
 
         if (cfg.contains("homeLocation")) {
             ConfigurationSection section = cfg.getConfigurationSection("homeLocation");
@@ -581,6 +496,94 @@ public class NPCData {
         }
         MessageUtil.log("Loaded NPC: " + this);
         isValid = true;
+    }
+
+    public void loadDelayed() {
+        SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
+        if (spellbook == null) {
+            Aether.addException(ID, "No Spellbook found", "Are you running Papyrus?", null);
+            return; // Very critical lol
+        }
+        if (cfg.contains("spells.onDamaged")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onDamaged");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                Aether.addException(ID, "No spells found for onDamaged", "Ensure the configuration is correct and not empty", null);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        Aether.addException(ID, "No onDamaged config found for spell " + string, "Ensure the configuration is correct", null);
+                        continue;
+                    }
+                    entry.load(ID + " onDamaged", section.getConfigurationSection(string));
+                    onDamagedSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onTimer")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onTimer");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                Aether.addException(ID, "No spells found for onTimer", "Ensure the configuration is correct and not empty", null);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        Aether.addException(ID, "No onTimer config found for spell " + string, "Ensure the configuration is correct", null);
+                        continue;
+                    }
+                    entry.load(ID + " onTimer", section.getConfigurationSection(string));
+                    onTimerSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onAttack")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onAttack");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                Aether.addException(ID, "No spells found for onAttack", "Ensure the configuration is correct and not empty", null);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        Aether.addException(ID, "No onAttack config found for spell " + string, "Ensure the configuration is correct", null);
+                        continue;
+                    }
+                    entry.load(ID + " onAttack", section.getConfigurationSection(string));
+                    onAttackSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onDeath")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onDeath");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                Aether.addException(ID, "No spells found for onDeath", "Ensure the configuration is correct and not empty", null);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        Aether.addException(ID, "No onDeath config found for spell " + string, "Ensure the configuration is correct", null);
+                        continue;
+                    }
+                    entry.load(ID + " onDeath", section.getConfigurationSection(string));
+                    onDeathSpells.add(entry);
+                }
+            }
+        }
+        if (cfg.contains("spells.onTarget")) {
+            ConfigurationSection section = cfg.getConfigurationSection("spells.onTarget");
+            if (section == null || section.getKeys(false).isEmpty()) {
+                Aether.addException(ID, "No spells found for onTarget", "Ensure the configuration is correct and not empty", null);
+            } else {
+                for (String string : section.getKeys(false)) {
+                    SpellCastEntry entry = new SpellCastEntry();
+                    if (section.getConfigurationSection(string) == null) {
+                        MessageUtil.log("No configuration found for spell " + string + " in " + ID);
+                        continue;
+                    }
+                    entry.load(ID + " onTarget", section.getConfigurationSection(string));
+                    onTargetSpells.add(entry);
+                }
+            }
+        }
     }
 
     @Override
