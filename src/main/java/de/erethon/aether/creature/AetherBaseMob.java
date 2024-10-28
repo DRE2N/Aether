@@ -7,6 +7,7 @@ import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.CreatureInteractEvent;
+import de.erethon.aether.events.CreatureLoadEvent;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.hephaestus.items.HItem;
@@ -20,7 +21,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -41,16 +41,16 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.behavior.MeleeAttack;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
@@ -59,6 +59,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.gameevent.GameEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftSound;
@@ -75,11 +76,10 @@ import team.unnamed.hephaestus.bukkit.ModelView;
 import team.unnamed.hephaestus.view.track.ModelViewTrackingRule;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
+public class AetherBaseMob extends Monster implements RangedAttackMob {
 
     private Aether plugin = Aether.getInstance();
     private NPCData data;
@@ -96,11 +96,11 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
 
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
-        super((EntityType<? extends PathfinderMob>) type, world);
+        super((EntityType<? extends Monster>) type, world);
     }
 
     public AetherBaseMob(NPCData data, World world) {
-        super((EntityType<? extends PathfinderMob>) data.getDisplayType(), ((CraftWorld) world).getHandle());
+        super((EntityType<? extends Monster>) data.getDisplayType(), ((CraftWorld) world).getHandle());
         this.data = data;
         onLoad();
         onFirstSpawn();
@@ -121,7 +121,6 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
             }
             modelView.animationPlayer().add(model.animations().get("attack"));
         }
-        drops.clear();
     }
 
     @Override
@@ -141,7 +140,7 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
         if (dataEntity instanceof Player player) {
             for (ServerPlayerConnection connection : moonrise$getTrackedEntity().seenBy) {
-                CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(data.getDisplayName()));
+                CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(Component.empty()));
                 Skin skin = plugin.getSkinCache().get(data.getSkinLink());
                 if (skin != null) {
                     craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
@@ -149,8 +148,9 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
                 player.getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte) 127); // Show all skin layers
                 player.setId(dataEntity.getId());
                 player.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
+                player.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
                 ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
-                        EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
+                        EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
                         new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), null));
 
                 ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(player.getId(), player.getEntityData().packDirty());
@@ -174,6 +174,7 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
         }
         return dataEntity.getEntityData();
     }
+
 
     @Override
     public void refreshEntityData(@NotNull ServerPlayer to) {
@@ -244,23 +245,44 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
 
     @Override
     public void die(DamageSource damageSource) {
-        super.die(damageSource);
+        // We need to re-implement this logic, otherwise we cause normal death events for plugins
+        Entity entity = damageSource.getEntity();
+        dead = true;
+        getCombatTracker().recheckStatus();
+        if (entity != null) {
+            entity.killedEntity((ServerLevel) this.level(), this);
+        }
+        gameEvent(GameEvent.ENTITY_DIE);
+        level().broadcastEntityEvent(this, (byte) 3);
+        setPose(Pose.DYING);
+
+        // onDeath spells
         for (SpellCastEntry spell : data.getOnDeathSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
                 continue;
             }
             logDebug("Casting onDeath spell " + spell.getSpell().getName());
-            castSpell(spell);
+            try {
+                castSpell(spell);
+            } catch (Throwable e) {
+                MessageUtil.log("Failed to cast spell " + spell.getSpell().getName() + " for " + data.getID() + ": " + e.getMessage());
+            }
         }
+        // Death event
         if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.Player player) {
             CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
             Bukkit.getPluginManager().callEvent(creatureDeathEvent);
         }
-        for (HItem item : data.getLoot()) {
-            ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
-            logDebug("Dropping loot " + item.getNameKey());
-            level().addFreshEntity(itemEntity);
+        // Drop loot
+        try { // Exceptions here crash the server
+            for (HItem item : data.getLoot()) {
+                ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
+                logDebug("Dropping loot " + item.getPatch().toString());
+                level().addFreshEntity(itemEntity);
+            }
+        } catch (Throwable e) {
+            MessageUtil.log("Failed to drop loot for " + data.getID() + ": " + e.getMessage());
         }
     }
 
@@ -363,7 +385,7 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
     private void onLoad() {
         dataEntity = data.getDisplayType().create(level());
         if (data.getDisplayType() == EntityType.PLAYER) {
-            dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault());
+            dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault(), true);
             ServerPlayer player = (ServerPlayer) dataEntity;
             player.moonrise$setRealPlayer(false);
         }
@@ -381,6 +403,18 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
         if (data.getHomeLocation() != null) {
             restrictTo(data.getHomeLocation(), data.getHomeRange());
         }
+        drops.clear();
+        setDropChance(EquipmentSlot.HEAD, 0);
+        setDropChance(EquipmentSlot.CHEST, 0);
+        setDropChance(EquipmentSlot.LEGS, 0);
+        setDropChance(EquipmentSlot.FEET, 0);
+        setDropChance(EquipmentSlot.MAINHAND, 0);
+        setDropChance(EquipmentSlot.OFFHAND, 0);
+        expToDrop = data.getDropXP();
+        setCanPickUpLoot(false);
+
+        CreatureLoadEvent event = new CreatureLoadEvent(data, this);
+        Bukkit.getPluginManager().callEvent(event);
     }
 
     private void onFirstSpawn() {
@@ -398,6 +432,10 @@ public class AetherBaseMob extends PathfinderMob implements RangedAttackMob {
                 continue;
             }
             getAttribute(entry.getKey()).setBaseValue(entry.getValue());
+            // Handle health separately
+            if (entry.getKey().equals(Attributes.MAX_HEALTH)) {
+                setHealth(entry.getValue().floatValue());
+            }
         }
         // Love how bukkit and vanilla names don't match here lol
         if (data.getMainHand() != null) {
