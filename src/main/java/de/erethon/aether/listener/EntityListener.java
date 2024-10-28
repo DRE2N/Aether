@@ -9,6 +9,7 @@ import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.InstancedNPC;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
+import de.erethon.bedrock.chat.MessageUtil;
 import io.papermc.paper.event.entity.EntityMoveEvent;
 import net.minecraft.world.entity.LivingEntity;
 import org.bukkit.Bukkit;
@@ -28,6 +29,8 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 

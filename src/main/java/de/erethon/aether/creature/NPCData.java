@@ -492,9 +492,10 @@ public class NPCData {
                 }
                 loot.add(hitem);
             }
+            MessageUtil.log("Loaded " + loot.size() + " loot items.");
             this.loot = loot;
         }
-        MessageUtil.log("Loaded NPC: " + this);
+        MessageUtil.log("Loaded NPC: " + getID());
         isValid = true;
     }
 

@@ -178,7 +178,6 @@ public final class Aether extends EPlugin implements Listener {
         playerListener = new PlayerListener();
         entityListener = new EntityListener();
         skinCache = new SkinCache(SKINS);
-        skinCache.refresh();
 
 
         //Bukkit.getPluginManager().registerEvents(npcManager, this);

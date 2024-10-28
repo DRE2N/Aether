@@ -34,6 +34,7 @@ java {
 }
 
 val papyrusVersion = "1.21.1-R0.1-SNAPSHOT"
+paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 dependencies {
     paperweightDevBundle("de.erethon.papyrus", papyrusVersion) { isChanging = true }
@@ -72,7 +73,7 @@ tasks {
             project.buildDir.mkdir()
         }
         val f = File(project.buildDir, "server.jar");
-        //uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
+        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
     }
 
@@ -85,6 +86,14 @@ tasks {
     }
     processResources {
         filteringCharset = Charsets.UTF_8.name()
+    }
+
+    jar {
+        manifest {
+            attributes(
+                "paperweight-mappings-namespace" to "mojang"
+            )
+        }
     }
 
     shadowJar {
