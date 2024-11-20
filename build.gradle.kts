@@ -25,7 +25,7 @@ plugins {
 }
 
 group = "de.erethon.aether"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 description = "Mob and NPC plugin for Erethon"
 
 java {
@@ -49,34 +49,8 @@ dependencies {
 
 }
 
-publishing {
-    repositories {
-        maven {
-            name = "erethon"
-            url = uri("https://reposilite.fyreum.de/snapshots/")
-            credentials(PasswordCredentials::class)
-            authentication {
-                create<BasicAuthentication>("basic")
-            }
-        }
-    }
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "${project.group}"
-            artifactId = "Aether"
-            version = "${project.version}"
-
-            from(components["java"])
-        }
-    }
-}
-
 tasks {
     // Configure reobfJar to run when invoking the build task
-    assemble {
-        dependsOn(reobfJar)
-        dependsOn(shadowJar)
-    }
 
     runServer {
         if (!project.buildDir.exists()) {
@@ -91,8 +65,18 @@ tasks {
         options.encoding = Charsets.UTF_8.name()
         options.release.set(21)
     }
+
     javadoc {
         options.encoding = Charsets.UTF_8.name()
+    }
+    val javadocJar by creating(Jar::class) {
+        dependsOn(javadoc)
+        archiveClassifier.set("javadoc")
+        from(javadoc)
+    }
+    val sourcesJar by creating(Jar::class) {
+        archiveClassifier.set("sources")
+        from(sourceSets.main.get().allSource)
     }
     processResources {
         filteringCharset = Charsets.UTF_8.name()
@@ -128,5 +112,37 @@ tasks {
             }
         }
     }
+
+    assemble {
+        dependsOn(reobfJar)
+        dependsOn(shadowJar)
+        dependsOn(javadocJar)
+        dependsOn(sourcesJar)
+    }
 }
+
+publishing {
+    repositories {
+        maven {
+            name = "erethon"
+            url = uri("https://reposilite.fyreum.de/snapshots/")
+            credentials(PasswordCredentials::class)
+            authentication {
+                create<BasicAuthentication>("basic")
+            }
+        }
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "${project.group}"
+            artifactId = "Aether"
+            version = "${project.version}"
+
+            from(components["java"])
+            artifact(tasks["javadocJar"])
+            artifact(tasks["sourcesJar"])
+        }
+    }
+}
+
 
