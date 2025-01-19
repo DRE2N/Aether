@@ -100,7 +100,7 @@ public class NPCData {
 
     // Loot
     private int dropXP = 0;
-    private Set<HItem> loot = new HashSet<>();
+    private Map<HItem, Float> loot = new HashMap<>();
 
     public NPCData(EntityType<?> displayType) {
         this.displayType = displayType;
@@ -221,7 +221,7 @@ public class NPCData {
         return dropXP;
     }
 
-    public Set<HItem> getLoot() {
+    public Map<HItem, Float> getLoot() {
         return loot;
     }
 
@@ -482,18 +482,23 @@ public class NPCData {
         // Loot
         dropXP = cfg.getInt("loot.xp", 0);
         if (cfg.contains("loot.items")) {
-            Set<HItem> loot = new HashSet<>();
+            loot.clear();
             for (String s : cfg.getStringList("loot.items")) {
                 String[] split = s.split(";");
+                float chance = 100.0f;
+                try {
+                    chance = Float.parseFloat(split[1]);
+                } catch (Exception e) {
+                    continue;
+                }
                 HItem hitem = plugin.getItemLibrary().get(NamespacedKey.fromString(split[0]));
                 if (hitem == null) {
                     Aether.addException(ID, "Could not find item " + split[0], "Ensure the item exists in the item library", null);
                     return;
                 }
-                loot.add(hitem);
+                loot.put(hitem, chance);
             }
             MessageUtil.log("Loaded " + loot.size() + " loot items.");
-            this.loot = loot;
         }
         MessageUtil.log("Loaded NPC: " + getID());
         isValid = true;

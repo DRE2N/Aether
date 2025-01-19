@@ -50,6 +50,7 @@ import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.CrossbowAttackMob;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
@@ -69,6 +70,7 @@ import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import team.unnamed.hephaestus.Model;
 import team.unnamed.hephaestus.animation.Animation;
@@ -79,7 +81,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class AetherBaseMob extends Monster implements RangedAttackMob {
+public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob {
 
     private Aether plugin = Aether.getInstance();
     private NPCData data;
@@ -106,6 +108,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob {
         onFirstSpawn();
     }
 
+    @ApiStatus.Obsolete
     public void addToWorld() {
         if (dataEntity == null) {
             return;
@@ -210,7 +213,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob {
             return;
         }
         if (getTarget() != null) {
-            lookAt(getTarget(), Float.MAX_VALUE, Float.MAX_VALUE); // I hope large values are enough
+            lookAt(getTarget(),180f, 180f); // I hope large values are enough
             logDebug("Looking at target...");
         }
         entry.getSpell().queue(caster);
@@ -241,6 +244,18 @@ public class AetherBaseMob extends Monster implements RangedAttackMob {
             castSpell(spell);
         }
         return super.hurt(source, amount, type);
+    }
+
+    @Override
+    public void setChargingCrossbow(boolean charging) {
+        if (dataEntity instanceof CrossbowAttackMob crossbowAttackMob) {
+            crossbowAttackMob.setChargingCrossbow(charging);
+        }
+    }
+
+    @Override
+    public void onCrossbowAttackPerformed() {
+        // This is apparently useless, thanks Mojang
     }
 
     @Override
@@ -276,9 +291,14 @@ public class AetherBaseMob extends Monster implements RangedAttackMob {
         }
         // Drop loot
         try { // Exceptions here crash the server
-            for (HItem item : data.getLoot()) {
+            for (Map.Entry<HItem, Float> entry : data.getLoot().entrySet()) {
+                HItem item = entry.getKey();
+                float chance = entry.getValue() / 100;
+                if (chance < 1 && random.nextFloat() > chance) {
+                    continue;
+                }
                 ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
-                logDebug("Dropping loot " + item.getPatch().toString());
+                logDebug("Dropping loot " + item.getPatch().toString() + ", chance was " + chance * 100 + "%");
                 level().addFreshEntity(itemEntity);
             }
         } catch (Throwable e) {
@@ -466,6 +486,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob {
     public void performRangedAttack(LivingEntity target, float pullProgress) {
         // Copied from AbstractSkeleton
         ItemStack itemstack = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW));
+        if (itemstack.getItem() != Items.BOW) {
+            performCrossbowAttack(target, pullProgress); // Maybe we have a crossbow
+            return;
+        }
         ItemStack itemstack1 = this.getProjectile(itemstack);
         AbstractArrow entityarrow = ProjectileUtil.getMobArrow(this, itemstack1, pullProgress, itemstack);
         double d0 = target.getX() - this.getX();
