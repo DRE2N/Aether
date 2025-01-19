@@ -39,6 +39,7 @@ import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
@@ -300,6 +301,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
                 logDebug("Dropping loot " + item.getPatch().toString() + ", chance was " + chance * 100 + "%");
                 level().addFreshEntity(itemEntity);
+            }
+            if (data.getDropXP() > 0) {
+                level().addFreshEntity(new ExperienceOrb(level(), getX(), getY(), getZ(), data.getDropXP(), org.bukkit.entity.ExperienceOrb.SpawnReason.ENTITY_DEATH, entity, this));
             }
         } catch (Throwable e) {
             MessageUtil.log("Failed to drop loot for " + data.getID() + ": " + e.getMessage());
