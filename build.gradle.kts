@@ -2,7 +2,8 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 
 repositories {
     mavenLocal()
-    maven("https://erethon.de/repo")
+    maven("https://repo.erethon.de/releases/")
+    maven("https://repo.erethon.de/snapshots/")
     maven("https://repo.unnamed.team/repository/unnamed-public/")
     maven("https://repo.dmulloy2.net/repository/public/")
     maven("https://oss.sonatype.org/content/groups/public/")
@@ -18,7 +19,7 @@ repositories {
 plugins {
     `java-library`
     `maven-publish`
-    id("io.papermc.paperweight.userdev") version "1.7.1"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.14"
     id("xyz.jpenilla.run-paper") version "1.0.6" // Adds runServer and runMojangMappedServer tasks for testing
     id("io.github.goooler.shadow") version "8.1.5"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
@@ -33,11 +34,11 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-val papyrusVersion = "1.21.1-R0.1-SNAPSHOT"
+val papyrusVersion = "1.21.4-R0.1-SNAPSHOT"
 paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 dependencies {
-    paperweightDevBundle("de.erethon.papyrus", papyrusVersion) { isChanging = true }
+    paperweightDevelopmentBundle("de.erethon.papyrus", "dev-bundle", papyrusVersion) { isChanging = true }
     implementation("de.erethon:bedrock:1.4.0") { isTransitive = false }
 
     implementation("team.unnamed:hephaestus-api:0.11.1-dev-SNAPSHOT")
@@ -57,7 +58,7 @@ tasks {
             project.buildDir.mkdir()
         }
         val f = File(project.buildDir, "server.jar");
-        //uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
+        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
     }
 
