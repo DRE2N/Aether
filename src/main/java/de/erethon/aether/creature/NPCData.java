@@ -315,7 +315,7 @@ public class NPCData {
         String classString = cfg.getString("class", "de.erethon.aether.creature.AetherBaseMob");
         try {
             Map.Entry<Plugin, Class<? extends Entity >> entry = Map.entry(plugin, (Class<? extends Entity>) Class.forName(classString));
-            EntityType.customEntities.put(ID, entry);
+            //EntityType.customEntities.put(ID, entry);
         } catch (ClassNotFoundException e) {
             Aether.addException(ID, "Could not find class " + classString, "Ensure the class exists", null);
             return;
@@ -324,7 +324,7 @@ public class NPCData {
         displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
         currentVersion = cfg.getInt("version", 0);
         try {
-            displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
+            //displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
         } catch (Exception e) {
             Aether.addException(ID, "Could not find displayType " + cfg.getString("displayType", "pig"), "Ensure the displayType exists in vanilla", e);
             return;
@@ -366,7 +366,7 @@ public class NPCData {
                 }
                 Attribute attribute;
                 try {
-                    attribute = attributeRegistry.get(ResourceLocation.fromNamespaceAndPath("minecraft", id));
+                    attribute = attributeRegistry.get(ResourceLocation.fromNamespaceAndPath("minecraft", id)).get().value();
                 } catch (Exception e) {
                     Aether.addException(ID, "Could not find attribute " + id, "Ensure the attribute exists", e);
                     continue;
@@ -419,27 +419,27 @@ public class NPCData {
         // Sounds & Messages - We can ignore these
         if (cfg.contains("interaction.sounds")) {
             try {
-                attackSound = Sound.valueOf(cfg.getString("interaction.sounds.attack"));
+                attackSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.attack")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find attack sound " + cfg.getString("interaction.sounds.attack"), "Ensure the sound exists in the server", e);
             }
             try {
-                ambientSound = Sound.valueOf(cfg.getString("interaction.sounds.ambient"));
+                ambientSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.ambient")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find ambient sound " + cfg.getString("interaction.sounds.ambient"), "Ensure the sound exists in the server", e);
             }
             try {
-                shootSound = Sound.valueOf(cfg.getString("interaction.sounds.shoot"));
+                shootSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.shoot")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find shoot sound " + cfg.getString("interaction.sounds.shoot"), "Ensure the sound exists in the server", e);
             }
             try {
-                deathSound = Sound.valueOf(cfg.getString("interaction.sounds.death"));
+                deathSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.death")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find death sound " + cfg.getString("interaction.sounds.death"), "Ensure the sound exists in the server", e);
             }
             try {
-                hurtSound = Sound.valueOf(cfg.getString("interaction.sounds.hurt"));
+                hurtSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.hurt")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find hurt sound " + cfg.getString("interaction.sounds.hurt"), "Ensure the sound exists in the server", e);
             }
@@ -484,12 +484,16 @@ public class NPCData {
         if (cfg.contains("loot.items")) {
             loot.clear();
             for (String s : cfg.getStringList("loot.items")) {
+                MessageUtil.log("Parsing loot item " + s);
                 String[] split = s.split(";");
                 float chance = 100.0f;
-                try {
-                    chance = Float.parseFloat(split[1]);
-                } catch (Exception e) {
-                    continue;
+                if (split.length == 2) {
+                    try {
+                        chance = Float.parseFloat(split[1]);
+                    } catch (Exception e) {
+                        Aether.addException(ID, "Error parsing chance for loot item " + split[0], "Ensure the chance is a valid number", e);
+                        continue;
+                    }
                 }
                 HItem hitem = plugin.getItemLibrary().get(NamespacedKey.fromString(split[0]));
                 if (hitem == null) {
@@ -505,7 +509,7 @@ public class NPCData {
     }
 
     public void loadDelayed() {
-        SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
+        SpellLibrary spellbook = null; //Bukkit.getServer().getSpellbookAPI().getLibrary();
         if (spellbook == null) {
             Aether.addException(ID, "No Spellbook found", "Are you running Papyrus?", null);
             return; // Very critical lol

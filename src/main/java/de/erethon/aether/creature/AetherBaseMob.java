@@ -37,6 +37,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -155,7 +156,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 player.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
                 ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
-                        new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), null));
+                        new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), true, 0, null));
 
                 ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(player.getId(), player.getEntityData().packDirty());
                 connection.send(infoUpdatePacket);
@@ -188,7 +189,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public CraftEntity getBukkitEntity() {
         if (dataEntity == null) { // Workaround for initialization issues
-            return EntityType.PIG.create(level()).getBukkitEntity();
+            return EntityType.PIG.create(level(), EntitySpawnReason.NATURAL).getBukkitEntity();
         }
         return dataEntity.getBukkitEntity();
     }
@@ -221,7 +222,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         logDebug("Cast spell " + entry.getSpell().getName() + "!");
     }
 
-    @Override
+    /*@Override
     public boolean doHurtTarget(Entity target, CraftPDamageType type) {
         for (SpellCastEntry spell : data.getOnAttackSpells()) {
             if (spell.getSpell() == null) {
@@ -245,7 +246,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             castSpell(spell);
         }
         return super.hurt(source, amount, type);
-    }
+    }*/
 
     @Override
     public void setChargingCrossbow(boolean charging) {
@@ -338,7 +339,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         isTalking = true;
         String[] strings = text.split(";");
-        Display.TextDisplay textDisplay = EntityType.TEXT_DISPLAY.create(level());
+        Display.TextDisplay textDisplay = EntityType.TEXT_DISPLAY.create(level(), EntitySpawnReason.NATURAL);
         textDisplay.persist = false;
         textDisplay.visibleByDefault = false;
         textDisplay.setPos(getX(), getY() + 2, getZ());
@@ -366,7 +367,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (dataEntity instanceof LivingEntity livingEntity) { // Workaround for initialization issues
             return livingEntity.getBukkitLivingEntity();
         }
-        return EntityType.PIG.create(level()).getBukkitLivingEntity(); // never reached anyway
+        return EntityType.PIG.create(level(), EntitySpawnReason.NATURAL).getBukkitLivingEntity(); // never reached anyway
     }
 
 
@@ -407,9 +408,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     private void onLoad() {
-        dataEntity = data.getDisplayType().create(level());
+        dataEntity = data.getDisplayType().create(level(), EntitySpawnReason.NATURAL);
         if (data.getDisplayType() == EntityType.PLAYER) {
-            dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault(), true);
+            dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault());
             ServerPlayer player = (ServerPlayer) dataEntity;
             player.moonrise$setRealPlayer(false);
         }

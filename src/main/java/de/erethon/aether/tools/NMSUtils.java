@@ -7,8 +7,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import org.bukkit.Location;
@@ -38,10 +38,10 @@ public class NMSUtils {
     public static Entity spawnEntityWithoutSending(Location location, EntityType type) {
         CraftWorld craftWorld = (CraftWorld) location.getWorld();
         ServerLevel world = craftWorld.getHandle();
-        return type.create(world);
+        return type.create(world, EntitySpawnReason.NATURAL);
     }
 
-    public static void setDisplayType(org.bukkit.entity.Entity entity, NPCData data) {
+    /*public static void setDisplayType(org.bukkit.entity.Entity entity, NPCData data) {
         EntityType type = data.getDisplayType();
         if (type == null) {
             return;
@@ -58,7 +58,7 @@ public class NMSUtils {
             return EntityType.PIG;
         }
         return type;
-    }
+    }*/
 
     public static void addEntity(Entity entity, Location location) {
         entity.getBukkitEntity().teleport(location);
@@ -67,7 +67,7 @@ public class NMSUtils {
     }
 
     public static ClientboundAddEntityPacket getAddEntityPacketWithType(Entity entity, EntityType<?> type) {
-        return new ClientboundAddEntityPacket(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), type, 0, entity.getDeltaMovement(), entity.getYHeadRot(), entity);
+        return new ClientboundAddEntityPacket(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(), entity.getXRot(), entity.getYRot(), type, 0, entity.getDeltaMovement(), entity.getYHeadRot());
     }
 
 }

@@ -23,16 +23,16 @@ public class EnemyTeamTargetGoal extends TargetGoal {
         if (mob.getRandom().nextInt(randomInterval) != 0) {
             return false;
         } else {
-            findTarget();
+            //findTarget();
             return target != null;
         }
     }
 
-    protected void findTarget() {
-        target = mob.level().getNearestEntity(mob.level().getEntitiesOfClass(LivingEntity.class, getTargetSearchArea(getFollowDistance()), (entityliving) -> {
+    /*protected void findTarget() {
+        target = mob.level().getentit(mob.level().getEntitiesOfClass(LivingEntity.class, getTargetSearchArea(getFollowDistance()), (entityliving) -> {
             return entityliving.getTeam() != mob.getTeam();
         }), TargetingConditions.forCombat().range(range), mob, mob.getX(), mob.getEyeY(), mob.getZ());
-    }
+    }*/
 
     protected AABB getTargetSearchArea(double distance) {
         return mob.getBoundingBox().inflate(distance, 4.0D, distance);

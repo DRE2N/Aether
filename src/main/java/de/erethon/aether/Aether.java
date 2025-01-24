@@ -116,9 +116,12 @@ public final class Aether extends EPlugin implements Listener {
     public static void addException(String locationIdentifier, String errorMessage,  String friendlyMessage, @Nullable Exception e) {
         if (e == null) {
             errors.add(new ErrorEntry(locationIdentifier, friendlyMessage, errorMessage, null));
+            MessageUtil.log(errorMessage);
             return;
         }
         errors.add(new ErrorEntry(locationIdentifier, friendlyMessage, errorMessage, e.getStackTrace()));
+        MessageUtil.log(errorMessage);
+        e.printStackTrace();
     }
 
 
@@ -168,12 +171,6 @@ public final class Aether extends EPlugin implements Listener {
         }
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
-        MessageUtil.log("Available creatures: ");
-        String creatures = "";
-        for (EntityType entityType : BuiltInRegistries.ENTITY_TYPE.stream().distinct().toList()) {
-            creatures = creatures + entityType.getDescriptionId() + ", ";
-        }
-        MessageUtil.log(creatures);
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
         entityListener = new EntityListener();

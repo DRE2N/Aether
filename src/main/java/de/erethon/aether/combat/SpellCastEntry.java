@@ -13,7 +13,7 @@ public class SpellCastEntry {
     private SpellData spell;
     private double chance;
 
-    private SpellLibrary library = Bukkit.getServer().getSpellbookAPI().getLibrary();
+    //private SpellLibrary library = Bukkit.getServer().getSpellbookAPI().getLibrary();
 
 
     public boolean canCast() {
@@ -26,7 +26,7 @@ public class SpellCastEntry {
 
     public void load(String loadingID, ConfigurationSection section) {
         name = section.getName();
-        spell = library.getSpellByID(section.getName());
+        spell = null; //library.getSpellByID(section.getName());
         if (spell == null) {
             Aether.addException(loadingID, "Spell not found: " + section.getName(), "Check if the Spellbook spell exists and is loaded", null);
             MessageUtil.log("Spell not found: " + section.getName());

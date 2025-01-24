@@ -82,7 +82,7 @@ public class ActiveNPC {
 
     public void setProperties() {
         baseEntity.setSilent(true);
-        NMSUtils.setDisplayType(baseEntity, npcData);
+        //NMSUtils.setDisplayType(baseEntity, npcData);
         baseEntity.setGlowing(npcData.isGlowing());
         baseEntity.setGravity(npcData.isGravity());
         baseEntity.setInvulnerable(npcData.isInvulnerable());
