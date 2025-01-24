@@ -5,6 +5,7 @@ import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
+import de.erethon.aether.creature.SynchedDataMappings;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.models.ModelRegistry;
@@ -29,6 +30,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -169,6 +172,7 @@ public final class Aether extends EPlugin implements Listener {
                 e.printStackTrace();
             }
         }
+        createEntityMappings();
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
@@ -249,6 +253,12 @@ public final class Aether extends EPlugin implements Listener {
             }
         }
         return Component.text("Hint: ", NamedTextColor.GRAY).append(Component.text(entry.friendlyMessage(), NamedTextColor.RED)).append(Component.newline()).append(Component.newline()).append(Component.text("Stacktrace: ", NamedTextColor.GRAY)).append(Component.newline()).append(stackTrace);
+    }
+
+    private void createEntityMappings() {
+        World world = Bukkit.getWorlds().get(0);
+        CraftWorld craftWorld = (CraftWorld) world;
+        SynchedDataMappings.generateMappings(craftWorld.getHandle());
     }
 
     public static void debug(String string) {

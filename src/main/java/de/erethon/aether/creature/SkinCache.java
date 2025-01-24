@@ -17,6 +17,7 @@ public class SkinCache {
     YamlConfiguration diskCache;
     Aether plugin = Aether.getInstance();
     Set<Skin> skins = new HashSet<>();
+    private String authToken = "";
 
     public SkinCache(File cacheFile) {
         this.cacheFile = cacheFile;
@@ -35,7 +36,14 @@ public class SkinCache {
     }
 
     public void fetch(String link) {
-        MineSkinFetcher.fetchSkinFromIdAsync(link, skinData -> skins.add(skinData));
+        MineSkinFetcher.fetchSkinFromIdAsync(link, skinData ->  {
+            if (skinData == null) {
+                return;
+            }
+            skins.add(new Skin(link, skinData.texture(), skinData.signature()));
+            MineSkinFetcher.skinsInQueue.remove(link);
+            saveCache();
+        });
     }
 
     public void refresh() {
@@ -44,7 +52,12 @@ public class SkinCache {
         }
     }
 
+    public String getAuthToken() {
+        return authToken;
+    }
+
     public void loadCache() {
+        authToken = diskCache.getString("mineskin-auth");
         for (String s : diskCache.getStringList("skins")) {
             String[] split = s.split(";");
             skins.add(new Skin(split[0], split[1], split[2]));
