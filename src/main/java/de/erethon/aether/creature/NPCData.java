@@ -18,13 +18,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
@@ -122,10 +119,6 @@ public class NPCData {
 
     public @NotNull EntityType<?> getDisplayType() {
         return displayType;
-    }
-
-    public void setDisplayType(EntityType<?> displayType) {
-        this.displayType = displayType;
     }
 
     public Component getDisplayName() {
@@ -321,6 +314,13 @@ public class NPCData {
             return;
         }
         // General
+        String displayTypeString = cfg.getString("displayType", "pig");
+        Optional<Holder.Reference<EntityType<?>>> optional = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", displayTypeString));
+        if (optional.isEmpty()) {
+            Aether.addException(ID, "Could not find displayType " + displayTypeString, "Ensure the displayType exists in vanilla", null);
+            return;
+        }
+        displayType = optional.get().value();
         displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
         currentVersion = cfg.getInt("version", 0);
         try {
@@ -419,27 +419,27 @@ public class NPCData {
         // Sounds & Messages - We can ignore these
         if (cfg.contains("interaction.sounds")) {
             try {
-                attackSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.attack")));
+                attackSound = org.bukkit.Registry.SOUND_EVENT.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.attack")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find attack sound " + cfg.getString("interaction.sounds.attack"), "Ensure the sound exists in the server", e);
             }
             try {
-                ambientSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.ambient")));
+                ambientSound = org.bukkit.Registry.SOUND_EVENT.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.ambient")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find ambient sound " + cfg.getString("interaction.sounds.ambient"), "Ensure the sound exists in the server", e);
             }
             try {
-                shootSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.shoot")));
+                shootSound = org.bukkit.Registry.SOUND_EVENT.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.shoot")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find shoot sound " + cfg.getString("interaction.sounds.shoot"), "Ensure the sound exists in the server", e);
             }
             try {
-                deathSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.death")));
+                deathSound = org.bukkit.Registry.SOUND_EVENT.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.death")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find death sound " + cfg.getString("interaction.sounds.death"), "Ensure the sound exists in the server", e);
             }
             try {
-                hurtSound = org.bukkit.Registry.SOUNDS.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.hurt")));
+                hurtSound = org.bukkit.Registry.SOUND_EVENT.get(NamespacedKey.fromString(cfg.getString("interaction.sounds.hurt")));
             } catch (Exception e) {
                 Aether.addException(ID, "Could not find hurt sound " + cfg.getString("interaction.sounds.hurt"), "Ensure the sound exists in the server", e);
             }

@@ -89,14 +89,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private NPCData data;
     private ModelView modelView;
     private Model model;
-    private Entity dataEntity;
+    private EntityType<?> displayType;
     private int version = 0;
 
     private boolean isTalking = false;
-
-   Consumer<Packet<?>> packetConsumer = packet -> {
-
-   };
 
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
@@ -110,13 +106,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         onFirstSpawn();
     }
 
-    @ApiStatus.Obsolete
     public void addToWorld() {
-        if (dataEntity == null) {
-            return;
-        }
-        dataEntity.setPos(getX(), getY(), getZ());
-        dataEntity.setId(getId());
         ServerLevel level = (ServerLevel) level();
         level.addFreshEntity(this);
         if (model != null) {
@@ -131,7 +121,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void tick() {
         super.tick();
-        dataEntity.setPos(getX(), getY(), getZ());
         if (modelView != null) {
             modelView.tickAnimations();
         }
@@ -143,22 +132,20 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
-        if (dataEntity instanceof Player player) {
+        if (displayType == EntityType.PLAYER) {
             for (ServerPlayerConnection connection : moonrise$getTrackedEntity().seenBy) {
                 CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(Component.empty()));
                 Skin skin = plugin.getSkinCache().get(data.getSkinLink());
                 if (skin != null) {
                     craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
                 }
-                player.getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte) 127); // Show all skin layers
-                player.setId(dataEntity.getId());
-                player.getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
-                player.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
+                getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte) 127); // Show all skin layers
+                getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
                 ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                         EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
                         new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), true, 0, null));
 
-                ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(player.getId(), player.getEntityData().packDirty());
+                ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(getId(), getEntityData().packDirty());
                 connection.send(infoUpdatePacket);
                 BukkitRunnable entityDataPacketSender = new BukkitRunnable() {
                     @Override
@@ -169,29 +156,18 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 entityDataPacketSender.runTaskLater(plugin, 3);
             }
         }
-        return NMSUtils.getAddEntityPacketWithType(this, dataEntity.getType());
+        return NMSUtils.getAddEntityPacketWithType(this, displayType);
     }
 
     @Override
-    public @NotNull SynchedEntityData getEntityData() { // Return the correct entity data so the client isn't confused
-        if (dataEntity == null) {
-            return super.getEntityData();
-        }
-        return dataEntity.getEntityData();
-    }
-
-
-    @Override
-    public void refreshEntityData(@NotNull ServerPlayer to) {
-        dataEntity.refreshEntityData(to);
+    public @NotNull SynchedEntityData getEntityData() {// Return the correct entity data so the client isn't confused
+        displayType = data.getDisplayType();
+        return SynchedDataMappings.ENTITY_DATA_MAPPINGS.get(displayType);
     }
 
     @Override
     public CraftEntity getBukkitEntity() {
-        if (dataEntity == null) { // Workaround for initialization issues
-            return EntityType.PIG.create(level(), EntitySpawnReason.NATURAL).getBukkitEntity();
-        }
-        return dataEntity.getBukkitEntity();
+        return EntityType.PIG.create(level(), EntitySpawnReason.NATURAL).getBukkitEntity();
     }
 
     @Override
@@ -250,9 +226,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public void setChargingCrossbow(boolean charging) {
-        if (dataEntity instanceof CrossbowAttackMob crossbowAttackMob) {
-            crossbowAttackMob.setChargingCrossbow(charging);
-        }
+
     }
 
     @Override
@@ -364,9 +338,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
 
     public @NotNull CraftLivingEntity getBukkitLivingEntity() {
-        if (dataEntity instanceof LivingEntity livingEntity) { // Workaround for initialization issues
-            return livingEntity.getBukkitLivingEntity();
-        }
         return EntityType.PIG.create(level(), EntitySpawnReason.NATURAL).getBukkitLivingEntity(); // never reached anyway
     }
 
@@ -408,21 +379,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     private void onLoad() {
-        dataEntity = data.getDisplayType().create(level(), EntitySpawnReason.NATURAL);
-        if (data.getDisplayType() == EntityType.PLAYER) {
-            dataEntity = new ServerPlayer(MinecraftServer.getServer(), (ServerLevel) level(), new CraftPlayerProfile(getUUID(), "NPC").buildGameProfile(), ClientInformation.createDefault());
-            ServerPlayer player = (ServerPlayer) dataEntity;
-            player.moonrise$setRealPlayer(false);
-        }
         ServerLevel level = (ServerLevel) level();
         level.chunkSource.removeEntity(this);
         if (data.getModelID() != null) {
             model = plugin.getModelRegistry().model(data.getModelID());
-        }
-        if (dataEntity == null) {
-            plugin.getLogger().warning("Failed to create entity for " + data.getDisplayType());
-            remove(RemovalReason.DISCARDED);
-            return;
         }
         registerAetherGoals();
         if (data.getHomeLocation() != null) {
@@ -444,7 +404,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     private void onFirstSpawn() {
         getBukkitEntity().getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.BOOLEAN, true);
-        dataEntity.setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         setCustomName(PaperAdventure.asVanilla(data.getDisplayName()));
         setGlowingTag(data.isGlowing());
         setNoGravity(!data.isGravity());
