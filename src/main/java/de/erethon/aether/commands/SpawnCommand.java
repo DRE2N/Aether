@@ -58,7 +58,8 @@ public class SpawnCommand extends ECommand {
             Player player = (Player) commandSender;
             for (int i = 0; i <= amount; i++) {
                 try {
-                    AetherBaseMob activeNPC = new AetherBaseMob(npcData, player.getWorld());
+                    Class<? extends AetherBaseMob> toSpawn = npcData.getEntityClass();
+                    AetherBaseMob activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(npcData, player.getWorld());
                     activeNPC.setPos(player.getX(), player.getY(), player.getZ());
                     activeNPC.addToWorld();
                     MessageUtil.sendMessage(commandSender, "&aNPC " + npcData.getID() + " gespawnt. BaseClass: " + activeNPC.getClass().getSimpleName());

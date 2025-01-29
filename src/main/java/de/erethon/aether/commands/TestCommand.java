@@ -5,7 +5,6 @@ import com.destroystokyo.paper.entity.ai.PaperMobGoals;
 import com.destroystokyo.paper.entity.ai.VanillaGoal;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
-import de.erethon.aether.creature.AetherModelEntity;
 import de.erethon.aether.groups.FormationDirection;
 import de.erethon.aether.groups.FormationTools;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -14,12 +13,9 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.*;
 import org.bukkit.event.Listener;
 import org.bukkit.util.BoundingBox;
-import team.unnamed.hephaestus.Model;
-import team.unnamed.hephaestus.bukkit.ModelView;
 
 import java.util.HashMap;
 import java.util.List;
@@ -46,21 +42,6 @@ public class TestCommand extends ECommand implements Listener {
     public void onExecute(String[] args, CommandSender commandSender) {
         Player player = (Player) commandSender;
         World world = player.getWorld();
-        if (args[1].equals("model")) {
-            Model model = plugin.getModelRegistry().model(args[2]);
-            if (model == null) {
-                MessageUtil.sendMessage(player, "Model not found.");
-                return;
-            }
-            ModelView view = plugin.getModelEngine().createViewAndTrack(model, player.getLocation());
-            return;
-        }
-        if (args[1].equals("test")) {
-            Model model = plugin.getModelRegistry().model("redstone_monstrosity");
-            ModelView view = plugin.getModelEngine().spawn(model, player);
-            MessageUtil.sendMessage(player, "Spawned " + view);
-            return;
-        }
         if (args[1].equals("text")) {
             ActiveNPC activeNPC = null;
             String desc = new String();

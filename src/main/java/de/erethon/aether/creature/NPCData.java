@@ -117,6 +117,10 @@ public class NPCData {
         return new AetherBaseMob(this, location.getWorld());
     }
 
+    public Class<? extends AetherBaseMob> getEntityClass() {
+        return entityClass;
+    }
+
     public @NotNull EntityType<?> getDisplayType() {
         return displayType;
     }
@@ -308,7 +312,8 @@ public class NPCData {
         String classString = cfg.getString("class", "de.erethon.aether.creature.AetherBaseMob");
         try {
             Map.Entry<Plugin, Class<? extends Entity >> entry = Map.entry(plugin, (Class<? extends Entity>) Class.forName(classString));
-            //EntityType.customEntities.put(ID, entry);
+            EntityType.customEntities.put(ID, entry);
+            entityClass = entry.getValue();
         } catch (ClassNotFoundException e) {
             Aether.addException(ID, "Could not find class " + classString, "Ensure the class exists", null);
             return;

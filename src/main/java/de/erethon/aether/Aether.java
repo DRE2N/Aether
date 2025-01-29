@@ -2,15 +2,12 @@ package de.erethon.aether;
 
 import de.erethon.aether.commands.CommandCache;
 import de.erethon.aether.creature.ActiveCreatureManager;
-import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
 import de.erethon.aether.creature.SynchedDataMappings;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
-import de.erethon.aether.models.ModelRegistry;
-import de.erethon.aether.models.ModelViewPersistenceHandlerImpl;
-import de.erethon.aether.network.AetherPacketHandler;
+import de.erethon.aether.models.AEModelManager;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.aether.tools.ErrorEntry;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -20,14 +17,8 @@ import de.erethon.bedrock.plugin.EPlugin;
 import de.erethon.bedrock.plugin.EPluginSettings;
 import de.erethon.hephaestus.Hephaestus;
 import de.erethon.hephaestus.items.HItemLibrary;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import io.papermc.paper.network.ChannelInitializeListenerHolder;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -39,41 +30,11 @@ import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import team.unnamed.hephaestus.bukkit.BukkitModelEngine;
-import team.unnamed.hephaestus.bukkit.BukkitModelEngineAdapt;
-
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import io.papermc.paper.network.ChannelInitializeListenerHolder;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.kyori.adventure.key.Key;
-import net.minecraft.core.RegistrySynchronization;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.data.worldgen.DimensionTypes;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.IntTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
-import net.minecraft.world.level.dimension.DimensionType;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.framework.qual.DefaultQualifier;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public final class Aether extends EPlugin implements Listener {
 
@@ -90,20 +51,15 @@ public final class Aether extends EPlugin implements Listener {
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
+    AEModelManager modelManager;
     PlayerListener playerListener;
     EntityListener entityListener;
     SpawnerManager spawnerManager;
-
-    final ModelRegistry modelRegistry = new ModelRegistry();
-    private BukkitModelEngine engine;
 
     private Hephaestus hephaestusPlugin;
     private HItemLibrary hitemLibrary;
 
     private static final List<ErrorEntry> errors = new ArrayList<>();
-
-    public static final byte[] AIR_SECTION = new byte[]{0, 0, 0, 0, 0, 0, 39, 0};
-    public static final int ADDED_SECTIONS = 256;
 
     public Aether() {
         settings = EPluginSettings.builder()
@@ -152,9 +108,6 @@ public final class Aether extends EPlugin implements Listener {
         if (!MODELS.exists()) {
             MODELS.mkdir();
         }
-        modelRegistry.loadFromFolder(MODELS);
-        engine = BukkitModelEngineAdapt.create(this, new ModelViewPersistenceHandlerImpl(modelRegistry));
-
 
         CREATURES = new File(getDataFolder(), "creatures");
         if (!CREATURES.exists()) {
@@ -173,6 +126,7 @@ public final class Aether extends EPlugin implements Listener {
             }
         }
         createEntityMappings();
+        modelManager = new AEModelManager();
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
@@ -283,14 +237,6 @@ public final class Aether extends EPlugin implements Listener {
 
     public SkinCache getSkinCache() {
         return skinCache;
-    }
-
-    public ModelRegistry getModelRegistry() {
-        return modelRegistry;
-    }
-
-    public BukkitModelEngine getModelEngine() {
-        return engine;
     }
 
     public HItemLibrary getItemLibrary() {
