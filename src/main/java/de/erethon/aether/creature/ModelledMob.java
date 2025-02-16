@@ -11,9 +11,12 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.worldseed.multipart.animations.AnimationHandler;
 import net.worldseed.multipart.animations.AnimationHandlerImpl;
+import net.worldseed.util.DataMappings;
 import net.worldseed.util.math.Pos;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class ModelledMob extends AetherBaseMob {
@@ -33,18 +36,21 @@ public class ModelledMob extends AetherBaseMob {
             Aether.addException("ModelledMob " + data.getID(), "Missing  model_id", "Add a model_id or remove the ModelledMob base class", null);
             return;
         }
+        entityData = DataMappings.getSynchedEntityData(displayType);
         this.model = new AEModel(id);
         CraftWorld cw = (CraftWorld) world;
         Level level = cw.getHandle();
         model.init(level, new Pos(getX(), getY(), getZ()), 1.0f);
         this.animationHandler = new AnimationHandlerImpl(model);
         animationHandler.playRepeat("walk");
+        setInvisible(true);
     }
 
     @Override
     public void startSeenByPlayer(ServerPlayer serverPlayer) {
         super.startSeenByPlayer(serverPlayer);
         model.addViewer(serverPlayer);
+        refreshEntityData(serverPlayer);
     }
 
     @Override
@@ -61,7 +67,10 @@ public class ModelledMob extends AetherBaseMob {
     @Override
     public void tick() {
         super.tick();
-        if (!this.dead) this.model.setPosition(new Pos(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot()));
+        if (!dead) {
+            model.setPosition(new Pos(this.getX(), this.getY(), this.getZ()));
+            model.setGlobalRotation(getYRot(), getXRot());
+        }
     }
 
     @Override

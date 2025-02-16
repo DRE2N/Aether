@@ -4,10 +4,12 @@ import de.erethon.aether.commands.CommandCache;
 import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
-import de.erethon.aether.creature.SynchedDataMappings;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.models.AEModelManager;
+import de.erethon.aether.qxl.actions.SpawnMobAction;
+import de.erethon.aether.qxl.actions.SpawnerAction;
+import de.erethon.aether.qxl.objectives.KillMobObjective;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.aether.tools.ErrorEntry;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -17,12 +19,12 @@ import de.erethon.bedrock.plugin.EPlugin;
 import de.erethon.bedrock.plugin.EPluginSettings;
 import de.erethon.hephaestus.Hephaestus;
 import de.erethon.hephaestus.items.HItemLibrary;
+import de.erethon.questsxl.QuestsXL;
+import de.erethon.questsxl.common.QRegistries;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
-import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -125,8 +127,12 @@ public final class Aether extends EPlugin implements Listener {
                 e.printStackTrace();
             }
         }
-        createEntityMappings();
-        modelManager = new AEModelManager();
+        try {
+            modelManager = new AEModelManager();
+        } catch (Exception e) {
+            MessageUtil.log("Failed to load model manager.");
+            e.printStackTrace();
+        }
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
@@ -145,6 +151,12 @@ public final class Aether extends EPlugin implements Listener {
         spawnerManager = new SpawnerManager();
         Bukkit.getPluginManager().registerEvents(this, this);
         this.getServer().getPluginManager().registerEvents(this, this);
+        QuestsXL questsXL = (QuestsXL) Bukkit.getPluginManager().getPlugin("QuestsXL");
+        if (questsXL != null) {
+            questsXL.registerComponent(QRegistries.ACTIONS, "spawn_mob", SpawnMobAction::new);
+            questsXL.registerComponent(QRegistries.ACTIONS, "spawner", SpawnerAction::new);
+            questsXL.registerComponent(QRegistries.OBJECTIVES, "kill_mob", KillMobObjective::new);
+        }
     }
 
 
@@ -207,12 +219,6 @@ public final class Aether extends EPlugin implements Listener {
             }
         }
         return Component.text("Hint: ", NamedTextColor.GRAY).append(Component.text(entry.friendlyMessage(), NamedTextColor.RED)).append(Component.newline()).append(Component.newline()).append(Component.text("Stacktrace: ", NamedTextColor.GRAY)).append(Component.newline()).append(stackTrace);
-    }
-
-    private void createEntityMappings() {
-        World world = Bukkit.getWorlds().get(0);
-        CraftWorld craftWorld = (CraftWorld) world;
-        SynchedDataMappings.generateMappings(craftWorld.getHandle());
     }
 
     public static void debug(String string) {

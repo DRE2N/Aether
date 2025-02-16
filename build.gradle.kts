@@ -29,7 +29,7 @@ version = "1.0.1-SNAPSHOT"
 description = "Mob and NPC plugin for Erethon"
 
 java {
-    // Configure the java toolchain. This allows gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.
+    // Configure the java toolchain. This allows Gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
@@ -39,9 +39,10 @@ paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArt
 dependencies {
     paperweightDevelopmentBundle("de.erethon.papyrus", "dev-bundle", papyrusVersion) { isChanging = true }
     implementation("de.erethon:bedrock:1.4.0") { isTransitive = false }
+    compileOnly("de.erethon.questsxl:QuestsXL:1.0.0-SNAPSHOT")
 
     implementation("net.worldseed.multipart", "WorldSeedEntityEngine", "12.1")
-    implementation("org.zeroturnaround:zt-zip:1.8")
+    implementation("org.zeroturnaround:zt-zip:1.8") // Outdated, but newer versions seem to have entirely different API annoyingly
 
     compileOnly("de.erethon.hephaestus:Hephaestus:1.0-SNAPSHOT")
 
@@ -57,7 +58,7 @@ tasks {
         val f = File(project.buildDir, "server.jar");
         uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
-        workingDir = File (project.buildDir, "test")
+        runDirectory.set(file("C:\\Dev\\Erethon"))
     }
 
     compileJava {
@@ -124,11 +125,22 @@ tasks {
     }
 }
 
+
+tasks.register<Copy>("deployToSharedServer") {
+    group = "Erethon"
+    description = "Used for deploying the plugin to the shared server. runServer will do this automatically." +
+            "This task is only for manual deployment when running runServer from another plugin."
+    dependsOn(":shadowJar")
+    from(layout.buildDirectory.file("libs/Aether-$version-all.jar"))
+    into("C:\\Dev\\Erethon\\plugins")
+}
+
+
 publishing {
     repositories {
         maven {
             name = "erethon"
-            url = uri("https://reposilite.fyreum.de/releases/")
+            url = uri("https://repo.erethon.de/snapshots/")
             credentials(PasswordCredentials::class)
             authentication {
                 create<BasicAuthentication>("basic")

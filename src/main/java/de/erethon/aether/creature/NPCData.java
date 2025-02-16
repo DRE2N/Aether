@@ -4,6 +4,7 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
+import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.hephaestus.items.HItemLibrary;
@@ -90,6 +91,9 @@ public class NPCData {
     private final Set<SpellCastEntry> onAttackSpells = new HashSet<>();
     private final Set<SpellCastEntry> onDeathSpells = new HashSet<>();
     private final Set<SpellCastEntry> onTargetSpells = new HashSet<>();
+
+    // QXL
+    private ConfigurationSection qxlSection;
 
     // AI
     private Set<AEPathfinderGoal> goals = new HashSet<>();
@@ -298,12 +302,8 @@ public class NPCData {
         return homeRange;
     }
 
-    public String getModelID() {
-        return modelID;
-    }
-
-    public boolean hasModel() {
-        return !modelID.equals("");
+    public ConfigurationSection getQXLSection() {
+        return qxlSection;
     }
 
     public void load() {
@@ -598,6 +598,9 @@ public class NPCData {
                     onTargetSpells.add(entry);
                 }
             }
+        }
+        if (cfg.contains("qxl")) {
+            qxlSection = cfg.getConfigurationSection("qxl");
         }
     }
 

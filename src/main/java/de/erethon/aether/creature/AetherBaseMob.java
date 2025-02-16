@@ -6,10 +6,14 @@ import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.CreatureInteractEvent;
 import de.erethon.aether.events.CreatureLoadEvent;
+import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.hephaestus.items.HItem;
+import de.erethon.papyrus.CraftPDamageType;
 import de.erethon.papyrus.entities.CraftCustomMob;
+import de.erethon.questsxl.QuestsXL;
+import de.erethon.questsxl.player.QPlayer;
 import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -75,7 +79,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     protected EntityType<?> displayType;
     private int version = 0;
     protected CraftCustomMob bukkitEntity;
-    protected SynchedEntityData customData;
+    private AetherHolder holder;
 
     private boolean isTalking = false;
 
@@ -94,7 +98,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         bukkitEntity.setHandle(this);
         bukkitEntity.setPapyrusId(data.getID());
         bukkitEntity.setType(data.getDisplayType());
-        customData = SynchedDataMappings.ENTITY_DATA_MAPPINGS.get(data.getDisplayType());
+        entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
     }
 
     public void addToWorld() {
@@ -118,7 +122,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public @NotNull SynchedEntityData getEntityData() {// Return the correct entity data so the client isn't confused
-        return customData;
+        return entityData;
     }
 
     @Override
@@ -159,8 +163,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         logDebug("Cast spell " + entry.getSpell().getName() + "!");
     }
 
-    /*@Override
-    public boolean doHurtTarget(Entity target, CraftPDamageType type) {
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity target) {
         for (SpellCastEntry spell : data.getOnAttackSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -169,11 +173,17 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             logDebug("Casting onAttack spell " + spell.getSpell().getName());
             castSpell(spell);
         }
-        return super.doHurtTarget(target, type);
+        if (target instanceof Player player) {
+            QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            if (qPlayer != null && holder != null) {
+                holder.onAttack(qPlayer);
+            }
+        }
+        return super.doHurtTarget(level, target);
     }
 
     @Override
-    public boolean hurt(DamageSource source, float amount, CraftPDamageType type) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount, CraftPDamageType type) {
         for (SpellCastEntry spell : data.getOnDamagedSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -182,8 +192,17 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             logDebug("Casting onHurt spell " + spell.getSpell().getName());
             castSpell(spell);
         }
-        return super.hurt(source, amount, type);
-    }*/
+        if (source.getEntity() instanceof Player player) {
+            QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            if (qPlayer != null && holder != null) {
+                holder.onLeftClick(qPlayer);
+                if (amount > 0) {
+                    holder.onDamage(qPlayer);
+                }
+            }
+        }
+        return super.hurtServer(level, source, amount, type);
+    }
 
     @Override
     public void setChargingCrossbow(boolean charging) {
@@ -244,6 +263,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         } catch (Throwable e) {
             MessageUtil.log("Failed to drop loot for " + data.getID() + ": " + e.getMessage());
         }
+        if (holder != null) {
+            holder.onDeath();
+        }
     }
 
     @Override
@@ -264,6 +286,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
         Bukkit.getPluginManager().callEvent(event);
+        QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+        if (qPlayer != null && holder != null) {
+            holder.onRightClick(qPlayer);
+        }
         return super.mobInteract(player, hand);
     }
 
@@ -341,6 +367,12 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private void onLoad() {
         ServerLevel level = (ServerLevel) level();
         level.chunkSource.removeEntity(this);
+        if (data.getQXLSection() != null) {
+            holder = AetherHolder.loadFromConfigSection(data.getQXLSection(), this);
+            if (holder != null) {
+                holder.onSpawn();
+            }
+        }
         registerAetherGoals();
         if (data.getHomeLocation() != null) {
             restrictTo(data.getHomeLocation(), data.getHomeRange());
