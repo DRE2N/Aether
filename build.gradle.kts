@@ -106,6 +106,7 @@ tasks {
         main = "de.erethon.aether.Aether"
         apiVersion = "1.21"
         authors = listOf("Malfrador")
+        depend = listOf("QuestsXL")
         load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
         commands {
             register("aether") {

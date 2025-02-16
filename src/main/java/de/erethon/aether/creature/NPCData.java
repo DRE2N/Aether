@@ -328,12 +328,6 @@ public class NPCData {
         displayType = optional.get().value();
         displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
         currentVersion = cfg.getInt("version", 0);
-        try {
-            //displayType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", cfg.getString("displayType", "pig")));
-        } catch (Exception e) {
-            Aether.addException(ID, "Could not find displayType " + cfg.getString("displayType", "pig"), "Ensure the displayType exists in vanilla", e);
-            return;
-        }
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);

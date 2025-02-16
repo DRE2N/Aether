@@ -3,11 +3,14 @@ package de.erethon.aether.ai.goals;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalClass;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.game.ServerPacketListener;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.Optional;
 
@@ -31,6 +34,9 @@ public class NearestAttackableTarget extends AEPathfinderGoal {
         if (byName.isPresent()) {
             EntityType<?> entityType = byName.get();
             target = entityType.getClass();
+            if (target == Player.class) {
+                target = ServerPlayer.class;
+            }
         } else {
             Aether.addException("NearestAttackableTargetGoal",  "Could not find entity type " + args[0], "Please check your entity type name.", null);
             return;
