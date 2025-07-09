@@ -175,7 +175,7 @@ public class ActiveNPC {
 
 
     public void damage() {
-        baseEntity.playEffect(EntityEffect.HURT);
+        baseEntity.broadcastHurtAnimation(baseEntity.getTrackedBy());
     }
 
     public void playAmbientSound() {

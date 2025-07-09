@@ -58,6 +58,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.worldseed.util.DataMappings;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -71,6 +73,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob {
 
@@ -269,8 +272,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason, boolean fireEvent) {
-        boolean bool = super.setTarget(entityliving, reason, fireEvent);
+    public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason) {
+        boolean bool = super.setTarget(entityliving, reason);
         for (SpellCastEntry spell : data.getOnTargetSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -343,15 +346,20 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundTag nbt) {
-        super.readAdditionalSaveData(nbt);
-        data = plugin.getCreatureManager().getByID(nbt.getString("papyrus-entity-id"));
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        Optional<String> papyrusId = input.getString("papyrus-entity-id");
+        if (papyrusId.isEmpty()) {
+            return;
+        }
+        data = plugin.getCreatureManager().getByID(papyrusId.get());
         if (data == null) {
-            plugin.getLogger().warning("Failed to load entity data for " + nbt.getString("papyrus-entity-id") + " for entity " + this);
+            plugin.getLogger().warning("Failed to load entity data for " + input.getString("papyrus-entity-id") + " for entity " + this);
             remove(RemovalReason.DISCARDED);
             return;
         }
-        version = nbt.getInt("aether-mob-version");
+        Optional<Integer> papyrusVersion = input.getInt("papyrus-entity-version");
+        version = papyrusVersion.orElse(0);
         // Setup bukkit entity
         bukkitEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
         bukkitEntity.setHandle(this);
@@ -375,7 +383,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         registerAetherGoals();
         if (data.getHomeLocation() != null) {
-            restrictTo(data.getHomeLocation(), data.getHomeRange());
+            setHomeTo(data.getHomeLocation(), data.getHomeRange());
         }
         drops.clear();
         setDropChance(EquipmentSlot.HEAD, 0);
@@ -455,9 +463,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    public void addAdditionalSaveData(CompoundTag nbt) {
-        super.addAdditionalSaveData(nbt);
-        nbt.putString("papyrus-entity-id", data.getID());
-        nbt.putInt("aether-mob-version", version);
+    public void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putString("papyrus-entity-id", data.getID());
+        output.putInt("aether-mob-version", version);
     }
 }

@@ -62,7 +62,7 @@ public class NMSUtils {
 
     public static void addEntity(Entity entity, Location location) {
         entity.getBukkitEntity().teleport(location);
-        Level world = entity.getCommandSenderWorld();
+        Level world = entity.level();
         world.addFreshEntity(entity, CreatureSpawnEvent.SpawnReason.CUSTOM);
     }
 
