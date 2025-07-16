@@ -5,6 +5,9 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.tools.NMSUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
@@ -16,6 +19,8 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -42,6 +47,12 @@ public class AetherPlayer extends AetherBaseMob {
         displayType = EntityType.PLAYER;
         entityData = DataMappings.getSynchedEntityData(EntityType.PILLAGER);
         entityDataToSend = DataMappings.getSynchedEntityData(EntityType.PLAYER);
+    }
+
+    @Override
+    protected void onFirstSpawn() {
+        super.onFirstSpawn();
+        getAttribute(Attributes.WAYPOINT_TRANSMIT_RANGE).setBaseValue(0); // Do not transmit waypoints for NPCs
     }
 
     @Override
