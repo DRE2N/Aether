@@ -1,27 +1,21 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.aether.models.AEModel;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
+import net.worldseed.model.DModel;
 import net.worldseed.multipart.animations.AnimationHandler;
 import net.worldseed.multipart.animations.AnimationHandlerImpl;
 import net.worldseed.util.DataMappings;
 import net.worldseed.util.math.Pos;
-import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
 public class ModelledMob extends AetherBaseMob {
 
-    private AEModel model;
+    private DModel model;
     private AnimationHandler animationHandler;
 
     public ModelledMob(EntityType<? extends Mob> type, Level world) {
@@ -37,7 +31,7 @@ public class ModelledMob extends AetherBaseMob {
             return;
         }
         entityData = DataMappings.getSynchedEntityData(displayType);
-        this.model = new AEModel(id);
+        this.model = new DModel(id, plugin.getDaedalusPlugin());
         CraftWorld cw = (CraftWorld) world;
         Level level = cw.getHandle();
         model.init(level, new Pos(getX(), getY(), getZ()), 1.0f);
@@ -76,6 +70,6 @@ public class ModelledMob extends AetherBaseMob {
     @Override
     public void remove(RemovalReason reason) {
         super.remove(reason);
-        //model.remove();
+        model.destroy();
     }
 }

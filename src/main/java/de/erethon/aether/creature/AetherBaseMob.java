@@ -19,7 +19,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -286,7 +285,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+    protected @NotNull InteractionResult mobInteract(Player player, InteractionHand hand) {
         CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
         Bukkit.getPluginManager().callEvent(event);
         QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
@@ -413,10 +412,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 continue;
             }
             getAttribute(entry.getKey()).setBaseValue(entry.getValue());
-            // Handle health separately
-            if (entry.getKey().equals(Attributes.MAX_HEALTH)) {
-                setHealth(entry.getValue().floatValue());
-            }
+            MessageUtil.log("Set attribute " + entry.getKey().value().getDescriptionId() + " to " + entry.getValue() + " for " + data.getID());
         }
         // Love how bukkit and vanilla names don't match here lol
         if (data.getMainHand() != null) {
@@ -437,6 +433,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (data.getBoots() != null) {
             setItemSlot(EquipmentSlot.FEET, data.getBoots().rollRandomStack().getVanillaStack());
         }
+        setHealth(getMaxHealth()); // So we don't have 1 HP.
     }
 
     public NPCData getData() {

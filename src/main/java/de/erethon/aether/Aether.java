@@ -6,10 +6,11 @@ import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
-import de.erethon.aether.models.AEModelManager;
 import de.erethon.aether.qxl.actions.SpawnMobAction;
 import de.erethon.aether.qxl.actions.SpawnerAction;
 import de.erethon.aether.qxl.objectives.KillMobObjective;
+import de.erethon.aether.spawning.MobSpawnConfig;
+import de.erethon.aether.spawning.NaturalSpawningListener;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.aether.tools.ErrorEntry;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -23,6 +24,8 @@ import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.QRegistries;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.worldseed.multipart.ModelEngine;
+import net.worldseed.plugin.DaedalusPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -53,10 +56,12 @@ public final class Aether extends EPlugin implements Listener {
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
-    AEModelManager modelManager;
+    DaedalusPlugin daedalusPlugin;
     PlayerListener playerListener;
     EntityListener entityListener;
+    NaturalSpawningListener naturalSpawningListener;
     SpawnerManager spawnerManager;
+    MobSpawnConfig mobSpawnConfig;
 
     private Hephaestus hephaestusPlugin;
     private HItemLibrary hitemLibrary;
@@ -90,6 +95,9 @@ public final class Aether extends EPlugin implements Listener {
     public void onLoad() {
         hephaestusPlugin = (Hephaestus) Bukkit.getPluginManager().getPlugin("Hephaestus");
         hitemLibrary = hephaestusPlugin.getLibrary();
+        if (Bukkit.getPluginManager().getPlugin("Daedalus") != null) {
+            daedalusPlugin = (DaedalusPlugin) Bukkit.getPluginManager().getPlugin("Daedalus");
+        }
     }
 
     @Override
@@ -127,18 +135,15 @@ public final class Aether extends EPlugin implements Listener {
                 e.printStackTrace();
             }
         }
-        try {
-            modelManager = new AEModelManager();
-        } catch (Exception e) {
-            MessageUtil.log("Failed to load model manager.");
-            e.printStackTrace();
-        }
         //npcManager = new NPCManager();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
         entityListener = new EntityListener();
         skinCache = new SkinCache(SKINS);
+        mobSpawnConfig = new MobSpawnConfig();
+        naturalSpawningListener = new NaturalSpawningListener();
+        Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
 
 
         //Bukkit.getPluginManager().registerEvents(npcManager, this);
@@ -247,6 +252,18 @@ public final class Aether extends EPlugin implements Listener {
 
     public HItemLibrary getItemLibrary() {
         return hitemLibrary;
+    }
+
+    public DaedalusPlugin getDaedalusPlugin() {
+        return daedalusPlugin;
+    }
+
+    public ModelEngine getModelEngine() {
+        return daedalusPlugin.getModelEngine();
+    }
+
+    public MobSpawnConfig getMobSpawnConfig() {
+        return mobSpawnConfig;
     }
 
     public NamespacedKey getKey() {
