@@ -4,7 +4,6 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
-import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.hephaestus.items.HItemLibrary;
@@ -19,10 +18,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
+import org.bukkit.attribute.Attributable;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.craftbukkit.attribute.CraftAttribute;
+import org.bukkit.craftbukkit.entity.CraftEntityType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
@@ -114,10 +118,6 @@ public class NPCData {
     }
 
     public AetherBaseMob spawn(Location location) {
-        if (!isValid) {
-            MessageUtil.log("Tried to spawn invalid NPC " + ID);
-            return null;
-        }
         return new AetherBaseMob(this, location.getWorld());
     }
 
@@ -347,6 +347,21 @@ public class NPCData {
         // Attributes
         if (cfg.contains("attributes") && cfg.isConfigurationSection("attributes")) {
             Registry<Attribute> attributeRegistry = BuiltInRegistries.ATTRIBUTE;
+            // Populate with default for display type
+            org.bukkit.entity.EntityType bukkitDisplayType = CraftEntityType.minecraftToBukkit(displayType);
+            Attributable attributable = bukkitDisplayType.getDefaultAttributes();
+            for (org.bukkit.attribute.Attribute attribute : org.bukkit.Registry.ATTRIBUTE.stream().toList()) {
+                if (attributable.getAttribute(attribute) == null) continue;
+                double bukkitValue = attributable.getAttribute(attribute).getBaseValue();
+                if (bukkitValue == 0.0) continue; // Skip attributes with no value
+                Holder<Attribute> attributeHolder = CraftAttribute.bukkitToMinecraftHolder(attribute);
+                attributes.put(attributeHolder, bukkitValue);
+            }
+            if (displayType == EntityType.PLAYER) {
+                // Set default follow range for players
+                attributes.put(Attributes.FOLLOW_RANGE, 16.0);
+            }
+
             for (String key : cfg.getConfigurationSection("attributes").getKeys(false)) {
                 ConfigurationSection section = cfg.getConfigurationSection("attributes." + key);
                 if (section == null) {
@@ -508,7 +523,7 @@ public class NPCData {
     }
 
     public void loadDelayed() {
-        SpellLibrary spellbook = null; //Bukkit.getServer().getSpellbookAPI().getLibrary();
+        SpellLibrary spellbook = Bukkit.getServer().getSpellbookAPI().getLibrary();
         if (spellbook == null) {
             Aether.addException(ID, "No Spellbook found", "Are you running Papyrus?", null);
             return; // Very critical lol

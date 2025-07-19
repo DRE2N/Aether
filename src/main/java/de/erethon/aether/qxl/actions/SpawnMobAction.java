@@ -11,6 +11,7 @@ import de.erethon.questsxl.common.QLocation;
 import de.erethon.questsxl.common.Quester;
 import de.erethon.questsxl.error.FriendlyError;
 import org.bukkit.Location;
+import org.bukkit.World;
 
 public class SpawnMobAction extends QBaseAction {
 
@@ -26,14 +27,10 @@ public class SpawnMobAction extends QBaseAction {
         if (!conditions(quester)) return;
         Location pLocation = quester.getLocation();
         try {
-            AetherBaseMob mob = npcData.spawn(location.get(pLocation));
-            if (mob == null) {
-                FriendlyError error = new FriendlyError(id, "Failed to spawn mob", "Mob is null.", "Mob ID: " + npcData.getID());
-                QuestsXL.getInstance().addRuntimeError(error);
-                return;
-            }
-            mob.setPos(location.getX(pLocation), location.getY(pLocation), location.getZ(pLocation));
-            mob.addToWorld();
+            Class<? extends AetherBaseMob> toSpawn = npcData.getEntityClass();
+            AetherBaseMob activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(npcData, pLocation.getWorld());
+            activeNPC.setPos(location.getX(pLocation), location.getY(pLocation), location.getZ(pLocation));
+            activeNPC.addToWorld();
         }
         catch (Exception e) {
             FriendlyError error = new FriendlyError(id,"Failed to spawn mob", e.getMessage(), "Mob ID: " + npcData.getID()).addStacktrace(e.getStackTrace());
