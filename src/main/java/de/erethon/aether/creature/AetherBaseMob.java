@@ -53,9 +53,11 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.ValueInput;
@@ -71,6 +73,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 
@@ -84,6 +87,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private AetherHolder holder;
 
     private boolean isTalking = false;
+    private boolean isChargingCrossbow = false;
 
 
     // Constructor for entity loading
@@ -216,13 +220,22 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    public void setChargingCrossbow(boolean charging) {
-
+    public void onCrossbowAttackPerformed() {
+        noActionTime = 0;
     }
 
     @Override
-    public void onCrossbowAttackPerformed() {
-        // This is apparently useless, thanks Mojang
+    public boolean canFireProjectileWeapon(ProjectileWeaponItem projectileWeapon) {
+        return projectileWeapon == Items.CROSSBOW;
+    }
+
+    public boolean isChargingCrossbow() {
+        return isChargingCrossbow;
+    }
+
+    @Override
+    public void setChargingCrossbow(boolean isCharging) {
+        isChargingCrossbow = isCharging;
     }
 
     @Override
@@ -455,22 +468,42 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    public void performRangedAttack(LivingEntity target, float pullProgress) {
-        // Copied from AbstractSkeleton
-        ItemStack itemstack = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW));
-        if (itemstack.getItem() != Items.BOW) {
-            performCrossbowAttack(target, pullProgress); // Maybe we have a crossbow
+    public void performRangedAttack(LivingEntity target, float distanceFactor) {
+        if (getItemInHand(InteractionHand.MAIN_HAND).getItem() == Items.CROSSBOW) { // We need to handle crossbow attacks separately
+            performCrossbowAttack(this, 1.6F);
             return;
         }
-        ItemStack itemstack1 = this.getProjectile(itemstack);
-        AbstractArrow entityarrow = ProjectileUtil.getMobArrow(this, itemstack1, pullProgress, itemstack);
-        double d0 = target.getX() - this.getX();
-        double d1 = target.getY(0.3333333333333333D) - entityarrow.getY();
+        net.minecraft.world.InteractionHand hand = ProjectileUtil.getWeaponHoldingHand(this, Items.BOW); // Paper - call EntityShootBowEvent
+        ItemStack itemInHand = this.getItemInHand(hand); // Paper - call EntityShootBowEvent
+        ItemStack projectile = this.getProjectile(itemInHand);
+        AbstractArrow arrow = this.getArrow(projectile, distanceFactor, itemInHand);
+        double d = target.getX() - this.getX();
+        double d1 = target.getY(0.3333333333333333) - arrow.getY();
         double d2 = target.getZ() - this.getZ();
-        double d3 = Math.sqrt(d0 * d0 + d2 * d2);
-        entityarrow.shoot(d0, d1 + d3 * 0.20000000298023224D, d2, 1.6F, (float) (14 - this.level().getDifficulty().getId() * 4));
-        this.level().addFreshEntity(entityarrow);
+        double squareRoot = Math.sqrt(d * d + d2 * d2);
+        if (this.level() instanceof ServerLevel serverLevel) {
+            Projectile.Delayed<AbstractArrow> delayedEntity = Projectile.spawnProjectileUsingShootDelayed( // Paper - delayed
+                    arrow, serverLevel, projectile, d, d1 + squareRoot * 0.2F, d2, 1.6F, 14 - serverLevel.getDifficulty().getId() * 4
+            );
+
+            // Paper start - call EntityShootBowEvent
+            org.bukkit.event.entity.EntityShootBowEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityShootBowEvent(this, itemInHand, arrow.getPickupItem(), arrow, hand, distanceFactor, true);
+            if (event.isCancelled()) {
+                event.getProjectile().remove();
+                return;
+            }
+
+            if (event.getProjectile() == arrow.getBukkitEntity()) {
+                delayedEntity.spawn();
+            }
+            // Paper end - call EntityShootBowEvent
+        }
+
         this.playSound(SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+    }
+
+    protected AbstractArrow getArrow(ItemStack arrow, float velocity, @Nullable ItemStack weapon) {
+        return ProjectileUtil.getMobArrow(this, arrow, velocity, weapon);
     }
 
     @Override
