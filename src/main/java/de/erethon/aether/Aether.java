@@ -24,8 +24,6 @@ import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.QRegistries;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.worldseed.multipart.ModelEngine;
-import net.worldseed.plugin.DaedalusPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -56,7 +54,6 @@ public final class Aether extends EPlugin implements Listener {
     CreatureManager creatureManager;
     ActiveCreatureManager activeCreatureManager;
     SkinCache skinCache;
-    DaedalusPlugin daedalusPlugin;
     PlayerListener playerListener;
     EntityListener entityListener;
     NaturalSpawningListener naturalSpawningListener;
@@ -95,9 +92,6 @@ public final class Aether extends EPlugin implements Listener {
     public void onLoad() {
         hephaestusPlugin = (Hephaestus) Bukkit.getPluginManager().getPlugin("Hephaestus");
         hitemLibrary = hephaestusPlugin.getLibrary();
-        if (Bukkit.getPluginManager().getPlugin("Daedalus") != null) {
-            daedalusPlugin = (DaedalusPlugin) Bukkit.getPluginManager().getPlugin("Daedalus");
-        }
     }
 
     @Override
@@ -252,14 +246,6 @@ public final class Aether extends EPlugin implements Listener {
 
     public HItemLibrary getItemLibrary() {
         return hitemLibrary;
-    }
-
-    public DaedalusPlugin getDaedalusPlugin() {
-        return daedalusPlugin;
-    }
-
-    public ModelEngine getModelEngine() {
-        return daedalusPlugin.getModelEngine();
     }
 
     public MobSpawnConfig getMobSpawnConfig() {

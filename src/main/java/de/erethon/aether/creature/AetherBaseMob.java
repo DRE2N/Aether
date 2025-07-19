@@ -9,6 +9,7 @@ import de.erethon.aether.events.CreatureLoadEvent;
 import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.daedalus.utils.DataMappings;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.papyrus.CraftPDamageType;
 import de.erethon.papyrus.entities.CraftCustomMob;
@@ -59,7 +60,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import net.worldseed.util.DataMappings;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftSound;
@@ -80,7 +80,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     protected NPCData data;
     protected EntityType<?> displayType;
     private int version = 0;
-    protected CraftCustomMob bukkitEntity;
+    protected CraftCustomMob bukkitLivingEntity;
     private AetherHolder holder;
 
     private boolean isTalking = false;
@@ -94,13 +94,13 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     public AetherBaseMob(NPCData data, World world) {
         super((EntityType<? extends Monster>) data.getDisplayType(), ((CraftWorld) world).getHandle());
         this.data = data;
+        bukkitLivingEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
+        bukkitLivingEntity.setHandle(this);
+        bukkitLivingEntity.setPapyrusId(data.getID());
+        bukkitLivingEntity.setType(data.getDisplayType());
+        entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
         onLoad();
         onFirstSpawn();
-        bukkitEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
-        bukkitEntity.setHandle(this);
-        bukkitEntity.setPapyrusId(data.getID());
-        bukkitEntity.setType(data.getDisplayType());
-        entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
     }
 
     public void addToWorld() {
@@ -129,11 +129,19 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public @NotNull CraftEntity getBukkitEntity() {
-        return new CraftCustomMob(MinecraftServer.getServer().server, this);
+        if (bukkitLivingEntity == null) {
+            return new CraftCustomMob(MinecraftServer.getServer().server, this);
+        } else {
+            return bukkitLivingEntity;
+        }
     }
 
     public @NotNull CraftLivingEntity getBukkitLivingEntity() {
-        return new CraftCustomMob(MinecraftServer.getServer().server, this);
+        if (bukkitLivingEntity == null) {
+            return new CraftCustomMob(MinecraftServer.getServer().server, this);
+        } else {
+            return bukkitLivingEntity;
+        }
     }
 
 
@@ -203,6 +211,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 }
             }
         }
+        MessageUtil.log("Entity " + getData().getID() + " (" + getUUID() + ") hurt by " + source.getMsgId() + " for " + amount + " damage");
         return super.hurtServer(level, source, amount, type);
     }
 
@@ -338,6 +347,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             goalSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
             MessageUtil.log("Added goal " + aeGoal.get(this).getClass().getSimpleName() + " to " + getData().getID());
         }
+        if (data.getTargets().isEmpty()) {
+            targetSelector.addGoal(0, new HurtByTargetGoal(this));
+            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+            return;
+        }
         for (AEPathfinderGoal aeGoal : data.getTargets()) {
             targetSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
             MessageUtil.log("Added target " + aeGoal.get(this).getClass().getSimpleName() + " to " + getData().getID());
@@ -360,10 +374,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         Optional<Integer> papyrusVersion = input.getInt("papyrus-entity-version");
         version = papyrusVersion.orElse(0);
         // Setup bukkit entity
-        bukkitEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
-        bukkitEntity.setHandle(this);
-        bukkitEntity.setPapyrusId(data.getID());
-        bukkitEntity.setType(data.getDisplayType());
+        bukkitLivingEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
+        bukkitLivingEntity.setHandle(this);
+        bukkitLivingEntity.setPapyrusId(data.getID());
+        bukkitLivingEntity.setType(data.getDisplayType());
         onLoad();
         if (version <= data.getCurrentVersion()) {
             plugin.getLogger().warning("Entity " + data.getID() + " (" + getUUID() + ") is outdated. Updating...");
@@ -433,7 +447,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (data.getBoots() != null) {
             setItemSlot(EquipmentSlot.FEET, data.getBoots().rollRandomStack().getVanillaStack());
         }
-        setHealth(getMaxHealth()); // So we don't have 1 HP.
+        setHealth(getMaxHealth());
     }
 
     public NPCData getData() {

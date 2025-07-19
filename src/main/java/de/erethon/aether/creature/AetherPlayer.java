@@ -5,26 +5,22 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.tools.NMSUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
-import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerPlayerConnection;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
-import net.worldseed.util.DataMappings;
 import org.bukkit.World;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -33,20 +29,12 @@ import java.util.EnumSet;
 
 public class AetherPlayer extends AetherBaseMob {
 
-    private SynchedEntityData entityDataToSend;
-
     public AetherPlayer(EntityType<? extends Mob> type, Level world) {
         super(type, world);
-        displayType = EntityType.PLAYER;
-        entityData = DataMappings.getSynchedEntityData(EntityType.PILLAGER);
-        entityDataToSend = DataMappings.getSynchedEntityData(EntityType.PLAYER);
     }
 
     public AetherPlayer(NPCData data, World world) {
         super(data, world);
-        displayType = EntityType.PLAYER;
-        entityData = DataMappings.getSynchedEntityData(EntityType.PILLAGER);
-        entityDataToSend = DataMappings.getSynchedEntityData(EntityType.PLAYER);
     }
 
     @Override
@@ -66,12 +54,46 @@ public class AetherPlayer extends AetherBaseMob {
         for (ServerPlayerConnection serverPlayerConnection : moonrise$getTrackedEntity().seenBy) {
             sendPlayerStuff(serverPlayerConnection.getPlayer());
         }
+        detectEquipmentUpdates();
         return NMSUtils.getAddEntityPacketWithType(this, EntityType.PLAYER);
     }
 
     @Override
-    public @NotNull SynchedEntityData getEntityData() {// Return the correct entity data so the client isn't confused
-        return entityDataToSend;
+    public void setNoAi(boolean noAi) {
+    }
+
+    @Override
+    public void setLeftHanded(boolean leftHanded) {
+    }
+
+    @Override
+    public void setAggressive(boolean aggressive) {
+    }
+
+    @Override
+    public boolean isNoAi() {
+        return false;
+    }
+
+    @Override
+    public boolean isLeftHanded() {
+        return false;
+    }
+
+    @Override
+    public boolean isAggressive() {
+        return true;
+    }
+
+    @Override
+    public float getPreciseBodyRotation(float partialTick) {
+        return super.getPreciseBodyRotation(partialTick);
+    }
+
+    @Override
+    public void lookAt(Entity entity, float maxYRotIncrease, float maxXRotIncrease) {
+        super.lookAt(entity, maxYRotIncrease, maxXRotIncrease);
+        yBodyRot = Mth.rotateIfNecessary(yBodyRot, yHeadRot, (float) getMaxHeadYRot());
     }
 
     private void sendPlayerStuff(ServerPlayer serverPlayer) {
