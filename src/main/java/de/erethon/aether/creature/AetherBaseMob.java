@@ -215,7 +215,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 }
             }
         }
-        MessageUtil.log("Entity " + getData().getID() + " (" + getUUID() + ") hurt by " + source.getMsgId() + " for " + amount + " damage");
         return super.hurtServer(level, source, amount, type);
     }
 

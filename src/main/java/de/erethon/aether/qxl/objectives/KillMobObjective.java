@@ -3,6 +3,7 @@ package de.erethon.aether.qxl.objectives;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.InstancedCreatureDeathEvent;
+import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.questsxl.common.QConfig;
 import de.erethon.questsxl.livingworld.QEvent;
 import de.erethon.questsxl.objective.ActiveObjective;
@@ -11,9 +12,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
 
-    private String mob;
+    private Set<String> mobs;
     private int radius;
 
     @Override
@@ -30,7 +36,7 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
     }
 
     private void check(NPCData npc, Player player, ActiveObjective active) {
-        if (npc.getID().equals(mob)) {
+        if (mobs.contains(npc.getID())) {
             checkCompletion(active, this, plugin.getPlayerCache().getByPlayer(player));
         }
     }
@@ -38,10 +44,9 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
     @Override
     public void load(QConfig cfg) {
         super.load(cfg);
-        mob = cfg.getString("mob");
-        if (mob == null) { // Legacy
-            mob = cfg.getString("id");
-        }
+        String[] npcIds = cfg.getStringArray("mobs", new String[]{});
+        mobs = new HashSet<>();
+        Collections.addAll(mobs, npcIds);
         radius = cfg.getInt("radius", -1);
     }
 
