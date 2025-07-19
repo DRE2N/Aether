@@ -10,7 +10,6 @@ plugins {
     `maven-publish`
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.18"
     id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("io.github.goooler.shadow") version "8.1.5"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
 }
 
@@ -28,11 +27,10 @@ paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArt
 dependencies {
     paperweightDevelopmentBundle("de.erethon.papyrus", "dev-bundle", papyrusVersion)
 
-    implementation("de.erethon:bedrock:1.4.0") { isTransitive = false }
-    implementation("de.erethon", "Daedalus", "12.1")
+    compileOnly("de.erethon", "Daedalus", "1.2")
 
     compileOnly("de.erethon.hephaestus:Hephaestus:1.0-SNAPSHOT")
-    compileOnly("de.erethon.questsxl:QuestsXL:1.0.0-SNAPSHOT")
+    compileOnly("de.erethon.questsxl:QuestsXL:1.0.2-SNAPSHOT")
 }
 
 tasks {
@@ -44,6 +42,7 @@ tasks {
         uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
         runDirectory.set(file("C:\\Dev\\Erethon"))
+        jvmArgs = listOf("-XX:MaxJavaStackTraceDepth=2000000")
     }
 
     compileJava {
@@ -75,19 +74,12 @@ tasks {
         }
     }
 
-    shadowJar {
-        dependencies {
-            include(dependency("de.erethon:bedrock:.*"))
-        }
-        relocate("de.erethon.bedrock", "de.erethon.aether.bedrock")
-    }
-
     bukkit {
         main = "de.erethon.aether.Aether"
         apiVersion = "1.21"
         authors = listOf("Malfrador")
         depend = listOf("QuestsXL")
-        load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
+        softDepend = listOf("Hephaestus", "Daedalus")
         commands {
             register("aether") {
                 description = "Main command for Aether"
@@ -100,7 +92,6 @@ tasks {
 
     assemble {
         dependsOn(reobfJar)
-        dependsOn(shadowJar)
         dependsOn(javadocJar)
         dependsOn(sourcesJar)
     }
@@ -108,11 +99,12 @@ tasks {
 
 
 tasks.register<Copy>("deployToSharedServer") {
+    doNotTrackState("")
     group = "Erethon"
     description = "Used for deploying the plugin to the shared server. runServer will do this automatically." +
             "This task is only for manual deployment when running runServer from another plugin."
-    dependsOn(":shadowJar")
-    from(layout.buildDirectory.file("libs/Aether-$version-all.jar"))
+    dependsOn(":jar")
+    from(layout.buildDirectory.file("libs/Aether-$version.jar"))
     into("C:\\Dev\\Erethon\\plugins")
 }
 

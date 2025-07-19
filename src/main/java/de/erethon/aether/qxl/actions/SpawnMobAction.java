@@ -27,6 +27,11 @@ public class SpawnMobAction extends QBaseAction {
         Location pLocation = quester.getLocation();
         try {
             AetherBaseMob mob = npcData.spawn(location.get(pLocation));
+            if (mob == null) {
+                FriendlyError error = new FriendlyError(id, "Failed to spawn mob", "Mob is null.", "Mob ID: " + npcData.getID());
+                QuestsXL.getInstance().addRuntimeError(error);
+                return;
+            }
             mob.setPos(location.getX(pLocation), location.getY(pLocation), location.getZ(pLocation));
             mob.addToWorld();
         }

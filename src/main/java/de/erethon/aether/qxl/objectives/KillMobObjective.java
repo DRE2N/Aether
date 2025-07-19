@@ -11,37 +11,22 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 
-public class KillMobObjective extends QBaseObjective {
+public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
 
     private String mob;
     private int radius;
 
     @Override
-    public void check(ActiveObjective active, Event e) {
+    public void check(ActiveObjective active, CreatureDeathEvent event) {
         if (radius > 0) {
             if (active.getHolder() instanceof QEvent qEvent) {
-                if (e instanceof CreatureDeathEvent event && event.getKiller().getLocation().distance(qEvent.getLocation()) <= radius) {
-                    return;
-                }
-                if (e instanceof InstancedCreatureDeathEvent event && event.getKiller().getLocation().distance(qEvent.getLocation()) <= radius) {
-                    return;
-                }
-                if (e instanceof EntityDeathEvent event && event.getEntity().getLocation().distance(qEvent.getLocation()) <= radius) {
+                if (event.getKiller().getLocation().distance(qEvent.getLocation()) <= radius) {
                     return;
                 }
             }
             return;
         }
-        if (e instanceof CreatureDeathEvent event) {
-            check(event.getNpc(), event.getKiller(), active);
-        } else if (e instanceof InstancedCreatureDeathEvent event) {
-            check(event.getNpc().getNpc(), event.getKiller(), active);
-        }
-        if (e instanceof EntityDeathEvent event) {
-            if (event.getEntity().getType().name().equals(mob.toUpperCase()) && event.getEntity().getKiller() instanceof Player player) {
-                checkCompletion(active, this, plugin.getPlayerCache().getByPlayer(player));
-            }
-        }
+        check(event.getNpc(), event.getKiller(), active);
     }
 
     private void check(NPCData npc, Player player, ActiveObjective active) {
@@ -58,5 +43,10 @@ public class KillMobObjective extends QBaseObjective {
             mob = cfg.getString("id");
         }
         radius = cfg.getInt("radius", -1);
+    }
+
+    @Override
+    public Class<CreatureDeathEvent> getEventType() {
+        return CreatureDeathEvent.class;
     }
 }
