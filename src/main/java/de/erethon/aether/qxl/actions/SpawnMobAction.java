@@ -34,7 +34,7 @@ public class SpawnMobAction extends QBaseAction {
         }
         catch (Exception e) {
             FriendlyError error = new FriendlyError(id,"Failed to spawn mob", e.getMessage(), "Mob ID: " + npcData.getID()).addStacktrace(e.getStackTrace());
-            QuestsXL.getInstance().addRuntimeError(error);
+            QuestsXL.get().addRuntimeError(error);
         }
         onFinish(quester);
     }

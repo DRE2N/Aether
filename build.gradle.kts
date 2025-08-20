@@ -30,7 +30,7 @@ dependencies {
     compileOnly("de.erethon", "Daedalus", "1.2")
 
     compileOnly("de.erethon.hephaestus:Hephaestus:1.0-SNAPSHOT")
-    compileOnly("de.erethon.questsxl:QuestsXL:1.0.2-SNAPSHOT")
+    compileOnly("de.erethon.questsxl:QuestsXL:1.0.3-SNAPSHOT")
 }
 
 tasks {
@@ -52,11 +52,6 @@ tasks {
 
     javadoc {
         options.encoding = Charsets.UTF_8.name()
-    }
-    val javadocJar by creating(Jar::class) {
-        dependsOn(javadoc)
-        archiveClassifier.set("javadoc")
-        from(javadoc)
     }
     val sourcesJar by creating(Jar::class) {
         archiveClassifier.set("sources")
@@ -92,7 +87,6 @@ tasks {
 
     assemble {
         dependsOn(reobfJar)
-        dependsOn(javadocJar)
         dependsOn(sourcesJar)
     }
 }
@@ -126,7 +120,6 @@ publishing {
             version = "${project.version}"
 
             from(components["java"])
-            artifact(tasks["javadocJar"])
             artifact(tasks["sourcesJar"])
         }
     }

@@ -188,7 +188,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             castSpell(spell);
         }
         if (target instanceof Player player) {
-            QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            QPlayer qPlayer = QuestsXL.get().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
             if (qPlayer != null && holder != null) {
                 holder.onAttack(qPlayer);
             }
@@ -207,7 +207,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             castSpell(spell);
         }
         if (source.getEntity() instanceof Player player) {
-            QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            QPlayer qPlayer = QuestsXL.get().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
             if (qPlayer != null && holder != null) {
                 holder.onLeftClick(qPlayer);
                 if (amount > 0) {
@@ -309,7 +309,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     protected @NotNull InteractionResult mobInteract(Player player, InteractionHand hand) {
         CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
         Bukkit.getPluginManager().callEvent(event);
-        QPlayer qPlayer = QuestsXL.getInstance().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+        QPlayer qPlayer = QuestsXL.get().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
         if (qPlayer != null && holder != null) {
             holder.onRightClick(qPlayer);
         }

@@ -32,7 +32,7 @@ public class AetherHolder implements QComponent, Quester {
             } catch (Exception e) {
                 FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to play death action", e.getMessage(), "Action: " + action.getClass().getSimpleName());
                 error.addStacktrace(e.getStackTrace());
-                QuestsXL.getInstance().addRuntimeError(error);
+                QuestsXL.get().addRuntimeError(error);
             }
         }
     }
@@ -44,7 +44,7 @@ public class AetherHolder implements QComponent, Quester {
             } catch (Exception e) {
                 FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to play rightClick action", e.getMessage(), "Action: " + action.getClass().getSimpleName());
                 error.addStacktrace(e.getStackTrace());
-                QuestsXL.getInstance().addRuntimeError(error);
+                QuestsXL.get().addRuntimeError(error);
             }
         }
     }
@@ -56,7 +56,7 @@ public class AetherHolder implements QComponent, Quester {
             } catch (Exception e) {
                 FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to play leftClick action", e.getMessage(), "Action: " + action.getClass().getSimpleName());
                 error.addStacktrace(e.getStackTrace());
-                QuestsXL.getInstance().addRuntimeError(error);
+                QuestsXL.get().addRuntimeError(error);
             }
         }
     }
@@ -68,7 +68,7 @@ public class AetherHolder implements QComponent, Quester {
             } catch (Exception e) {
                 FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to play spawn action", e.getMessage(), "Action: " + action.getClass().getSimpleName());
                 error.addStacktrace(e.getStackTrace());
-                QuestsXL.getInstance().addRuntimeError(error);
+                QuestsXL.get().addRuntimeError(error);
             }
         }
     }
@@ -80,7 +80,7 @@ public class AetherHolder implements QComponent, Quester {
             } catch (Exception e) {
                 FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to play damage action", e.getMessage(), "Action: " + action.getClass().getSimpleName());
                 error.addStacktrace(e.getStackTrace());
-                QuestsXL.getInstance().addRuntimeError(error);
+                QuestsXL.get().addRuntimeError(error);
             }
         }
     }
@@ -92,7 +92,7 @@ public class AetherHolder implements QComponent, Quester {
             } catch (Exception e) {
                 FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to play attack action", e.getMessage(), "Action: " + action.getClass().getSimpleName());
                 error.addStacktrace(e.getStackTrace());
-                QuestsXL.getInstance().addRuntimeError(error);
+                QuestsXL.get().addRuntimeError(error);
             }
         }
     }
@@ -114,7 +114,7 @@ public class AetherHolder implements QComponent, Quester {
         } catch (Exception e) {
             FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to load actions", e.getMessage(), "Mob ID: " + mobID);
             error.addStacktrace(e.getStackTrace());
-            QuestsXL.getInstance().addRuntimeError(error);
+            QuestsXL.get().addRuntimeError(error);
         }
         return holder;
     }
@@ -127,5 +127,15 @@ public class AetherHolder implements QComponent, Quester {
     @Override
     public Location getLocation() {
         return mob.getBukkitEntity().getLocation();
+    }
+
+    @Override
+    public QComponent getParent() {
+        return null; // Parent is always self for mobs
+    }
+
+    @Override
+    public void setParent(QComponent qComponent) {
+
     }
 }
