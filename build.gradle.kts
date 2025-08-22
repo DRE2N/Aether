@@ -30,7 +30,7 @@ dependencies {
     compileOnly("de.erethon", "Daedalus", "1.2")
 
     compileOnly("de.erethon.hephaestus:Hephaestus:1.0-SNAPSHOT")
-    compileOnly("de.erethon.questsxl:QuestsXL:1.0.3-SNAPSHOT")
+    compileOnly("de.erethon.questsxl:QuestsXL:1.0.4-SNAPSHOT")
 }
 
 tasks {

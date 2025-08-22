@@ -188,9 +188,13 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             castSpell(spell);
         }
         if (target instanceof Player player) {
-            QPlayer qPlayer = QuestsXL.get().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            try {
+            QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
             if (qPlayer != null && holder != null) {
                 holder.onAttack(qPlayer);
+            }
+            } catch (Exception e) {
+                MessageUtil.log("Failed to handle attack for " + data.getID() + ": " + e.getMessage());
             }
         }
         return super.doHurtTarget(level, target);
@@ -207,12 +211,16 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             castSpell(spell);
         }
         if (source.getEntity() instanceof Player player) {
-            QPlayer qPlayer = QuestsXL.get().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            try {
+            QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
             if (qPlayer != null && holder != null) {
                 holder.onLeftClick(qPlayer);
                 if (amount > 0) {
                     holder.onDamage(qPlayer);
                 }
+            }
+            } catch (Exception e) {
+                MessageUtil.log("Failed to handle damage for " + data.getID() + ": " + e.getMessage());
             }
         }
         return super.hurtServer(level, source, amount, type);
@@ -309,9 +317,14 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     protected @NotNull InteractionResult mobInteract(Player player, InteractionHand hand) {
         CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
         Bukkit.getPluginManager().callEvent(event);
-        QPlayer qPlayer = QuestsXL.get().getPlayerCache().getByPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
-        if (qPlayer != null && holder != null) {
-            holder.onRightClick(qPlayer);
+        try {
+            QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
+            if (qPlayer != null && holder != null) {
+                holder.onRightClick(qPlayer);
+            }
+        }
+        catch (Exception e) {
+            MessageUtil.log("Failed to handle interaction for " + data.getID() + ": " + e.getMessage());
         }
         return super.mobInteract(player, hand);
     }

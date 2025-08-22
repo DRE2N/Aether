@@ -37,7 +37,7 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
 
     private void check(NPCData npc, Player player, ActiveObjective active) {
         if (mobs.contains(npc.getID())) {
-            checkCompletion(active, this, plugin.getPlayerCache().getByPlayer(player));
+            checkCompletion(active, this, plugin.getDatabaseManager().getCurrentPlayer(player));
         }
     }
 
