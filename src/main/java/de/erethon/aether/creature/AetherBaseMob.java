@@ -408,7 +408,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 HCharacter character = Hecate.getInstance().getDatabaseManager().getCurrentCharacter(bukkitPlayer);
                 // Scale XP based on level difference between the player and the mob, in both directions
                 CompletableFuture<Integer> playerLevelFuture = LevelUtil.getCharacterLevel(character);
-                playerLevelFuture.thenAccept(playerLevel -> {
+                playerLevelFuture.thenAcceptAsync(playerLevel -> {
                     int levelDifference = mobLevel - playerLevel;
                     double levelFactor = 0.05; // 5% more/less XP per level difference
                     double levelMultiplier = 1 + (levelDifference * levelFactor);
@@ -416,7 +416,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                     LevelUtil.giveCharacterXp(character, finalXP);
                     logDebug("Gave " + finalXP + " XP for " + player.getName().getString() +
                             " (damage: " + String.format("%.1f", damageContribution * 100) + "%, level diff: " + levelDifference + ")");
-                });
+                }, Bukkit.getScheduler().getMainThreadExecutor(Aether.getInstance()));
             }
         }
     }
@@ -746,4 +746,3 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
 }
-
