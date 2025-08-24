@@ -3,6 +3,7 @@ package de.erethon.aether.spawning;
 import de.erethon.aether.Aether;
 import net.minecraft.world.level.ChunkPos;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,9 +23,14 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
     private final List<AESpawner> configuredSpawners = new ArrayList<>();
     private final HashMap<ChunkPos, Set<AESpawner>> spawnersbyChunk = new HashMap<>();
     private final Set<AESpawner> activeSpawners = new HashSet<>();
+    private boolean listenersRegistered = false;
 
     public SpawnerManager() {
         loadSpawners();
+        if (!listenersRegistered) {
+            Bukkit.getPluginManager().registerEvents(this, Aether.getInstance());
+            listenersRegistered = true;
+        }
         runTaskTimer(Aether.getInstance(), 0, 20);
     }
 
@@ -38,27 +44,37 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
     }
 
     public void loadSpawners() {
-        for (File file : Aether.SPAWNERS.listFiles()) {
+        File[] files = Aether.SPAWNERS.listFiles();
+        if (files == null) {
+            Aether.log("No spawner files found.");
+            return;
+        }
+        for (File file : files) {
             YamlConfiguration fileConfig = YamlConfiguration.loadConfiguration(file);
             for (String key : fileConfig.getKeys(false)) {
                 try {
                     configuredSpawners.add(new AESpawner(fileConfig.getConfigurationSection(key), key));
                 } catch (Exception e) {
                     Aether.addException("SpawnerManager.loadSpawners", "Error while loading spawner " + key, "Error while loading spawner " + key, e);
-                    e.printStackTrace();
                 }
             }
         }
         Aether.log("Loaded " + configuredSpawners.size() + " spawners.");
-        Bukkit.getPluginManager().registerEvents(this, Aether.getInstance());
         for (AESpawner spawner : configuredSpawners) {
-            int x = spawner.getCenterLocation().blockX();
-            int z = spawner.getCenterLocation().blockZ();
+            World world = spawner.getCenterLocation().getWorld();
+            if (world == null) continue;
+            int x = spawner.getCenterLocation().getBlockX();
+            int z = spawner.getCenterLocation().getBlockZ();
             int chunkX = x >> 4;
             int chunkZ = z >> 4;
-            Set<AESpawner> spawnersAtChunk = spawnersbyChunk.getOrDefault(new ChunkPos(chunkX, chunkZ), new HashSet<>());
+            ChunkPos pos = new ChunkPos(chunkX, chunkZ);
+            Set<AESpawner> spawnersAtChunk = spawnersbyChunk.getOrDefault(pos, new HashSet<>());
             spawnersAtChunk.add(spawner);
-            spawnersbyChunk.put(new ChunkPos(chunkX, chunkZ), spawnersAtChunk);
+            spawnersbyChunk.put(pos, spawnersAtChunk);
+            // Immediately activate spawners in already-loaded chunks
+            if (world.isChunkLoaded(chunkX, chunkZ)) {
+                activeSpawners.add(spawner);
+            }
         }
     }
 
@@ -91,6 +107,11 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
         spawnersbyChunk.clear();
         activeSpawners.clear();
         loadSpawners();
+    }
+
+    // Expose configured spawners for commands and debugging
+    public List<AESpawner> getConfiguredSpawners() {
+        return configuredSpawners;
     }
 
 }

@@ -137,6 +137,7 @@ public final class Aether extends EPlugin implements Listener {
         playerListener = new PlayerListener();
         entityListener = new EntityListener();
         skinCache = new SkinCache(SKINS);
+        spawnerManager = new SpawnerManager();
         mobSpawnConfig = new MobSpawnConfig();
         naturalSpawningListener = new NaturalSpawningListener();
         Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
@@ -149,7 +150,6 @@ public final class Aether extends EPlugin implements Listener {
         commands = new CommandCache(this);
         setCommandCache(commands);
         commands.register(this);
-        spawnerManager = new SpawnerManager();
         Bukkit.getPluginManager().registerEvents(this, this);
         this.getServer().getPluginManager().registerEvents(this, this);
         QuestsXL questsXL = (QuestsXL) Bukkit.getPluginManager().getPlugin("QuestsXL");
