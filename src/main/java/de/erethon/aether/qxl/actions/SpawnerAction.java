@@ -4,11 +4,20 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.questsxl.action.QBaseAction;
 import de.erethon.questsxl.common.QConfig;
+import de.erethon.questsxl.common.QLoadableDoc;
 import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
 
+@QLoadableDoc(
+        value = "spawner",
+        description = "Triggers a spawner to spawn its mobs.",
+        shortExample = "spawner: spawner=bandit_spawner_1",
+        longExample = {
+                "spawner:",
+                "  spawner: bandit_spawner_1",
+        }
+)
 public class SpawnerAction extends QBaseAction {
-
 
     private final SpawnerManager spawnerManager = Aether.getInstance().getSpawnerManager();
 
