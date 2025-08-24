@@ -17,6 +17,10 @@ public class ModelledMob extends AetherBaseMob {
         super(type, world);
     }
 
+    public ModelledMob(NPCData data, World world, Integer overrideLevel) {
+        super(data, world, overrideLevel);
+    }
+
     public ModelledMob(NPCData data, World world) {
         super(data, world);
         displayType = EntityType.PILLAGER; // Hardcode this for now

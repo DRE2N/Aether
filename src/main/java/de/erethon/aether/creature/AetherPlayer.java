@@ -37,6 +37,10 @@ public class AetherPlayer extends AetherBaseMob {
         super(data, world);
     }
 
+    public AetherPlayer(NPCData data, World world, Integer overrideLevel) {
+        super(data, world, overrideLevel);
+    }
+
     @Override
     protected void onFirstSpawn() {
         super.onFirstSpawn();

@@ -50,7 +50,7 @@ public class SpawnMobAction extends QBaseAction {
             if (overrideLevel == -1) {
                 activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(npcData, pLocation.getWorld());
             } else {
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, int.class).newInstance(npcData, pLocation.getWorld(), overrideLevel);
+                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(npcData, pLocation.getWorld(), overrideLevel);
             }
             activeNPC.setPos(location.getX(pLocation), location.getY(pLocation), location.getZ(pLocation));
             activeNPC.addToWorld();
