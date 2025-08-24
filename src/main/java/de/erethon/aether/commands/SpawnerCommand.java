@@ -6,6 +6,10 @@ import de.erethon.aether.spawning.AESpawner;
 import de.erethon.aether.spawning.SpawnerManager;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommand;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickCallback;
+import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -153,6 +157,10 @@ public class SpawnerCommand extends ECommand {
             case "maxmobsrangey":
             case "cooldown":
             case "activationrange":
+            case "wavesize":
+            case "wavecooldown":
+            case "maxlevel":
+            case "minlevel":
                 try {
                     int i = Integer.parseInt(value);
                     String key = mapPropertyKey(property);
@@ -294,9 +302,29 @@ public class SpawnerCommand extends ECommand {
         }
         for (AESpawner s : nearby) {
             Location c = s.getCenterLocation();
-            MessageUtil.sendMessage(player, String.format(Locale.ROOT,
-                    "&7- &f%s &7at &7%s %d %d %d",
-                    s.getId(), c.getWorld().getName(), c.getBlockX(), c.getBlockY(), c.getBlockZ()));
+            Component message = Component.text("- " + s.getId() + " @ " +
+                    (c == null || c.getWorld() == null ? "?" : (c.getWorld().getName() + " " + c.getBlockX() + " " + c.getBlockY() + " " + c.getBlockZ())) +
+                    " | NPC: " + s.getEntityID());
+            Component hoverProperties = Component.text(
+                    "Radius: " + s.getRadius() + "\n" +
+                    "RadiusY: " + s.getRadiusY() + "\n" +
+                    "MobsPerSpawn: " + s.getMobsPerSpawn() + "\n" +
+                    "Chance: " + s.getProbability() + "\n" +
+                    "MaxMobs: " + s.getMaxMobs() + "\n" +
+                    "MaxMobsRange: " + s.getMaxMobsRange() + "\n" +
+                    "MaxMobsRangeY: " + s.getMaxMobsRangeY() + "\n" +
+                    "Cooldown: " + s.getCooldown() + "\n" +
+                    "ActivationRange: " + s.getActivationRange() + "\n" +
+                    "isTicking: " + s.isTicking() + "\n" +
+                    "WaveSize: " + s.getWaveSize() + "\n" +
+                    "WaveCooldown: " + s.getWaveCooldown() + "\n" +
+                    "MinLevel: " + s.getMinLevel() + "\n" +
+                    "MaxLevel: " + s.getMaxLevel()
+            );
+            message = message.hoverEvent(hoverProperties);
+            ClickCallback<Audience> callback = audience -> teleport(player, s.getCenterLocation());
+            message = message.clickEvent(ClickEvent.callback(callback));
+            player.sendMessage(message);
         }
     }
 
@@ -355,7 +383,7 @@ public class SpawnerCommand extends ECommand {
         MessageUtil.sendMessage(sender, "&7/ae spawner info [range]");
         MessageUtil.sendMessage(sender, "&7/ae spawner toggle <spawnerId>");
         MessageUtil.sendMessage(sender, "&7/ae spawner list");
-        MessageUtil.sendMessage(sender, "&8Properties: id|npc, radius, radiusY, mobsPerSpawn, maxMobs, maxMobsRange, maxMobsRangeY, cooldown, activationRange, chance, isTicking, world, x, y, z");
+        MessageUtil.sendMessage(sender, "&8Properties: id|npc, radius, radiusY, mobsPerSpawn, maxMobs, maxMobsRange, maxMobsRangeY, cooldown, activationRange, chance, isTicking, world, x, y, z, waveSize, waveCooldown, minLevel, maxLevel");
     }
 
     private void writeDefaultSpawnerSection(YamlConfiguration yaml, String spawnerId, String npcId, Location loc) {
@@ -375,6 +403,12 @@ public class SpawnerCommand extends ECommand {
         yaml.set(base + "maxMobsRangeY", 8);
         yaml.set(base + "cooldown", 30);
         yaml.set(base + "activationRange", 32);
+        // Waves
+        yaml.set(base + "waveSize", 1);
+        yaml.set(base + "waveCooldown", 20 * 60);
+        // Levels
+        yaml.set(base + "minLevel", -1);
+        yaml.set(base + "maxLevel", -1);
     }
 
     private File findSpawnerFile(String spawnerId) {
@@ -399,6 +433,14 @@ public class SpawnerCommand extends ECommand {
                 return "radiusY";
             case "maxmobsrangey":
                 return "maxMobsRangeY";
+            case "wavesize":
+                return "waveSize";
+            case "wavecooldown":
+                return "waveCooldown";
+                case "minlevel":
+                return "minLevel";
+            case "maxlevel":
+                return "maxLevel";
             default:
                 return property;
         }
@@ -408,21 +450,43 @@ public class SpawnerCommand extends ECommand {
     public List<String> onTabComplete(CommandSender sender, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 2) {
-            return Arrays.asList("create", "set", "movehere", "show", "info", "toggle", "list");
+            List<String> subs = Arrays.asList("create", "set", "movehere", "show", "info", "toggle", "list", "tp");
+            return filterStartsWith(subs, args[1]);
         }
         if (args.length == 3) {
-            if (args[1].equalsIgnoreCase("create")) {
-                out.add("<spawnerId>");
-            } else if (Arrays.asList("set", "movehere", "toggle").contains(args[1].toLowerCase(Locale.ROOT))) {
-                out.addAll(spawnerManager.getConfiguredSpawners().stream().map(AESpawner::getId).collect(Collectors.toList()));
+            String sub = args[1].toLowerCase(Locale.ROOT);
+            String partial = args[2];
+            if (sub.equals("create")) {
+                if (partial.isEmpty()) out.add("<spawnerId>");
+                return out;
+            } else if (Arrays.asList("set", "movehere", "toggle", "tp").contains(sub)) {
+                List<String> ids = spawnerManager.getConfiguredSpawners().stream().map(AESpawner::getId).collect(Collectors.toList());
+                return filterStartsWith(ids, partial);
             }
+            return out;
         }
-        if (args.length == 4 && args[1].equalsIgnoreCase("create")) {
-            out.addAll(plugin.getCreatureManager().getCreatures().stream().map(NPCData::getID).collect(Collectors.toList()));
-        }
-        if (args.length == 4 && args[1].equalsIgnoreCase("set")) {
-            out.addAll(Arrays.asList("id","npc","radius","radiusY","mobsPerSpawn","maxMobs","maxMobsRange","maxMobsRangeY","cooldown","activationRange","chance","isTicking","world","x","y","z"));
+        if (args.length == 4) {
+            String sub = args[1].toLowerCase(Locale.ROOT);
+            String partial = args[3];
+            if (sub.equals("create")) {
+                List<String> npcIds = plugin.getCreatureManager().getCreatures().stream().map(NPCData::getID).collect(Collectors.toList());
+                return filterStartsWith(npcIds, partial);
+            }
+            if (sub.equals("set")) {
+                List<String> props = Arrays.asList("id","npc","radius","radiusY","mobsPerSpawn","maxMobs","maxMobsRange","maxMobsRangeY","cooldown","activationRange","chance","isTicking","world","x","y","z","waveSize","waveCooldown","minLevel","maxLevel");
+                return filterStartsWith(props, partial);
+            }
+            return out;
         }
         return out;
+    }
+
+    private List<String> filterStartsWith(Collection<String> candidates, String prefix) {
+        if (prefix == null || prefix.isEmpty()) return new ArrayList<>(candidates);
+        String lower = prefix.toLowerCase(Locale.ROOT);
+        return candidates.stream()
+                .filter(s -> s != null && s.toLowerCase(Locale.ROOT).startsWith(lower))
+                .sorted()
+                .collect(Collectors.toList());
     }
 }
