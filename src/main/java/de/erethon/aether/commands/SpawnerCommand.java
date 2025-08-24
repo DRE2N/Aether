@@ -262,15 +262,15 @@ public class SpawnerCommand extends ECommand {
             MessageUtil.sendMessage(player, "&eNo spawners found within &f" + range + "&e blocks.");
             return;
         }
-        MessageUtil.sendMessage(player, "&aShowing &f" + nearby.size() + "&a spawners for &f" + (durationTicks/20) + "&a seconds.");
+        MessageUtil.sendMessage(player, "&aShowing &f" + nearby.size() + "&a spawners for &f" + (durationTicks / 20) + "&a seconds.");
         final int step = 4;
         int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
             for (AESpawner s : nearby) {
                 Location c = s.getCenterLocation();
                 if (c == null || c.getWorld() == null) continue;
                 // center marker
-                c.getWorld().spawnParticle(Particle.END_ROD, c.clone().add(0.5, 0.5, 0.5), 3, 0.2, 0.2, 0.2, 0.01);
-                //  small ring
+                c.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, c.clone().add(0.5, 0.5, 0.5), 3, 0.2, 0.2, 0.2, 0.01);
+                // radius marker
                 int r = s.getRadius();
                 for (int deg = 0; deg < 360; deg += step) {
                     double rad = Math.toRadians(deg);

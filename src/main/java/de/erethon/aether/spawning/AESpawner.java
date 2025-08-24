@@ -4,15 +4,19 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
+import de.erethon.hephaestus.utils.HRandom;
 import de.erethon.papyrus.entities.CustomMob;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Random;
+import java.util.*;
 
 public class AESpawner {
 
@@ -22,10 +26,19 @@ public class AESpawner {
 
     private String id;
 
+    // Wave config/state
+    private int waveCooldown = 20 * 60; // ticks between waves
+    private int waveSize = 1;           // how many mobs per wave
+    private boolean inWave = false;
+    private int remainingInWave = 0;
+    private int nextIntraTick = 0;      // next tick at which we may spawn within a wave
+    private int nextWaveTick = 0;       // next tick at which we may start a wave
+
+    // Spawning config/state
     private NPCData npcData = null;
     private Location centerLocation;
     private int radius = 16;
-    private int radiusY = 0;
+    private int radiusY = 4; // Mainly used to prevent spawning on roofs, trees, etc.
     private int mobsPerSpawn = 1;
     private double probability = 1.00;
     private int maxMobs = 5;
@@ -37,16 +50,13 @@ public class AESpawner {
     private int minLevel = -1;
     private int maxLevel = -1;
 
+    // Weighted mob selection
+    private final Map<String, Integer> weightedIds = new LinkedHashMap<>();
+    private final Map<String, NPCData> npcCache = new HashMap<>();
+    private final Set<String> entityIDs = new HashSet<>();
+
     // Papyrus identifier for counting existing mobs of this spawner's type
     private String entityID;
-
-    // Wave config/state
-    private int waveCooldown = 20 * 60; // ticks between waves
-    private int waveSize = 1;           // how many mobs per wave
-    private boolean inWave = false;
-    private int remainingInWave = 0;
-    private int nextIntraTick = 0;      // next tick at which we may spawn within a wave
-    private int nextWaveTick = 0;       // next tick at which we may start a wave
 
     public AESpawner(ConfigurationSection config, String id) {
         this.config = config;
@@ -58,7 +68,7 @@ public class AESpawner {
         if (centerLocation.getWorld() == null || !centerLocation.isChunkLoaded()) {
             return;
         }
-        if (npcData == null) {
+        if (weightedIds.isEmpty()) {
             return;
         }
         int now = Bukkit.getCurrentTick();
@@ -67,8 +77,8 @@ public class AESpawner {
             if (now < nextWaveTick) {
                 return;
             }
-            if (centerLocation.getNearbyPlayers(activationRange).isEmpty()) {
-                nextWaveTick = now + 20; // retry in ~1s to avoid per-tick checks
+            if (centerLocation.getNearbyPlayers(activationRange, p -> p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE).isEmpty()) {
+                nextWaveTick = now + 200; // retry in ~10s to avoid per-tick checks
                 return;
             }
             if (Math.random() > probability) {
@@ -76,11 +86,11 @@ public class AESpawner {
                 return;
             }
             // Capacity check before starting a wave
-            if (entityID != null) {
+            if (!entityIDs.isEmpty()) {
                 int nearby = centerLocation.getNearbyLivingEntities(maxMobsRange, maxMobsRangeY, e -> {
                     if (e instanceof CustomMob customMob) {
-                        String id = customMob.getPapyrusId();
-                        return id != null && id.equals(entityID);
+                        String pid = customMob.getPapyrusId();
+                        return pid != null && entityIDs.contains(pid);
                     }
                     return false;
                 }).size();
@@ -102,11 +112,11 @@ public class AESpawner {
             endWave(now);
             return;
         }
-        if (entityID != null) {
+        if (!entityIDs.isEmpty()) {
             int nearby = centerLocation.getNearbyLivingEntities(maxMobsRange, maxMobsRangeY, e -> {
                 if (e instanceof CustomMob customMob) {
-                    String id = customMob.getPapyrusId();
-                    return id != null && id.equals(entityID);
+                    String pid = customMob.getPapyrusId();
+                    return pid != null && entityIDs.contains(pid);
                 }
                 return false;
             }).size();
@@ -122,25 +132,43 @@ public class AESpawner {
             nextIntraTick = now + cooldown;
             return;
         }
-        Class<? extends AetherBaseMob> toSpawn = npcData.getEntityClass();
+        String chosenId;
+        try {
+            chosenId = HRandom.selectWeightedRandomValue(weightedIds, null);
+        } catch (Throwable t) {
+            List<String> keys = new ArrayList<>(weightedIds.keySet());
+            chosenId = keys.get(new Random().nextInt(keys.size()));
+        }
+        NPCData chosen = npcCache.get(chosenId);
+        if (chosen == null) {
+            nextIntraTick = now + cooldown;
+            return;
+        }
+        Class<? extends AetherBaseMob> toSpawn = chosen.getEntityClass();
         try {
             AetherBaseMob activeNPC;
             if (minLevel != -1 && maxLevel != -1) {
                 int level;
-
                 if (minLevel == maxLevel) {
                     level = minLevel;
                 } else {
                     level = minLevel + new Random().nextInt(maxLevel - minLevel + 1);
                 }
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(npcData, loc.getWorld(), level);
+                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(chosen, loc.getWorld(), level);
             } else {
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(npcData, loc.getWorld());
+                activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(chosen, loc.getWorld());
             }
             activeNPC.setPos(loc.getX(), loc.getY(), loc.getZ());
             activeNPC.addToWorld();
+            BlockPos bp = new BlockPos(centerLocation.getBlockX(), centerLocation.getBlockY(), centerLocation.getBlockZ());
+            // Make them stay around the spawner area
+            activeNPC.setHomeTo(bp, radius);
+            activeNPC.setPersistenceRequired(false);
+            activeNPC.persist = false;
+            MoveTowardsRestrictionGoal goal = new MoveTowardsRestrictionGoal(activeNPC, 0.15);
+            activeNPC.goalSelector.addGoal(7, goal);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            Aether.log("Spawner " + id + " failed to spawn mob of type " + toSpawn.getName() + ": " + e.getMessage());
+            Aether.log("Spawner " + id + " failed to spawn mob: " + e.getMessage());
             e.printStackTrace();
             endWave(now);
             return;
@@ -167,18 +195,15 @@ public class AESpawner {
         while (attempts-- > 0) {
             int nx = centerLocation.getBlockX() - radius + random.nextInt(radius * 2 + 1);
             int nz = centerLocation.getBlockZ() - radius + random.nextInt(radius * 2 + 1);
-            Location loc;
-            if (radiusY == 0) {
-                Location highestBlock = centerLocation.getWorld().getHighestBlockAt(nx, nz, HeightMap.MOTION_BLOCKING).getLocation();
-                loc = highestBlock.add(0, 1, 0);
-            } else {
-                int ny = centerLocation.getBlockY() - radiusY + random.nextInt(radiusY * 2 + 1);
-                loc = new Location(centerLocation.getWorld(), nx + 0.5, ny, nz + 0.5);
-                if (loc.getBlock().getType().isSolid() || !loc.clone().add(0, 1, 0).getBlock().getType().isAir()) {
-                    continue;
-                }
+
+            Location highestBlock = centerLocation.getWorld().getHighestBlockAt(nx, nz, HeightMap.MOTION_BLOCKING).getLocation();
+            if (highestBlock.getY() > centerLocation.getBlockY() + radiusY) {
+                continue;
             }
-            return loc;
+            if (highestBlock.getY() < centerLocation.getBlockY() - radiusY) {
+                continue;
+            }
+            return highestBlock.add(0, 1, 0);
         }
         return null;
     }
@@ -200,7 +225,16 @@ public class AESpawner {
     }
 
     public String getEntityID() {
-        return entityID;
+        // Backwards compatibility: return an arbitrary id if present
+        return entityIDs.stream().findFirst().orElse(entityID);
+    }
+
+    public Set<String> getEntityIDs() {
+        return Collections.unmodifiableSet(entityIDs);
+    }
+
+    public String getEntityIDsString() {
+        return String.join(",", entityIDs);
     }
 
     public int getRadiusY() {
@@ -252,10 +286,51 @@ public class AESpawner {
     }
 
     private void load() {
-        npcData = creatureManager.getByID(config.getString("id"));
+        // comma-separated id string with optional weights (e.g., "bandit;70, marksman;30" or "bandit:70,marksman:30").
+        weightedIds.clear();
+        npcCache.clear();
+        entityIDs.clear();
+        String rawId = config.getString("id");
+        if (rawId != null && !rawId.isBlank()) {
+            String[] parts = rawId.split(",");
+            for (String p : parts) {
+                String token = p.trim();
+                if (token.isEmpty()) continue;
+                String idStr = token;
+                int weight = 100;
+                int sep = token.indexOf(';');
+                if (sep < 0) sep = token.indexOf(':');
+                if (sep > 0 && sep < token.length() - 1) {
+                    idStr = token.substring(0, sep).trim();
+                    try {
+                        weight = Integer.parseInt(token.substring(sep + 1).trim());
+                    } catch (NumberFormatException ignored) {}
+                }
+                if (idStr.isEmpty()) continue;
+                weightedIds.put(idStr, weight);
+            }
+        }
+        if (weightedIds.isEmpty()) {
+            String single = config.getString("id");
+            if (single != null && !single.isBlank()) {
+                weightedIds.put(single.trim(), 100);
+            }
+        }
+        for (Map.Entry<String, Integer> entry : weightedIds.entrySet()) {
+            String mobId = entry.getKey();
+            NPCData data = creatureManager.getByID(mobId);
+            if (data == null) {
+                Aether.addException("Spawner:" + id, "Unknown NPC id '" + mobId + "' in spawner", "Ensure the NPC id exists", null);
+                continue;
+            }
+            npcCache.put(mobId, data);
+            entityIDs.add(mobId);
+        }
+        npcData = npcCache.values().stream().findFirst().orElse(null);
         if (npcData != null) {
             entityID = npcData.getID();
         }
+
         World world = Bukkit.getWorld(config.getString("loc.world", "Erethon"));
         int x = config.getInt("loc.x", 0);
         int y = config.getInt("loc.y", 64);
