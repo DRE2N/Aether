@@ -31,6 +31,7 @@ dependencies {
 
     compileOnly("de.erethon.hephaestus:Hephaestus:1.0.4-SNAPSHOT")
     compileOnly("de.erethon.questsxl:QuestsXL:1.0.4-SNAPSHOT")
+    compileOnly("de.erethon.hecate:Hecate:1.2-SNAPSHOT")
 }
 
 tasks {

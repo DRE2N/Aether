@@ -21,6 +21,7 @@ public class CommandCache extends ECommandCache {
         addCommand(new ReloadCommand());
         addCommand(new FormationCommand());
         addCommand(new KillCommand());
+        addCommand(new DebugCommand());
 
     }
 }

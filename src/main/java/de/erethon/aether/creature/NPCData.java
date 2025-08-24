@@ -5,6 +5,9 @@ import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.MobAttributeRange;
 import de.erethon.aether.combat.MobLevelInfo;
+import de.erethon.aether.combat.MobLevelLoot;
+import de.erethon.aether.combat.MobLootEntry;
+import de.erethon.aether.combat.MobXPRange;
 import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.hephaestus.items.HItemLibrary;
@@ -652,7 +655,6 @@ public class NPCData {
                     }
 
                     int weight = levelSection.getInt("weight", 100);
-                    String messageKey = levelSection.getString("messageTranslationKey");
 
                     Map<org.bukkit.attribute.Attribute, MobAttributeRange> attributeBonuses = new HashMap<>();
 
@@ -674,7 +676,7 @@ public class NPCData {
 
                                 org.bukkit.attribute.Attribute bukkitAttribute;
                                 try {
-                                    bukkitAttribute = org.bukkit.Registry.ATTRIBUTE.get(NamespacedKey.fromString(attributeId));
+                                    bukkitAttribute = org.bukkit.Registry.ATTRIBUTE.get(NamespacedKey.fromString("minecraft:" + attributeId));
                                     if (bukkitAttribute == null) {
                                         throw new IllegalArgumentException("Attribute not found: " + attributeId);
                                     }
@@ -699,7 +701,54 @@ public class NPCData {
                         }
                     }
 
-                    MobLevelInfo info = new MobLevelInfo(level, messageKey, attributeBonuses);
+                    // Load level-based loot
+                    MobLevelLoot levelLoot = null;
+                    if (levelSection.contains("loot")) {
+                        ConfigurationSection lootSection = levelSection.getConfigurationSection("loot");
+                        if (lootSection != null) {
+                            List<MobLootEntry> lootItems = new ArrayList<>();
+                            MobXPRange xpRange = new MobXPRange(0, 0);
+
+                            // Load XP
+                            if (lootSection.contains("xp")) {
+                                if (lootSection.contains("xp.min") && lootSection.contains("xp.max")) {
+                                    int minXP = lootSection.getInt("xp.min");
+                                    int maxXP = lootSection.getInt("xp.max");
+                                    xpRange = new MobXPRange(minXP, maxXP);
+                                } else if (lootSection.contains("xp.value") || lootSection.isInt("xp")) {
+                                    int xpValue = lootSection.getInt("xp.value", lootSection.getInt("xp"));
+                                    xpRange = new MobXPRange(xpValue, xpValue);
+                                }
+                            }
+
+                            // Load items
+                            if (lootSection.contains("items")) {
+                                for (String itemString : lootSection.getStringList("items")) {
+                                    Aether.log("Parsing level " + level + " loot item " + itemString);
+                                    String[] split = itemString.split(";");
+                                    float chance = 100.0f;
+                                    if (split.length == 2) {
+                                        try {
+                                            chance = Float.parseFloat(split[1]);
+                                        } catch (Exception e) {
+                                            Aether.addException(ID, "Error parsing chance for loot item " + split[0] + " in level " + level, "Ensure the chance is a valid number", e);
+                                            continue;
+                                        }
+                                    }
+                                    HItem hitem = plugin.getItemLibrary().get(NamespacedKey.fromString(split[0]));
+                                    if (hitem == null) {
+                                        Aether.addException(ID, "Could not find item " + split[0] + " for level " + level, "Ensure the item exists in the item library", null);
+                                        continue;
+                                    }
+                                    lootItems.add(new MobLootEntry(hitem, chance));
+                                }
+                            }
+
+                            levelLoot = new MobLevelLoot(level, lootItems, xpRange);
+                        }
+                    }
+
+                    MobLevelInfo info = new MobLevelInfo(level, attributeBonuses, levelLoot);
                     levelWeights.put(level, weight);
                     levelInfo.put(level, info);
                 }

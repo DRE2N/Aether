@@ -4,6 +4,8 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.MobAttributeRange;
 import de.erethon.aether.combat.MobLevelInfo;
+import de.erethon.aether.combat.MobLevelLoot;
+import de.erethon.aether.combat.MobLootEntry;
 import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.CreatureInteractEvent;
@@ -11,6 +13,9 @@ import de.erethon.aether.events.CreatureLoadEvent;
 import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.daedalus.utils.DataMappings;
+import de.erethon.hecate.Hecate;
+import de.erethon.hecate.data.HCharacter;
+import de.erethon.hecate.progression.LevelUtil;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.papyrus.CraftPDamageType;
 import de.erethon.papyrus.entities.CraftCustomMob;
@@ -38,7 +43,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
@@ -75,7 +79,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob {
@@ -93,6 +99,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private boolean isTalking = false;
     private boolean isChargingCrossbow = false;
 
+    private Map<Player, Double> damageTracker = new HashMap<>();
+
 
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
@@ -108,8 +116,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         this.data = data;
 
         if (data.hasLevels()) {
-            mobLevel = overrideLevel;
+            mobLevel = Objects.requireNonNullElseGet(overrideLevel, data::selectRandomLevel);
             levelInfo = data.getLevelInfoForLevel(mobLevel);
+            Aether.log("Spawned " + data.getID() + " at level " + mobLevel);
         }
 
         bukkitLivingEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
@@ -132,7 +141,12 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     private void logDebug(String message) {
-        getBukkitEntity().getLocation().getNearbyPlayers(8).forEach(p -> p.sendMessage(Component.text("[DEBUG] " + message)));
+        getBukkitEntity().getLocation().getNearbyPlayers(8).forEach(p -> {
+            if (p.hasPermission("aether.debug") || !Aether.AETHER_DEBUG_MODE) {
+                return;
+            }
+            p.sendMessage(Component.text("[DEBUG] " + message));
+        });
     }
 
     @Override
@@ -236,6 +250,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             } catch (Exception e) {
                 Aether.log("Failed to handle damage for " + data.getID() + ": " + e.getMessage());
             }
+            damageTracker.put(player, damageTracker.getOrDefault(player, 0.0) + amount);
         }
         return super.hurtServer(level, source, amount, type);
     }
@@ -290,27 +305,168 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
             Bukkit.getPluginManager().callEvent(creatureDeathEvent);
         }
-        // Drop loot
-        try { // Exceptions here crash the server
-            for (Map.Entry<HItem, Float> entry : data.getLoot().entrySet()) {
-                HItem item = entry.getKey();
-                float chance = entry.getValue() / 100;
-                if (chance < 1 && random.nextFloat() > chance) {
-                    continue;
-                }
-                ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
-                logDebug("Dropping loot " + item.getPatch().toString() + ", chance was " + chance * 100 + "%");
-                level().addFreshEntity(itemEntity);
-            }
-            // TODO: Tyche
-            if (data.getDropXP() > 0) {
-                level().addFreshEntity(new ExperienceOrb(level(), getX(), getY(), getZ(), data.getDropXP(), org.bukkit.entity.ExperienceOrb.SpawnReason.ENTITY_DEATH, entity, this));
-            }
-        } catch (Throwable e) {
-            Aether.log("Failed to drop loot for " + data.getID() + ": " + e.getMessage());
-        }
+
+        // Calculate damage distribution and distribute loot/XP
+        distributeLootAndXP();
+
         if (holder != null) {
             holder.onDeath();
+        }
+    }
+
+    private void distributeLootAndXP() {
+        try {
+            Map<Player, Double> nearbyParticipants = new HashMap<>();
+            double totalDamage = 0.0;
+
+            for (Map.Entry<Player, Double> entry : damageTracker.entrySet()) {
+                Player player = entry.getKey();
+                double damage = entry.getValue();
+
+                // Check if player is still nearby (within 16 blocks)
+                if (player.distanceToSqr(this) <= 16 * 16) {
+                    nearbyParticipants.put(player, damage);
+                    totalDamage += damage;
+                }
+            }
+
+            if (nearbyParticipants.isEmpty()) {
+                return;
+            }
+
+            logDebug("Distributing loot among " + nearbyParticipants.size() + " participants");
+
+            if (levelInfo != null && levelInfo.loot() != null) {
+                distributeLevelBasedLoot(nearbyParticipants, totalDamage);
+                distributeLevelBasedXP(nearbyParticipants, totalDamage);
+            } else {
+                distributeClassicLoot(nearbyParticipants, totalDamage);
+                distributeClassicXP(nearbyParticipants, totalDamage);
+            }
+        } catch (Throwable e) {
+            Aether.log("Failed to distribute loot for " + data.getID() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void distributeLevelBasedLoot(Map<Player, Double> participants, double totalDamage) {
+        MobLevelLoot loot = levelInfo.loot();
+
+        for (MobLootEntry entry : loot.lootItems()) {
+            HItem item = entry.item();
+            float baseChance = entry.chance() / 100.0f;
+
+            for (Map.Entry<Player, Double> participant : participants.entrySet()) {
+                Player player = participant.getKey();
+                double damageContribution = participant.getValue() / totalDamage;
+
+                // Scale chance based on damage contribution
+                // Players with higher damage get better chances at rare loot
+                float scaledChance = (float) (baseChance * damageContribution);
+
+                // Add a minimum chance for all participants (10% of base chance)
+                float minimumChance = baseChance * 0.1f;
+                scaledChance = Math.max(scaledChance, minimumChance);
+
+                // Roll for this player
+                if (random.nextFloat() <= scaledChance) {
+                    // Never drop items below the mob's level
+                    ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack(mobLevel).getVanillaStack());
+                    itemEntity.setTarget(player.getUUID());
+                    itemEntity.getBukkitEntity().setVisibleByDefault(false);
+                    org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
+                    bukkitPlayer.showEntity(Aether.getInstance(), itemEntity.getBukkitEntity());
+                    logDebug("Dropping level " + mobLevel + " loot " + item.getPatch().toString() +
+                            " for " + player.getName().getString() +
+                            " (damage: " + String.format("%.1f", damageContribution * 100) + "%, chance: " + String.format("%.1f", scaledChance * 100) + "%)");
+                    level().addFreshEntity(itemEntity);
+                } else{
+                    logDebug("No loot, chance: " + String.format("%.1f", scaledChance * 100) + "% - Minimum: " + String.format("%.1f", (baseChance * 0.1f) * 100) + "%");
+                }
+            }
+        }
+    }
+
+    private void distributeLevelBasedXP(Map<Player, Double> participants, double totalDamage) {
+        if (levelInfo.loot().xpRange().min() <= 0 && levelInfo.loot().xpRange().max() <= 0) {
+            return;
+        }
+
+        int baseXP = levelInfo.loot().xpRange().getRandom();
+
+        for (Map.Entry<Player, Double> participant : participants.entrySet()) {
+            Player player = participant.getKey();
+            double damageContribution = participant.getValue() / totalDamage;
+
+            // Scale XP based on damage contribution with a minimum of 10%
+            double xpMultiplier = Math.max(damageContribution, 0.1);
+            int playerXP = (int) (baseXP * xpMultiplier);
+
+            if (playerXP > 0) {
+                org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
+                HCharacter character = Hecate.getInstance().getDatabaseManager().getCurrentCharacter(bukkitPlayer);
+                LevelUtil.giveCharacterXp(character, playerXP);
+                logDebug("Drop " + playerXP + " XP for " + player.getName().getString() +
+                        " (damage: " + String.format("%.1f", damageContribution * 100) + "%)");
+            }
+        }
+    }
+
+    private void distributeClassicLoot(Map<Player, Double> participants, double totalDamage) {
+        for (Map.Entry<HItem, Float> lootEntry : data.getLoot().entrySet()) {
+            HItem item = lootEntry.getKey();
+            float baseChance = lootEntry.getValue() / 100.0f;
+
+            // For each participant, calculate their chance based on damage contribution
+            for (Map.Entry<Player, Double> participant : participants.entrySet()) {
+                Player player = participant.getKey();
+                double damageContribution = participant.getValue() / totalDamage;
+
+                // Scale chance based on damage contribution
+                float scaledChance = (float) (baseChance * damageContribution);
+
+                // Add a minimum chance for all participants (10% of base chance)
+                float minimumChance = baseChance * 0.1f;
+                scaledChance = Math.max(scaledChance, minimumChance);
+
+                // Roll for this player
+                if (random.nextFloat() <= scaledChance) {
+                    ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack().getVanillaStack());
+                    itemEntity.setTarget(player.getUUID());
+                    itemEntity.getBukkitEntity().setVisibleByDefault(false);
+                    org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
+                    bukkitPlayer.showEntity(Aether.getInstance(), itemEntity.getBukkitEntity());
+                    logDebug("Dropping loot " + item.getPatch().toString() +
+                            " for " + player.getName().getString() +
+                            " (damage: " + String.format("%.1f", damageContribution * 100) + "%, chance: " + String.format("%.1f", scaledChance * 100) + "%)");
+                    level().addFreshEntity(itemEntity);
+                }
+            }
+        }
+    }
+
+    private void distributeClassicXP(Map<Player, Double> participants, double totalDamage) {
+        if (data.getDropXP() <= 0) {
+            return;
+        }
+
+        int baseXP = data.getDropXP();
+
+        for (Map.Entry<Player, Double> participant : participants.entrySet()) {
+            Player player = participant.getKey();
+            double damageContribution = participant.getValue() / totalDamage;
+
+            // Scale XP based on damage contribution with a minimum of 10%
+            double xpMultiplier = Math.max(damageContribution, 0.1);
+            int playerXP = (int) (baseXP * xpMultiplier);
+
+            if (playerXP > 0) {
+                org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
+                HCharacter character = Hecate.getInstance().getDatabaseManager().getCurrentCharacter(bukkitPlayer);
+                LevelUtil.giveCharacterXp(character, playerXP);
+                logDebug("Gave " + playerXP + " XP for " + player.getName().getString() +
+                        " (damage: " + String.format("%.1f", damageContribution * 100) + "%)");
+            }
         }
     }
 
@@ -480,14 +636,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         collides = data.hasCollision();
         maxAirTicks = data.getMaximumAir();
 
-        for (Map.Entry<Holder<Attribute>, Double> entry : data.getAttributes().entrySet()) {
-            if (getAttribute(entry.getKey()) == null) {
-                continue;
-            }
-            getAttribute(entry.getKey()).setBaseValue(entry.getValue());
-            Aether.log("Set attribute " + entry.getKey().value().getDescriptionId() + " to " + entry.getValue() + " for " + data.getID());
-        }
-
         applyLevelAttributes();
 
         // Love how bukkit and vanilla names don't match here lol
@@ -589,3 +737,4 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
 }
+

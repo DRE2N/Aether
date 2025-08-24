@@ -29,7 +29,7 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
 
     @QParamDoc(name = "mobs", description = "The IDs of the mobs that count towards this objective", required = true)
     private Set<String> mobs;
-    @QParamDoc(name = "radius", description = "If set and on an event, the mob must be within the specified radius of the event  to count. Default: -1 (no radius check)")
+    @QParamDoc(name = "radius", description = "If set and on an event, the mob must be within the specified radius of the event to count. Default: -1 (no radius check)")
     private int radius;
 
     @Override

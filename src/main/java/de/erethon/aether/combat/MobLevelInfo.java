@@ -4,5 +4,5 @@ import org.bukkit.attribute.Attribute;
 
 import java.util.Map;
 
-public record MobLevelInfo(int level, String messageTranslationKey, Map<Attribute, MobAttributeRange> baseAttributeBonus) {
+public record MobLevelInfo(int level, Map<Attribute, MobAttributeRange> baseAttributeBonus, MobLevelLoot loot) {
 }

@@ -65,6 +65,8 @@ public final class Aether extends EPlugin implements Listener {
 
     private static final List<ErrorEntry> errors = new ArrayList<>();
 
+    public static boolean AETHER_DEBUG_MODE = false;
+
     public Aether() {
         settings = EPluginSettings.builder()
                 .economy(true)
