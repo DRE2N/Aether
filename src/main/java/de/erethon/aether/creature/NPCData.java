@@ -3,10 +3,12 @@ package de.erethon.aether.creature;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
+import de.erethon.aether.combat.MobAttributeRange;
+import de.erethon.aether.combat.MobLevelInfo;
 import de.erethon.aether.combat.SpellCastEntry;
-import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.hephaestus.items.HItemLibrary;
+import de.erethon.hephaestus.utils.HRandom;
 import de.erethon.spellbook.api.SpellLibrary;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -31,7 +33,14 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 
 public class NPCData {
 
@@ -106,6 +115,10 @@ public class NPCData {
     // Loot
     private int dropXP = 0;
     private Map<HItem, Float> loot = new HashMap<>();
+
+    // Level System
+    private Map<Integer, Integer> levelWeights = new HashMap<>();
+    private Map<Integer, MobLevelInfo> levelInfo = new HashMap<>();
 
     public NPCData(EntityType<?> displayType) {
         this.displayType = displayType;
@@ -307,7 +320,7 @@ public class NPCData {
     }
 
     public void load() {
-        MessageUtil.log("Loading npc " + ID);
+        Aether.log("Loading npc " + ID);
         // Loading
         String classString = cfg.getString("class", "de.erethon.aether.creature.AetherBaseMob");
         try {
@@ -342,7 +355,7 @@ public class NPCData {
         skinLink = cfg.getString("skin");
         if (cfg.contains("skins")) {
             skins = cfg.getStringList("skins");
-            MessageUtil.log("Loaded " + skins.size() + " skins.");
+            Aether.log("Loaded " + skins.size() + " skins.");
         }
         // Attributes
         if (cfg.contains("attributes") && cfg.isConfigurationSection("attributes")) {
@@ -479,7 +492,7 @@ public class NPCData {
                 goals = GoalLoader.loadGoals(cfg.getStringList("ai.goals"));
             } catch (Exception e) {
                 Aether.addException(ID, "Error loading goals", "Ensure the goals are properly configured", e);
-                MessageUtil.log("Error loading goals for " + ID);
+                Aether.log("Error loading goals for " + ID);
                 e.printStackTrace();
             }
         }
@@ -488,7 +501,7 @@ public class NPCData {
                 targets = GoalLoader.loadGoals(cfg.getStringList("ai.targets"));
             } catch (Exception e) {
                 Aether.addException(ID, "Error loading targets", "Ensure the targets are properly configured", e);
-                MessageUtil.log("Error loading targets for " + ID);
+                Aether.log("Error loading targets for " + ID);
                 e.printStackTrace();
             }
         }
@@ -498,7 +511,7 @@ public class NPCData {
         if (cfg.contains("loot.items")) {
             loot.clear();
             for (String s : cfg.getStringList("loot.items")) {
-                MessageUtil.log("Parsing loot item " + s);
+                Aether.log("Parsing loot item " + s);
                 String[] split = s.split(";");
                 float chance = 100.0f;
                 if (split.length == 2) {
@@ -516,9 +529,13 @@ public class NPCData {
                 }
                 loot.put(hitem, chance);
             }
-            MessageUtil.log("Loaded " + loot.size() + " loot items.");
+            Aether.log("Loaded " + loot.size() + " loot items.");
         }
-        MessageUtil.log("Loaded NPC: " + getID());
+
+        // Level System
+        loadLevelSystem();
+
+        Aether.log("Loaded NPC: " + getID());
         isValid = true;
     }
 
@@ -600,7 +617,7 @@ public class NPCData {
                 for (String string : section.getKeys(false)) {
                     SpellCastEntry entry = new SpellCastEntry();
                     if (section.getConfigurationSection(string) == null) {
-                        MessageUtil.log("No configuration found for spell " + string + " in " + ID);
+                        Aether.log("No configuration found for spell " + string + " in " + ID);
                         continue;
                     }
                     entry.load(ID + " onTarget", section.getConfigurationSection(string));
@@ -611,6 +628,122 @@ public class NPCData {
         if (cfg.contains("qxl")) {
             qxlSection = cfg.getConfigurationSection("qxl");
         }
+    }
+
+    private void loadLevelSystem() {
+        if (cfg.contains("leveling")) {
+            ConfigurationSection section = cfg.getConfigurationSection("leveling");
+            if (section == null) {
+                Aether.addException(ID, "No configuration found for leveling", "Ensure the configuration is correct and not empty", null);
+            } else {
+                for (String key : section.getKeys(false)) {
+                    int level;
+                    try {
+                        level = Integer.parseInt(key);
+                    } catch (Exception e) {
+                        Aether.addException(ID, "Invalid level key " + key, "Ensure the level is a valid number", e);
+                        continue;
+                    }
+
+                    ConfigurationSection levelSection = section.getConfigurationSection(key);
+                    if (levelSection == null) {
+                        Aether.addException(ID, "No configuration section found for level " + key, "Ensure the level configuration is correct", null);
+                        continue;
+                    }
+
+                    int weight = levelSection.getInt("weight", 100);
+                    String messageKey = levelSection.getString("messageTranslationKey");
+
+                    Map<org.bukkit.attribute.Attribute, MobAttributeRange> attributeBonuses = new HashMap<>();
+
+                    if (levelSection.contains("attributes")) {
+                        ConfigurationSection attrSection = levelSection.getConfigurationSection("attributes");
+                        if (attrSection != null) {
+                            for (String attrKey : attrSection.getKeys(false)) {
+                                ConfigurationSection attrConfig = attrSection.getConfigurationSection(attrKey);
+                                if (attrConfig == null) {
+                                    Aether.addException(ID, "No configuration found for attribute " + attrKey + " in level " + key, "Ensure the attribute configuration is correct", null);
+                                    continue;
+                                }
+
+                                String attributeId = attrConfig.getString("id");
+                                if (attributeId == null) {
+                                    Aether.addException(ID, "No id found for attribute " + attrKey + " in level " + key, "Ensure the attribute configuration includes 'id: '", null);
+                                    continue;
+                                }
+
+                                org.bukkit.attribute.Attribute bukkitAttribute;
+                                try {
+                                    bukkitAttribute = org.bukkit.Registry.ATTRIBUTE.get(NamespacedKey.fromString(attributeId));
+                                    if (bukkitAttribute == null) {
+                                        throw new IllegalArgumentException("Attribute not found: " + attributeId);
+                                    }
+                                } catch (Exception e) {
+                                    Aether.addException(ID, "Could not find bukkit attribute " + attributeId, "Ensure the attribute exists", e);
+                                    continue;
+                                }
+
+                                // Check if it's a range or single value
+                                if (attrConfig.contains("min") && attrConfig.contains("max")) {
+                                    double min = attrConfig.getDouble("min");
+                                    double max = attrConfig.getDouble("max");
+                                    attributeBonuses.put(bukkitAttribute, new MobAttributeRange(bukkitAttribute, min, max));
+                                } else if (attrConfig.contains("value")) {
+                                    double value = attrConfig.getDouble("value");
+                                    attributeBonuses.put(bukkitAttribute, new MobAttributeRange(bukkitAttribute, value, value));
+                                } else {
+                                    Aether.addException(ID, "No value or min/max found for attribute " + attrKey + " in level " + key, "Ensure the attribute configuration includes 'value' or 'min'/'max'", null);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    MobLevelInfo info = new MobLevelInfo(level, messageKey, attributeBonuses);
+                    levelWeights.put(level, weight);
+                    levelInfo.put(level, info);
+                }
+                Aether.log("Loaded " + levelInfo.size() + " level configurations for " + ID);
+            }
+        }
+    }
+
+    public Map<Integer, Integer> getLevelWeights() {
+        return levelWeights;
+    }
+
+    public Map<Integer, MobLevelInfo> getLevelInfo() {
+        return levelInfo;
+    }
+
+    public boolean hasLevels() {
+        return !levelWeights.isEmpty();
+    }
+
+    public int selectRandomLevel() {
+        return selectRandomLevel(null);
+    }
+
+    public int selectRandomLevel(Integer minLevel) {
+        if (levelWeights.isEmpty()) {
+            return 1; // Default level
+        }
+        return HRandom.selectWeightedRandomValue(levelWeights, minLevel);
+    }
+
+    public MobLevelInfo getLevelInfoForLevel(int level) {
+        if (levelInfo.containsKey(level)) {
+            return levelInfo.get(level);
+        }
+
+        int bestLevel = -1;
+        for (int configuredLevel : levelInfo.keySet()) {
+            if (configuredLevel <= level && configuredLevel > bestLevel) {
+                bestLevel = configuredLevel;
+            }
+        }
+
+        return bestLevel != -1 ? levelInfo.get(bestLevel) : null;
     }
 
     @Override

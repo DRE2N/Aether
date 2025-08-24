@@ -1,7 +1,6 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -62,7 +61,7 @@ public class SkinCache {
             String[] split = s.split(";");
             skins.add(new Skin(split[0], split[1], split[2]));
         }
-        MessageUtil.log("Loaded " + skins.size() + " skins from local cache.");
+        Aether.log("Loaded " + skins.size() + " skins from local cache.");
     }
 
     public void saveCache() {

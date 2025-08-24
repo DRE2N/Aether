@@ -4,12 +4,10 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
-import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.craftbukkit.util.CraftMagicNumbers;
 import org.bukkit.entity.EntityType;
 
 import java.util.Random;
@@ -87,7 +85,7 @@ public class AESpawner {
         int z = config.getInt("loc.z", 0);
         isTicking = config.getBoolean("isTicking", true);
         centerLocation = new Location(world, x, y, z);
-        MessageUtil.log("Loaded spawner " + config.getName() + " at " + centerLocation.toString());
+        Aether.log("Loaded spawner " + config.getName() + " at " + centerLocation.toString());
         radius = config.getInt("radius", 16);
         radiusY = config.getInt("radiusY", 4);
         mobsPerSpawn = config.getInt("mobsPerSpawn", 1);

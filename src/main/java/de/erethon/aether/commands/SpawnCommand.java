@@ -1,7 +1,6 @@
 package de.erethon.aether.commands;
 
 import de.erethon.aether.Aether;
-import de.erethon.aether.creature.ActiveNPC;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.bedrock.chat.MessageUtil;
@@ -65,7 +64,7 @@ public class SpawnCommand extends ECommand {
                     MessageUtil.sendMessage(commandSender, "&aNPC " + npcData.getID() + " gespawnt. BaseClass: " + activeNPC.getClass().getSimpleName());
                 } catch (Exception e) {
                     MessageUtil.sendMessage(commandSender, "&cFehler beim Spawnen des NPCs: " + e.getMessage());
-                    MessageUtil.log("Error while spawning NPC " + npcData.getID()+ " for " + player.getName());
+                    Aether.log("Error while spawning NPC " + npcData.getID()+ " for " + player.getName());
                     e.printStackTrace();
                 }
             }

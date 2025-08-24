@@ -1,7 +1,6 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -28,7 +27,7 @@ public class CreatureManager {
                 return npcData;
             }
         }
-        MessageUtil.log("Could not find creature with id " + id + "!");
+        Aether.log("Could not find creature with id " + id + "!");
         return null;
     }
 
@@ -48,7 +47,7 @@ public class CreatureManager {
 
     public void load() {
         creatures.clear();
-        MessageUtil.log("Loading creatures (" + Aether.CREATURES.listFiles().length + " files in folder)");
+        Aether.log("Loading creatures (" + Aether.CREATURES.listFiles().length + " files in folder)");
         for (File file : Aether.CREATURES.listFiles()){
             if (file.getName().contains("disabled")) {
                 continue;
@@ -59,7 +58,7 @@ public class CreatureManager {
             }
             loadNPCFile(file);
         }
-        MessageUtil.log("Loaded " + creatures.size() + " creatures.");
+        Aether.log("Loaded " + creatures.size() + " creatures.");
     }
 
     public void loadDelayed() { // Spellbook
@@ -86,7 +85,7 @@ public class CreatureManager {
             configuration = YamlConfiguration.loadConfiguration(file);
         } catch (Exception e) {
             Aether.addException("YamlConfiguration", "Error loading NPC file " + file.getName(), "Make sure its a valid YAML file", e);
-            MessageUtil.log("Error loading NPC file " + file.getName());
+            Aether.log("Error loading NPC file " + file.getName());
             e.printStackTrace();
             return;
         }
@@ -95,7 +94,7 @@ public class CreatureManager {
             creatures.add(new NPCData(configuration, id));
         } catch (Exception e) {
             Aether.addException("NPCData", "Error loading NPC data" + id, "Check the file for errors", e);
-            MessageUtil.log("Error loading NPC data " + id);
+            Aether.log("Error loading NPC data " + id);
             e.printStackTrace();
         }
     }

@@ -1,9 +1,24 @@
 package de.erethon.aether.ai;
 
 import de.erethon.aether.Aether;
-import de.erethon.aether.ai.goals.*;
+import de.erethon.aether.ai.goals.AEAvoidTargetGoal;
+import de.erethon.aether.ai.goals.AEPathfinderGoal;
+import de.erethon.aether.ai.goals.AvoidWaterGoal;
+import de.erethon.aether.ai.goals.DoorInteractGoal;
+import de.erethon.aether.ai.goals.FleeSunGoal;
+import de.erethon.aether.ai.goals.FloatGoal;
 import de.erethon.aether.ai.goals.HurtByTarget;
-import de.erethon.bedrock.chat.MessageUtil;
+import de.erethon.aether.ai.goals.LeapAtTargetGoal;
+import de.erethon.aether.ai.goals.LookAtPlayer;
+import de.erethon.aether.ai.goals.MeleeAttackGoal;
+import de.erethon.aether.ai.goals.NearestAttackableTarget;
+import de.erethon.aether.ai.goals.PanicGoal;
+import de.erethon.aether.ai.goals.RandomLookAroundGoal;
+import de.erethon.aether.ai.goals.RandomStrollGoal;
+import de.erethon.aether.ai.goals.RandomSwimGoal;
+import de.erethon.aether.ai.goals.RangedBowAttackGoal;
+import de.erethon.aether.ai.goals.RangedCrossbowAttackGoal;
+import de.erethon.aether.ai.goals.RestrictSunGoal;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,7 +51,7 @@ public class GoalLoader {
     public static Set<AEPathfinderGoal> loadGoals(List<String> cfg) {
         Set<AEPathfinderGoal> goals = new HashSet<>();
         for (String cfgString : cfg) {
-            MessageUtil.log("Raw: " + cfgString);
+            Aether.log("Raw: " + cfgString);
             String[] split = cfgString.split(";");
             int priority;
             try {
@@ -55,7 +70,7 @@ public class GoalLoader {
                 continue;
             }
             AEPathfinderGoal goal = null;
-            MessageUtil.log("Split1: " + Arrays.toString(split));
+            Aether.log("Split1: " + Arrays.toString(split));
             switch (goalType) {
                 case AVOID_TARGET -> {
                     goal = new AEAvoidTargetGoal();
@@ -113,7 +128,7 @@ public class GoalLoader {
                 }
             }
             String[] args = Arrays.copyOfRange(split, 2,split.length);
-            MessageUtil.log("SplitArgs: " + Arrays.toString(args));
+            Aether.log("SplitArgs: " + Arrays.toString(args));
             try {
                 goal.load(args);
             }

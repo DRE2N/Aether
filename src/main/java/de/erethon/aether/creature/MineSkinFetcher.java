@@ -1,7 +1,6 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
-import de.erethon.bedrock.chat.MessageUtil;
 import org.bukkit.Bukkit;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -13,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,7 +23,7 @@ public class MineSkinFetcher {
 
     public static void fetchSkinFromIdAsync(String linkUrl, Callback callback) {
         if (linkUrl == null) {
-            MessageUtil.log("Trying to fetch invalid skin for NPC.");
+            Aether.log("Trying to fetch invalid skin for NPC.");
             return;
         }
         if (skinsInQueue.contains(linkUrl)) {
@@ -34,7 +32,7 @@ public class MineSkinFetcher {
         Aether plugin = Aether.getInstance();
         String auth = plugin.getSkinCache().getAuthToken();
         if (auth == null || auth.isEmpty()) {
-            MessageUtil.log("No MineSkin auth token found.");
+            Aether.log("No MineSkin auth token found.");
             return;
         }
         skinsInQueue.add(linkUrl);

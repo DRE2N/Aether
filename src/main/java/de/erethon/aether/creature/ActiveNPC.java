@@ -3,8 +3,6 @@ package de.erethon.aether.creature;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.SpellCastEntry;
-import de.erethon.aether.tools.NMSUtils;
-import de.erethon.bedrock.chat.MessageUtil;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -13,7 +11,6 @@ import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
@@ -22,8 +19,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.inventory.EntityEquipment;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -53,7 +48,7 @@ public class ActiveNPC {
         }
         npcData = plugin.getCreatureManager().getByID(npcID);
         if (npcData == null) {
-            MessageUtil.log(npcID + " is invalid. (UUID: " + entity.getUniqueId() + ")");
+            Aether.log(npcID + " is invalid. (UUID: " + entity.getUniqueId() + ")");
             return;
         }
         baseEntity = entity;

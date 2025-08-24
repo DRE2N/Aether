@@ -31,7 +31,7 @@ public class PlayerListener implements Listener {
         AetherPacketHandler packetHandler = new AetherPacketHandler(plugin, serverPlayer);
         ChannelPipeline pipeline = serverPlayer.connection.connection.channel.pipeline();
         pipeline.addAfter("packet_handler", "aether_handler", packetHandler);
-        MessageUtil.log("Added handler to " + pipeline.names());
+        Aether.log("Added handler to " + pipeline.names());
     }*/
 
 }

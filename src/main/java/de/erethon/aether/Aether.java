@@ -79,11 +79,11 @@ public final class Aether extends EPlugin implements Listener {
     public static void addException(String locationIdentifier, String errorMessage,  String friendlyMessage, @Nullable Exception e) {
         if (e == null) {
             errors.add(new ErrorEntry(locationIdentifier, friendlyMessage, errorMessage, null));
-            MessageUtil.log(errorMessage);
+            Aether.log(errorMessage);
             return;
         }
         errors.add(new ErrorEntry(locationIdentifier, friendlyMessage, errorMessage, e.getStackTrace()));
-        MessageUtil.log(errorMessage);
+        Aether.log(errorMessage);
         e.printStackTrace();
     }
 
@@ -98,7 +98,7 @@ public final class Aether extends EPlugin implements Listener {
     public void onEnable() {
         super.onEnable();
         if (!compat.isPaper()) {
-            MessageUtil.log("Please use Paper. https://papermc.io/");
+            Aether.log("Please use Paper. https://papermc.io/");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -254,5 +254,9 @@ public final class Aether extends EPlugin implements Listener {
 
     public NamespacedKey getKey() {
         return key;
+    }
+    
+    public static void log(String msg) {
+        getInstance().getLogger().info(msg);
     }
 }

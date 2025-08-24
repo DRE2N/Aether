@@ -1,9 +1,7 @@
 package de.erethon.aether.spawning;
 
 import de.erethon.aether.Aether;
-import de.erethon.bedrock.chat.MessageUtil;
 import net.minecraft.world.level.ChunkPos;
-import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
@@ -11,14 +9,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class SpawnerManager extends BukkitRunnable implements Listener {
@@ -53,7 +49,7 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
                 }
             }
         }
-        MessageUtil.log("Loaded " + configuredSpawners.size() + " spawners.");
+        Aether.log("Loaded " + configuredSpawners.size() + " spawners.");
         Bukkit.getPluginManager().registerEvents(this, Aether.getInstance());
         for (AESpawner spawner : configuredSpawners) {
             int x = spawner.getCenterLocation().blockX();

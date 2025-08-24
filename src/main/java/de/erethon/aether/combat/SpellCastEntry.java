@@ -1,10 +1,7 @@
 package de.erethon.aether.combat;
 
 import de.erethon.aether.Aether;
-import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.spellbook.api.SpellData;
-import de.erethon.spellbook.api.SpellLibrary;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
 public class SpellCastEntry {
@@ -29,7 +26,7 @@ public class SpellCastEntry {
         spell = null; //library.getSpellByID(section.getName());
         if (spell == null) {
             Aether.addException(loadingID, "Spell not found: " + section.getName(), "Check if the Spellbook spell exists and is loaded", null);
-            MessageUtil.log("Spell not found: " + section.getName());
+            Aether.log("Spell not found: " + section.getName());
             return;
         }
         chance = section.getDouble("chance");
