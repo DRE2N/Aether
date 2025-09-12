@@ -795,6 +795,64 @@ public class NPCData {
         return bestLevel != -1 ? levelInfo.get(bestLevel) : null;
     }
 
+    /**
+     * Gets composite level info for a mob level, finding the best available configuration
+     * for each attribute individually. If a specific attribute isn't configured at the
+     * exact level, it falls back to the highest configured level below it.
+     */
+    public MobLevelInfo getCompositeLevelInfoForLevel(int level) {
+        if (levelInfo.isEmpty()) {
+            return null;
+        }
+
+        // Always build composite attribute bonuses by finding best level for each attribute
+        // This ensures attributes "fall through" from lower levels when not defined at higher levels
+        Map<org.bukkit.attribute.Attribute, MobAttributeRange> compositeAttributes = new HashMap<>();
+
+        // Collect all unique attributes across all levels
+        Set<org.bukkit.attribute.Attribute> allAttributes = new HashSet<>();
+        for (MobLevelInfo info : levelInfo.values()) {
+            allAttributes.addAll(info.baseAttributeBonus().keySet());
+        }
+
+        // For each attribute, find the best available level
+        for (org.bukkit.attribute.Attribute attribute : allAttributes) {
+            int bestLevelForAttribute = -1;
+
+            for (int configuredLevel : levelInfo.keySet()) {
+                MobLevelInfo info = levelInfo.get(configuredLevel);
+                // Only consider levels at or below the target level that have this specific attribute
+                if (configuredLevel <= level &&
+                    info.baseAttributeBonus().containsKey(attribute) &&
+                    configuredLevel > bestLevelForAttribute) {
+                    bestLevelForAttribute = configuredLevel;
+                }
+            }
+
+            if (bestLevelForAttribute != -1) {
+                MobLevelInfo bestInfo = levelInfo.get(bestLevelForAttribute);
+                compositeAttributes.put(attribute, bestInfo.baseAttributeBonus().get(attribute));
+                Aether.log("Using level " + bestLevelForAttribute + " configuration for attribute " +
+                          attribute.getKey() + " on mob level " + level);
+            }
+        }
+
+        // For loot, use the highest configured level at or below the target level
+        MobLevelLoot compositeLoot = null;
+        int bestLootLevel = -1;
+        for (int configuredLevel : levelInfo.keySet()) {
+            if (configuredLevel <= level && configuredLevel > bestLootLevel) {
+                MobLevelInfo info = levelInfo.get(configuredLevel);
+                if (info.loot() != null) {
+                    bestLootLevel = configuredLevel;
+                    compositeLoot = info.loot();
+                }
+            }
+        }
+
+        return new MobLevelInfo(level, compositeAttributes, compositeLoot);
+    }
+
     @Override
     public String toString() {
         return "NPCData{" +

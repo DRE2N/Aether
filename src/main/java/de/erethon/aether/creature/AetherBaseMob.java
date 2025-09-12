@@ -115,10 +115,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     public AetherBaseMob(NPCData data, World world, Integer overrideLevel) {
         super((EntityType<? extends Monster>) data.getDisplayType(), ((CraftWorld) world).getHandle());
         this.data = data;
+        this.displayType = data.getDisplayType();
 
         if (data.hasLevels()) {
             mobLevel = Objects.requireNonNullElseGet(overrideLevel, data::selectRandomLevel);
-            levelInfo = data.getLevelInfoForLevel(mobLevel);
+            levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
             Aether.log("Spawned " + data.getID() + " at level " + mobLevel);
         }
 
@@ -573,13 +574,14 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             remove(RemovalReason.DISCARDED);
             return;
         }
+        this.displayType = data.getDisplayType();
         Optional<Integer> papyrusVersion = input.getInt("papyrus-entity-version");
         version = papyrusVersion.orElse(0);
 
         Optional<Integer> savedLevel = input.getInt("aether-mob-level");
         if (savedLevel.isPresent()) {
             mobLevel = savedLevel.get();
-            levelInfo = data.getLevelInfoForLevel(mobLevel);
+            levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
             Aether.log("Loaded " + data.getID() + " at level " + mobLevel);
         }
 

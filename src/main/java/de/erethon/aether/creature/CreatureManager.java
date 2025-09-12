@@ -74,8 +74,9 @@ public class CreatureManager {
             }
             if (f.isDirectory()) {
                 loadSub(f);
+                continue;
             }
-            loadNPCFile(file);
+            loadNPCFile(f);
         }
     }
 

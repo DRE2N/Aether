@@ -2,6 +2,8 @@ package de.erethon.aether.combat;
 
 import de.erethon.aether.Aether;
 import de.erethon.spellbook.api.SpellData;
+import de.erethon.spellbook.api.SpellLibrary;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
 public class SpellCastEntry {
@@ -10,7 +12,7 @@ public class SpellCastEntry {
     private SpellData spell;
     private double chance;
 
-    //private SpellLibrary library = Bukkit.getServer().getSpellbookAPI().getLibrary();
+    private final SpellLibrary library = Bukkit.getServer().getSpellbookAPI().getLibrary();
 
 
     public boolean canCast() {
@@ -23,7 +25,7 @@ public class SpellCastEntry {
 
     public void load(String loadingID, ConfigurationSection section) {
         name = section.getName();
-        spell = null; //library.getSpellByID(section.getName());
+        spell = library.getSpellByID(section.getName());
         if (spell == null) {
             Aether.addException(loadingID, "Spell not found: " + section.getName(), "Check if the Spellbook spell exists and is loaded", null);
             Aether.log("Spell not found: " + section.getName());
