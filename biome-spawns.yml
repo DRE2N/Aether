@@ -1,0 +1,53 @@
+# Mob Spawning Configuration
+# This file controls which custom mobs spawn in specific regions and biomes
+# Mobs will completely replace vanilla mob spawns
+
+# Region-based spawning (takes priority over biome spawning)
+regions:
+  example_region:
+    mobs:
+      Bandit_Axe: 10      # Weight 10 - more likely to spawn
+      Forest_Wolf: 5      # Weight 5 - less likely to spawn
+
+  dangerous_zone:
+    mobs:
+      Elite_Bandit: 15
+      War_Wolf: 8
+      Dark_Mage: 3        # Rare spawn
+
+# Biome-based spawning (fallback when not in a configured region)
+biomes:
+  minecraft:plains:
+    mobs:
+      Plains_Bandit: 12
+      Wild_Horse: 8
+      Plains_Wolf: 6
+
+  minecraft:forest:
+    mobs:
+      Forest_Archer: 10
+      Forest_Bear: 7
+      Tree_Spirit: 4
+
+  minecraft:desert:
+    mobs:
+      Desert_Raider: 15
+      Sand_Scorpion: 8
+      Mirage_Walker: 3
+
+  minecraft:mountains:
+    mobs:
+      Mountain_Goat: 12
+      Rock_Troll: 6
+      Alpine_Hunter: 9
+
+  minecraft:ocean:
+    mobs:
+      Sea_Bandit: 8
+      Water_Elemental: 5
+
+# Note:
+# - Mob IDs must match existing NPCData IDs in your creature system
+# - Higher weight values = more likely to spawn
+# - If no mobs are configured for a location, vanilla spawning will occur
+# - Region spawning always takes priority over biome spawning

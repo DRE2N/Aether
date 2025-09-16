@@ -10,12 +10,17 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
+import org.bukkit.util.Transformation;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +57,12 @@ public class SpawnerCommand extends ECommand {
         switch (sub) {
             case "create":
                 handleCreate(args, player);
+                return;
+            case "copy":
+                handleCopy(args, player);
+                return;
+            case "copyproperties":
+                handleCopyProperties(args, player);
                 return;
             case "set":
                 handleSet(args, player);
@@ -126,6 +137,139 @@ public class SpawnerCommand extends ECommand {
         }
         spawnerManager.reloadSpawners();
         MessageUtil.sendMessage(player, "&aCreated spawner '&f" + spawnerId + "&a' for NPC '&f" + npcId + "&a' at your location.");
+    }
+
+    private void handleCopy(String[] args, Player player) {
+        if (args.length < 4) {
+            MessageUtil.sendMessage(player, "&cUsage: /ae spawner copy <sourceSpawnerId> <newSpawnerId>");
+            return;
+        }
+        String sourceSpawnerId = args[2];
+        String newSpawnerId = args[3];
+
+        // Check if source spawner exists
+        File sourceFile = findSpawnerFile(sourceSpawnerId);
+        if (sourceFile == null) {
+            MessageUtil.sendMessage(player, "&cSource spawner '&f" + sourceSpawnerId + "&c' not found.");
+            return;
+        }
+
+        // Check if new spawner ID already exists
+        if (findSpawnerFile(newSpawnerId) != null) {
+            MessageUtil.sendMessage(player, "&cA spawner with id '&f" + newSpawnerId + "&c' already exists.");
+            return;
+        }
+
+        // Load source spawner configuration
+        YamlConfiguration sourceYaml = YamlConfiguration.loadConfiguration(sourceFile);
+        if (!sourceYaml.contains(sourceSpawnerId)) {
+            MessageUtil.sendMessage(player, "&cSource spawner configuration not found in file.");
+            return;
+        }
+
+        // Create new file for the copied spawner
+        File newFile = new File(Aether.SPAWNERS, newSpawnerId + ".yml");
+        YamlConfiguration newYaml = new YamlConfiguration();
+
+        // Copy all properties from source spawner to new spawner
+        String sourceBase = sourceSpawnerId + ".";
+        String newBase = newSpawnerId + ".";
+
+        // Copy all configuration values
+        for (String key : sourceYaml.getConfigurationSection(sourceSpawnerId).getKeys(true)) {
+            Object value = sourceYaml.get(sourceBase + key);
+            newYaml.set(newBase + key, value);
+        }
+
+        // Update location to player's current location
+        Location playerLoc = player.getLocation();
+        newYaml.set(newBase + "loc.world", playerLoc.getWorld().getName());
+        newYaml.set(newBase + "loc.x", playerLoc.getBlockX());
+        newYaml.set(newBase + "loc.y", playerLoc.getBlockY());
+        newYaml.set(newBase + "loc.z", playerLoc.getBlockZ());
+
+        try {
+            newYaml.save(newFile);
+        } catch (IOException e) {
+            Aether.addException("SpawnerCommand.copy", "Failed saving spawner '" + newSpawnerId + "'", "Could not save spawner file", e);
+            MessageUtil.sendMessage(player, "&cFailed to save spawner file: " + e.getMessage());
+            return;
+        }
+
+        spawnerManager.reloadSpawners();
+        MessageUtil.sendMessage(player, "&aCreated copy of spawner '&f" + sourceSpawnerId + "&a' as '&f" + newSpawnerId + "&a' at your location.");
+    }
+
+    private void handleCopyProperties(String[] args, Player player) {
+        if (args.length < 4) {
+            MessageUtil.sendMessage(player, "&cUsage: /ae spawner copyproperties <sourceSpawnerId> <targetSpawnerId>");
+            return;
+        }
+        String sourceSpawnerId = args[2];
+        String targetSpawnerId = args[3];
+
+        // Check if source spawner exists
+        File sourceFile = findSpawnerFile(sourceSpawnerId);
+        if (sourceFile == null) {
+            MessageUtil.sendMessage(player, "&cSource spawner '&f" + sourceSpawnerId + "&c' not found.");
+            return;
+        }
+
+        // Check if target spawner exists
+        File targetFile = findSpawnerFile(targetSpawnerId);
+        if (targetFile == null) {
+            MessageUtil.sendMessage(player, "&cTarget spawner '&f" + targetSpawnerId + "&c' not found.");
+            return;
+        }
+
+        // Load source spawner configuration
+        YamlConfiguration sourceYaml = YamlConfiguration.loadConfiguration(sourceFile);
+        if (!sourceYaml.contains(sourceSpawnerId)) {
+            MessageUtil.sendMessage(player, "&cSource spawner configuration not found in file.");
+            return;
+        }
+
+        // Load target spawner configuration
+        YamlConfiguration targetYaml = YamlConfiguration.loadConfiguration(targetFile);
+        if (!targetYaml.contains(targetSpawnerId)) {
+            MessageUtil.sendMessage(player, "&cTarget spawner configuration not found in file.");
+            return;
+        }
+
+        // Save the target's location before copying properties
+        String targetBase = targetSpawnerId + ".";
+        String targetWorld = targetYaml.getString(targetBase + "loc.world");
+        int targetX = targetYaml.getInt(targetBase + "loc.x");
+        int targetY = targetYaml.getInt(targetBase + "loc.y");
+        int targetZ = targetYaml.getInt(targetBase + "loc.z");
+
+        // Copy properties from source to target (excluding location)
+        String sourceBase = sourceSpawnerId + ".";
+        List<String> propertiesToCopy = Arrays.asList("id", "isTicking", "radius", "radiusY", "mobsPerSpawn", "chance", "maxMobs", "maxMobsRange", "maxMobsRangeY", "cooldown", "activationRange", "waveSize", "waveCooldown", "minLevel", "maxLevel");
+
+        for (String property : propertiesToCopy) {
+            Object value = sourceYaml.get(sourceBase + property);
+            if (value != null) {
+                targetYaml.set(targetBase + property, value);
+            }
+        }
+
+        // Restore the target's original location
+        targetYaml.set(targetBase + "loc.world", targetWorld);
+        targetYaml.set(targetBase + "loc.x", targetX);
+        targetYaml.set(targetBase + "loc.y", targetY);
+        targetYaml.set(targetBase + "loc.z", targetZ);
+
+        try {
+            targetYaml.save(targetFile);
+        } catch (IOException e) {
+            Aether.addException("SpawnerCommand.copyProperties", "Failed saving spawner '" + targetSpawnerId + "'", "Could not save spawner file", e);
+            MessageUtil.sendMessage(player, "&cFailed to save spawner file: " + e.getMessage());
+            return;
+        }
+
+        spawnerManager.reloadSpawners();
+        MessageUtil.sendMessage(player, "&aCopied properties from spawner '&f" + sourceSpawnerId + "&a' to '&f" + targetSpawnerId + "&a' (location preserved).");
     }
 
     private void handleSet(String[] args, Player player) {
@@ -263,25 +407,111 @@ public class SpawnerCommand extends ECommand {
             return;
         }
         MessageUtil.sendMessage(player, "&aShowing &f" + nearby.size() + "&a spawners for &f" + (durationTicks / 20) + "&a seconds.");
+
+        List<TextDisplay> textDisplays = new ArrayList<>();
+        for (AESpawner s : nearby) {
+            Location c = s.getCenterLocation();
+            if (c == null || c.getWorld() == null) continue;
+
+            TextDisplay textDisplay = c.getWorld().spawn(c.clone().add(0.5, 3.0, 0.5), TextDisplay.class, e -> {;
+                e.setVisibleByDefault(false);
+                e.setShadowed(false);
+                e.setBackgroundColor(Color.fromARGB(0)); // fully transparent
+                int currentTick = Bukkit.getCurrentTick();
+                String timingInfo = getSpawnerTimingInfo(s, currentTick);
+                Component displayText = Component.text(s.getId(), NamedTextColor.GOLD)
+                        .append(Component.newline())
+                        .append(Component.text(s.getEntityIDsString(), NamedTextColor.YELLOW))
+                        .append(Component.newline())
+                        .append(Component.text("Radius: " + s.getRadius(), NamedTextColor.WHITE))
+                        .append(Component.newline())
+                        .append(Component.text("Wave Size: " + s.getWaveSize(), NamedTextColor.WHITE))
+                        .append(Component.newline())
+                        .append(Component.text(timingInfo))
+                        .append(Component.newline())
+                        .append(Component.text("Mobs: " + s.getLastMobCount() + " / " + s.getMaxMobs()));
+                e.text(displayText);
+                e.setBillboard(Display.Billboard.CENTER);
+                Transformation transformation = e.getTransformation();
+                transformation.getScale().set(6.0f, 6.0f, 6.0f);
+                e.setTransformation(transformation);
+                e.setPersistent(false);
+                e.setViewRange(256f);
+            });
+            player.showEntity(plugin, textDisplay);
+
+            textDisplays.add(textDisplay);
+        }
+
         final int step = 4;
         int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            for (AESpawner s : nearby) {
+            int currentTick = Bukkit.getCurrentTick();
+            for (int i = 0; i < nearby.size() && i < textDisplays.size(); i++) {
+                AESpawner s = nearby.get(i);
+                TextDisplay textDisplay = textDisplays.get(i);
                 Location c = s.getCenterLocation();
                 if (c == null || c.getWorld() == null) continue;
-                // center marker
-                c.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, c.clone().add(0.5, 0.5, 0.5), 3, 0.2, 0.2, 0.2, 0.01);
-                // radius marker
+
+                String timingInfo = getSpawnerTimingInfo(s, currentTick);
+                Component displayText = Component.text(s.getId(), NamedTextColor.GOLD)
+                        .append(Component.newline())
+                        .append(Component.text(s.getEntityIDsString(), NamedTextColor.YELLOW))
+                        .append(Component.newline())
+                        .append(Component.text("Radius: " + s.getRadius(), NamedTextColor.WHITE))
+                        .append(Component.newline())
+                        .append(Component.text("Wave Size: " + s.getWaveSize(), NamedTextColor.WHITE))
+                        .append(Component.newline())
+                        .append(Component.text(timingInfo))
+                        .append(Component.newline())
+                        .append(Component.text("Mobs: " + s.getLastMobCount() + " / " + s.getMaxMobs()));
+                textDisplay.text(displayText);
+
+                c.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, c.clone().add(0.5, 0.5, 0.5), 3, 0.2, 0.2, 0.2, 0.01, null, true);
                 int r = s.getRadius();
                 for (int deg = 0; deg < 360; deg += step) {
                     double rad = Math.toRadians(deg);
                     double x = Math.cos(rad) * r;
                     double z = Math.sin(rad) * r;
                     Location lp = c.clone().add(x, 0.1, z);
-                    c.getWorld().spawnParticle(Particle.END_ROD, lp, 1, 0, 0, 0, 0);
+                    c.getWorld().spawnParticle(Particle.END_ROD, lp, 1, 0, 0, 0, 0, null, true);
                 }
             }
         }, 0L, 10L);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> Bukkit.getScheduler().cancelTask(taskId), durationTicks);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Bukkit.getScheduler().cancelTask(taskId);
+            for (TextDisplay textDisplay : textDisplays) {
+                if (textDisplay != null && !textDisplay.isDead()) {
+                    textDisplay.remove();
+                }
+            }
+        }, durationTicks);
+    }
+
+    private String getSpawnerTimingInfo(AESpawner spawner, int currentTick) {
+        if (!spawner.isTicking()) {
+            return "INACTIVE";
+        }
+
+        if (spawner.isInWave()) {
+            int nextIntraTick = spawner.getNextIntraTick();
+            if (nextIntraTick > currentTick) {
+                int remainingTicks = nextIntraTick - currentTick;
+                double remainingSeconds = remainingTicks / 20.0;
+                return String.format("IN WAVE (Next spawn: %.1fs)", remainingSeconds);
+            } else {
+                return "IN WAVE (Spawning now!)";
+            }
+        } else {
+            int nextWaveTick = spawner.getNextWaveTick();
+            if (nextWaveTick > currentTick) {
+                int remainingTicks = nextWaveTick - currentTick;
+                double remainingSeconds = remainingTicks / 20.0;
+                return String.format("Next wave: %.1fs", remainingSeconds);
+            } else {
+                return "Next wave: Ready!";
+            }
+        }
     }
 
     private void handleInfo(String[] args, Player player) {
@@ -377,6 +607,8 @@ public class SpawnerCommand extends ECommand {
     private void sendUsage(CommandSender sender) {
         MessageUtil.sendMessage(sender, "&eUsage:");
         MessageUtil.sendMessage(sender, "&7/ae spawner create <spawnerId> <npcId>");
+        MessageUtil.sendMessage(sender, "&7/ae spawner copy <sourceSpawnerId> <newSpawnerId>");
+        MessageUtil.sendMessage(sender, "&7/ae spawner copyproperties <sourceSpawnerId> <targetSpawnerId>");
         MessageUtil.sendMessage(sender, "&7/ae spawner set <spawnerId> <property> <value>");
         MessageUtil.sendMessage(sender, "&7/ae spawner movehere <spawnerId>");
         MessageUtil.sendMessage(sender, "&7/ae spawner show [range] [seconds]");
@@ -450,7 +682,7 @@ public class SpawnerCommand extends ECommand {
     public List<String> onTabComplete(CommandSender sender, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 2) {
-            List<String> subs = Arrays.asList("create", "set", "movehere", "show", "info", "toggle", "list", "tp");
+            List<String> subs = Arrays.asList("create", "copy", "copyproperties", "set", "movehere", "show", "info", "toggle", "list", "tp");
             return filterStartsWith(subs, args[1]);
         }
         if (args.length == 3) {
@@ -459,6 +691,9 @@ public class SpawnerCommand extends ECommand {
             if (sub.equals("create")) {
                 if (partial.isEmpty()) out.add("<spawnerId>");
                 return out;
+            } else if (sub.equals("copy") || sub.equals("copyproperties")) {
+                List<String> ids = spawnerManager.getConfiguredSpawners().stream().map(AESpawner::getId).collect(Collectors.toList());
+                return filterStartsWith(ids, partial);
             } else if (Arrays.asList("set", "movehere", "toggle", "tp").contains(sub)) {
                 List<String> ids = spawnerManager.getConfiguredSpawners().stream().map(AESpawner::getId).collect(Collectors.toList());
                 return filterStartsWith(ids, partial);
@@ -471,6 +706,14 @@ public class SpawnerCommand extends ECommand {
             if (sub.equals("create")) {
                 List<String> npcIds = plugin.getCreatureManager().getCreatures().stream().map(NPCData::getID).collect(Collectors.toList());
                 return filterStartsWith(npcIds, partial);
+            }
+            if (sub.equals("copy")) {
+                if (partial.isEmpty()) out.add("<newSpawnerId>");
+                return out;
+            }
+            if (sub.equals("copyproperties")) {
+                List<String> ids = spawnerManager.getConfiguredSpawners().stream().map(AESpawner::getId).collect(Collectors.toList());
+                return filterStartsWith(ids, partial);
             }
             if (sub.equals("set")) {
                 List<String> props = Arrays.asList("id","npc","radius","radiusY","mobsPerSpawn","maxMobs","maxMobsRange","maxMobsRangeY","cooldown","activationRange","chance","isTicking","world","x","y","z","waveSize","waveCooldown","minLevel","maxLevel");

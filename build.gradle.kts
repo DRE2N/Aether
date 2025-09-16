@@ -32,6 +32,7 @@ dependencies {
     compileOnly("de.erethon.hephaestus:Hephaestus:1.0.4-SNAPSHOT")
     compileOnly("de.erethon.questsxl:QuestsXL:1.0.4-SNAPSHOT")
     compileOnly("de.erethon.hecate:Hecate:1.2-SNAPSHOT")
+    compileOnly("de.erethon.factions:Factions:1.0-SNAPSHOT")
 }
 
 tasks {
@@ -43,7 +44,6 @@ tasks {
         uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
         runDirectory.set(file("C:\\Dev\\Erethon"))
-        jvmArgs = listOf("-XX:MaxJavaStackTraceDepth=2000000")
     }
 
     compileJava {
@@ -75,7 +75,7 @@ tasks {
         apiVersion = "1.21"
         authors = listOf("Malfrador")
         depend = listOf("QuestsXL")
-        softDepend = listOf("Hephaestus", "Daedalus")
+        softDepend = listOf("Hephaestus", "Daedalus", "Factions")
     }
 
     assemble {

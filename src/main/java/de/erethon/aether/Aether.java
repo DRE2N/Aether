@@ -28,6 +28,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -38,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public final class Aether extends EPlugin implements Listener {
 
@@ -139,7 +141,7 @@ public final class Aether extends EPlugin implements Listener {
         skinCache = new SkinCache(SKINS);
         spawnerManager = new SpawnerManager();
         mobSpawnConfig = new MobSpawnConfig();
-        naturalSpawningListener = new NaturalSpawningListener();
+        naturalSpawningListener = new NaturalSpawningListener(mobSpawnConfig);
         Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
 
 
@@ -250,9 +252,24 @@ public final class Aether extends EPlugin implements Listener {
         return hitemLibrary;
     }
 
+    public void registerTranslation(String key, Locale locale, String translation) {
+        hephaestusPlugin.getTranslationManager().registerTranslation(key, locale, translation);
+        Aether.log("Registered translation " + key + " for locale " + locale + " with text: " + translation);
+    }
+
     public MobSpawnConfig getMobSpawnConfig() {
         return mobSpawnConfig;
     }
+
+    public void reloadMobSpawns() {
+        mobSpawnConfig = new MobSpawnConfig();
+        if (naturalSpawningListener != null) {
+            HandlerList.unregisterAll(naturalSpawningListener);
+        }
+        naturalSpawningListener = new NaturalSpawningListener(mobSpawnConfig);
+        Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
+    }
+
 
     public NamespacedKey getKey() {
         return key;

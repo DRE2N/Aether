@@ -19,6 +19,7 @@ import de.erethon.hecate.progression.LevelUtil;
 import de.erethon.hephaestus.items.HItem;
 import de.erethon.papyrus.CraftPDamageType;
 import de.erethon.papyrus.entities.CraftCustomMob;
+import de.erethon.papyrus.entities.MobSpawnCategoryOverrideProvider;
 import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.player.QPlayer;
 import io.papermc.paper.adventure.PaperAdventure;
@@ -35,6 +36,7 @@ import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -45,7 +47,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -64,6 +68,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -85,7 +90,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob {
+public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob, MobSpawnCategoryOverrideProvider {
 
     protected Aether plugin = Aether.getInstance();
     protected NPCData data;
@@ -120,7 +125,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (data.hasLevels()) {
             mobLevel = Objects.requireNonNullElseGet(overrideLevel, data::selectRandomLevel);
             levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
-            Aether.log("Spawned " + data.getID() + " at level " + mobLevel);
         }
 
         bukkitLivingEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
@@ -128,6 +132,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         bukkitLivingEntity.setPapyrusId(data.getID());
         bukkitLivingEntity.setType(data.getDisplayType());
         entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
+        version = data.getCurrentVersion();
         onLoad();
         onFirstSpawn();
     }
@@ -274,6 +279,19 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void setChargingCrossbow(boolean isCharging) {
         isChargingCrossbow = isCharging;
+    }
+
+    @Override
+    public EntityType<?> getType() {
+        if (displayType != null && displayType != EntityType.PLAYER) {
+            return displayType;
+        }
+        return EntityType.PLAYER;
+    }
+
+    @Override
+    public MobCategory getEffectiveMobCategory() {
+        return data.getMobCategoryOverride();
     }
 
     @Override
@@ -557,7 +575,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         for (AEPathfinderGoal aeGoal : data.getTargets()) {
             targetSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
-            Aether.log("Added target " + aeGoal.get(this).getClass().getSimpleName() + " to " + data.getID());
         }
     }
 
@@ -739,8 +756,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 double currentValue = getAttribute(minecraftAttributeHolder).getBaseValue();
                 double newValue = currentValue + bonus;
                 getAttribute(minecraftAttributeHolder).setBaseValue(newValue);
-
-                Aether.log("Applied level " + mobLevel + " bonus of " + bonus + " to " + bukkitAttribute.getKey() + " for " + data.getID() + " (new value: " + newValue + ")");
             } catch (Exception e) {
                 Aether.log("Failed to apply level attribute bonus for " + bukkitAttribute.getKey() + " on " + data.getID() + ": " + e.getMessage());
             }
@@ -748,3 +763,4 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
 }
+

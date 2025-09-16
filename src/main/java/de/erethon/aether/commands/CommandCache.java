@@ -23,6 +23,7 @@ public class CommandCache extends ECommandCache {
         addCommand(new KillCommand());
         addCommand(new DebugCommand());
         addCommand(new SpawnerCommand());
+        addCommand(new NaturalSpawnCommand());
 
     }
 }

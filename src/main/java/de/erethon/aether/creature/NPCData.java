@@ -22,6 +22,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.bukkit.Bukkit;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -56,10 +58,11 @@ public class NPCData {
     ConfigurationSection cfg;
     private Class entityClass;
     private EntityType displayType;
+    private MobCategory mobCategoryOverride;
     private Component displayName = Component.text("NPC");
     private boolean instancable = true;
     private boolean hasCollision = true;
-    private boolean persistent = true;
+    private boolean persistent = false;
     private boolean invulnerable;
     private boolean glowing;
     private boolean gravity = true;
@@ -143,6 +146,10 @@ public class NPCData {
 
     public @NotNull EntityType<?> getDisplayType() {
         return displayType;
+    }
+
+    public MobCategory getMobCategoryOverride() {
+        return mobCategoryOverride;
     }
 
     public Component getDisplayName() {
@@ -342,12 +349,22 @@ public class NPCData {
             return;
         }
         displayType = optional.get().value();
-        displayName = MiniMessage.miniMessage().deserialize(cfg.getString("displayName", "NPC"));
+        mobCategoryOverride = MobCategory.valueOf(cfg.getString("mobCategory", "MONSTER").toUpperCase());
+        // Localized names
+        displayName = Component.translatable("aether.entity." + getID().toLowerCase() + ".name");
+        if (cfg.getConfigurationSection("name") != null) {
+            if (cfg.contains("name.de")) {
+                plugin.registerTranslation("aether.entity." + getID().toLowerCase() + ".name", Locale.GERMANY, cfg.getString("name.de"));
+            }
+            if (cfg.contains("name.en")) {
+                plugin.registerTranslation("aether.entity." + getID().toLowerCase() + ".name", Locale.US, cfg.getString("name.en"));
+            }
+        }
         currentVersion = cfg.getInt("version", 0);
         instancable = cfg.getBoolean("instancable", true);
         modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);
-        persistent = cfg.getBoolean("config.persistent", true);
+        persistent = cfg.getBoolean("config.persistent", false);
         invulnerable = cfg.getBoolean("config.invulnerable", false);
         glowing = cfg.getBoolean("config.glowing", false);
         gravity = cfg.getBoolean("config.gravity", true);
@@ -757,14 +774,6 @@ public class NPCData {
         }
     }
 
-    public Map<Integer, Integer> getLevelWeights() {
-        return levelWeights;
-    }
-
-    public Map<Integer, MobLevelInfo> getLevelInfo() {
-        return levelInfo;
-    }
-
     public boolean hasLevels() {
         return !levelWeights.isEmpty();
     }
@@ -778,21 +787,6 @@ public class NPCData {
             return 1; // Default level
         }
         return HRandom.selectWeightedRandomValue(levelWeights, minLevel);
-    }
-
-    public MobLevelInfo getLevelInfoForLevel(int level) {
-        if (levelInfo.containsKey(level)) {
-            return levelInfo.get(level);
-        }
-
-        int bestLevel = -1;
-        for (int configuredLevel : levelInfo.keySet()) {
-            if (configuredLevel <= level && configuredLevel > bestLevel) {
-                bestLevel = configuredLevel;
-            }
-        }
-
-        return bestLevel != -1 ? levelInfo.get(bestLevel) : null;
     }
 
     /**
@@ -821,7 +815,6 @@ public class NPCData {
 
             for (int configuredLevel : levelInfo.keySet()) {
                 MobLevelInfo info = levelInfo.get(configuredLevel);
-                // Only consider levels at or below the target level that have this specific attribute
                 if (configuredLevel <= level &&
                     info.baseAttributeBonus().containsKey(attribute) &&
                     configuredLevel > bestLevelForAttribute) {
@@ -832,8 +825,6 @@ public class NPCData {
             if (bestLevelForAttribute != -1) {
                 MobLevelInfo bestInfo = levelInfo.get(bestLevelForAttribute);
                 compositeAttributes.put(attribute, bestInfo.baseAttributeBonus().get(attribute));
-                Aether.log("Using level " + bestLevelForAttribute + " configuration for attribute " +
-                          attribute.getKey() + " on mob level " + level);
             }
         }
 

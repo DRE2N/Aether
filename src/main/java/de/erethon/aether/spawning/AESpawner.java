@@ -34,6 +34,8 @@ public class AESpawner {
     private int nextIntraTick = 0;      // next tick at which we may spawn within a wave
     private int nextWaveTick = 0;       // next tick at which we may start a wave
 
+    private int lastMobCount = 0;
+
     // Spawning config/state
     private NPCData npcData = null;
     private Location centerLocation;
@@ -98,6 +100,7 @@ public class AESpawner {
                     nextWaveTick = now + waveCooldown;
                     return;
                 }
+                lastMobCount = nearby;
             }
             // Start new wave
             inWave = true;
@@ -124,6 +127,7 @@ public class AESpawner {
                 endWave(now);
                 return;
             }
+            lastMobCount = nearby;
         }
 
         // Attempt to spawn exactly one mob per intra cooldown
@@ -283,6 +287,26 @@ public class AESpawner {
 
     public int getWaveSize() {
         return waveSize;
+    }
+
+    public boolean isInWave() {
+        return inWave;
+    }
+
+    public int getRemainingInWave() {
+        return remainingInWave;
+    }
+
+    public int getNextWaveTick() {
+        return nextWaveTick;
+    }
+
+    public int getNextIntraTick() {
+        return nextIntraTick;
+    }
+
+    public int getLastMobCount() {
+        return lastMobCount;
     }
 
     private void load() {
