@@ -3,8 +3,10 @@ package de.erethon.aether.creature;
 import com.destroystokyo.paper.profile.CraftPlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import de.erethon.aether.tools.NMSUtils;
+import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.translation.GlobalTranslator;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
@@ -26,6 +28,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
+import java.util.Locale;
 
 public class AetherPlayer extends AetherBaseMob {
 
@@ -102,7 +105,10 @@ public class AetherPlayer extends AetherBaseMob {
 
     private void sendPlayerStuff(ServerPlayer serverPlayer) {
         ServerGamePacketListenerImpl connection = serverPlayer.connection;
-        CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(Component.empty()));
+        Component displayName = data.getDisplayName();
+        Locale locale = serverPlayer.adventure$locale;
+        Component translated = GlobalTranslator.render(displayName, locale);
+        CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(translated));
         Skin skin = plugin.getSkinCache().get(data.getSkinLink());
         if (skin != null) {
             craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
@@ -111,7 +117,7 @@ public class AetherPlayer extends AetherBaseMob {
         getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
         ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
                 EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
-                new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, net.minecraft.network.chat.Component.empty(), true, 0, null));
+                new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, PaperAdventure.asVanilla(translated), true, 0, null));
 
         ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(getId(), getEntityData().packDirty());
         connection.send(infoUpdatePacket);

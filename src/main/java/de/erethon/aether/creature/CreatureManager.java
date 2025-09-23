@@ -1,17 +1,22 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class CreatureManager {
 
-    Set<NPCData> creatures = new HashSet<>();
+    private Set<NPCData> creatures = new HashSet<>();
+    private Map<String, AetherBaseMob> activeTaggedMobs = new HashMap<>();
 
     public CreatureManager() {
         load();
@@ -37,6 +42,18 @@ public class CreatureManager {
             ids.add(npcData.getID());
         }
         return ids;
+    }
+
+    public void addTaggedMob(String tag, AetherBaseMob mob) {
+        activeTaggedMobs.put(tag, mob);
+    }
+
+    public AetherBaseMob getTaggedMob(String tag) {
+        return activeTaggedMobs.get(tag);
+    }
+
+    public void removeTaggedMob(String tag) {
+        activeTaggedMobs.remove(tag);
     }
 
     public void reload() {
@@ -92,11 +109,63 @@ public class CreatureManager {
         }
         String id = file.getName().replaceAll(".yml", "");
         try {
-            creatures.add(new NPCData(configuration, id));
+            NPCData data = new NPCData(configuration, id);
+            creatures.add(data);
         } catch (Exception e) {
             Aether.addException("NPCData", "Error loading NPC data" + id, "Check the file for errors", e);
             Aether.log("Error loading NPC data " + id);
             e.printStackTrace();
+        }
+    }
+
+    public static void loadEarly(File folder) {
+        for (File file : folder.listFiles()){
+            if (file.getName().contains("disabled")) {
+                continue;
+            }
+            if (file.isDirectory()) {
+                loadEarlySub(file);
+                continue;
+            }
+            loadEarlyNPCFile(file);
+        }
+    }
+
+    private static void loadEarlyNPCFile(File file) {
+        YamlConfiguration configuration;
+        try {
+            configuration = YamlConfiguration.loadConfiguration(file);
+        } catch (Exception e) {
+            Aether.addException("YamlConfiguration", "Error loading NPC file " + file.getName(), "Make sure its a valid YAML file", e);
+            Aether.log("Error loading NPC file " + file.getName());
+            e.printStackTrace();
+            return;
+        }
+        String id = file.getName().replaceAll(".yml", "");
+        String className = configuration.getString("class", "de.erethon.aether.creature.AetherBaseMob");
+        Class <? extends Entity> clazz;
+        try {
+            clazz = (Class<? extends Entity>) Class.forName(className);
+            EntityType.customEntities.put(id, Map.entry(Aether.getInstance(), clazz));
+            Aether.log("Registered class mapping for " + id + " to " + className);
+        } catch (ClassNotFoundException e) {
+            Aether.addException("NPCData", "Error loading NPC data" + id, "Class " + className + " not found", e);
+            Aether.log("Error loading NPC data " + id + ": Class " + className + " not found");
+            e.printStackTrace();
+
+        }
+    }
+
+    private static void loadEarlySub(File file) {
+        for (File f : file.listFiles()){
+            if (f.getName().contains("disabled")) {
+                continue;
+            }
+            if (f.isDirectory()) {
+                loadEarlySub(f);
+                continue;
+            }
+            loadEarlyNPCFile(f);
         }
     }
 

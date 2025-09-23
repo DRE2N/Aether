@@ -14,7 +14,6 @@ import de.erethon.hephaestus.items.HItemLibrary;
 import de.erethon.hephaestus.utils.HRandom;
 import de.erethon.spellbook.api.SpellLibrary;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -99,7 +98,7 @@ public class NPCData {
     private boolean randomTalker = false;
 
     // Combat
-    String faction;
+    String faction = null;
     EntityType projectile;
     BoundingBox hitbox;
     private BlockPos homeLocation;

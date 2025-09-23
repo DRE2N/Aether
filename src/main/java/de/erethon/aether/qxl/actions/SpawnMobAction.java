@@ -22,6 +22,8 @@ import org.bukkit.World;
         longExample = {
                 "spawn_mob:",
                 "  mob: bandit",
+                "  tag: guard_leader",
+                "  level: 69",
                 "  location:",
                 "    x: 1",
                 "    y: 2",
@@ -39,6 +41,8 @@ public class SpawnMobAction extends QBaseAction {
     QLocation location = null;
     @QParamDoc(name = "level", description = "Override the mob's level. Default: -1 (no override)")
     int overrideLevel = -1;
+    @QParamDoc(name = "tag" , description = "Tag the spawned mob with an ID to be able to reference it later")
+    String tag = null;
 
     @Override
     public void play(Quester quester) {
@@ -54,6 +58,9 @@ public class SpawnMobAction extends QBaseAction {
             }
             activeNPC.setPos(location.getX(pLocation), location.getY(pLocation), location.getZ(pLocation));
             activeNPC.addToWorld();
+            if (tag != null) {
+                activeNPC.setMobTag(tag);
+            }
         }
         catch (Exception e) {
             FriendlyError error = new FriendlyError(id,"Failed to spawn mob", e.getMessage(), "Mob ID: " + npcData.getID()).addStacktrace(e.getStackTrace());
@@ -69,6 +76,7 @@ public class SpawnMobAction extends QBaseAction {
         location = cfg.getQLocation("location");
         npcData = creatureManager.getByID(cfg.getString("mob"));
         overrideLevel = cfg.getInt("level", -1);
+        tag = cfg.getString("tag", null);
         if (npcData == null) { // Legacy support
             npcData = creatureManager.getByID(cfg.getString("id"));
         }

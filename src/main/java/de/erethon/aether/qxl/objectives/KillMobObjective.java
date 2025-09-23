@@ -5,6 +5,7 @@ import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.questsxl.common.QConfig;
 import de.erethon.questsxl.common.QLoadableDoc;
 import de.erethon.questsxl.common.QParamDoc;
+import de.erethon.questsxl.common.QTranslatable;
 import de.erethon.questsxl.livingworld.QEvent;
 import de.erethon.questsxl.objective.ActiveObjective;
 import de.erethon.questsxl.objective.QBaseObjective;
@@ -58,6 +59,11 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
         mobs = new HashSet<>();
         Collections.addAll(mobs, npcIds);
         radius = cfg.getInt("radius", -1);
+    }
+
+    @Override
+    protected QTranslatable getDefaultDisplayText() {
+        return QTranslatable.fromString("en=Kill " + (mobs != null ? String.join(", ", mobs) : "a mob") + "; de=Töte " + (mobs != null ? String.join(", ", mobs) : "einen Mob"));
     }
 
     @Override

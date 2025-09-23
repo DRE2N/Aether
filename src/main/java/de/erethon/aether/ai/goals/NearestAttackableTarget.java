@@ -43,4 +43,12 @@ public class NearestAttackableTarget extends AEPathfinderGoal {
         }
         checkVisibility = Boolean.parseBoolean(args[1]);
     }
+
+    public Class getTarget() {
+        return target;
+    }
+
+    public boolean isCheckVisibility() {
+        return checkVisibility;
+    }
 }

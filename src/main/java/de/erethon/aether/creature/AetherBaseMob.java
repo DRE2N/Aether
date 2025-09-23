@@ -2,6 +2,8 @@ package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
+import de.erethon.aether.ai.goals.HurtByTarget;
+import de.erethon.aether.ai.goals.NearestAttackableTarget;
 import de.erethon.aether.combat.MobAttributeRange;
 import de.erethon.aether.combat.MobLevelInfo;
 import de.erethon.aether.combat.MobLevelLoot;
@@ -22,6 +24,9 @@ import de.erethon.papyrus.entities.CraftCustomMob;
 import de.erethon.papyrus.entities.MobSpawnCategoryOverrideProvider;
 import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.player.QPlayer;
+import de.erethon.spellbook.Spellbook;
+import de.erethon.spellbook.teams.SpellbookTeam;
+import de.erethon.spellbook.teams.TeamManager;
 import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -36,7 +41,6 @@ import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -49,8 +53,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
@@ -68,11 +72,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftSound;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -98,6 +102,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private int version = 0;
     protected CraftCustomMob bukkitLivingEntity;
     private AetherHolder holder;
+    private String mobTag = null;
 
     private int mobLevel = 1;
     private MobLevelInfo levelInfo;
@@ -107,10 +112,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     private Map<Player, Double> damageTracker = new HashMap<>();
 
-
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
         super((EntityType<? extends Monster>) type, world);
+        Aether.log("Entity loading constructor called for " + type);
     }
 
     public AetherBaseMob(NPCData data, World world) {
@@ -133,6 +138,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         bukkitLivingEntity.setType(data.getDisplayType());
         entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
         version = data.getCurrentVersion();
+        Aether.log("Loading Aether mob " + data.getID());
         onLoad();
         onFirstSpawn();
     }
@@ -145,6 +151,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void tick() {
         super.tick();
+        getBukkitLivingEntity().setMaxEnergy(100);
+        getBukkitLivingEntity().setEnergy(100); // Mobs have infinite energy
     }
 
     private void logDebug(String message) {
@@ -258,6 +266,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 Aether.log("Failed to handle damage for " + data.getID() + ": " + e.getMessage());
             }
             damageTracker.put(player, damageTracker.getOrDefault(player, 0.0) + amount);
+            if (data.getFaction() != null && !Spellbook.canAttack(player.getBukkitEntity(), getBukkitLivingEntity())) {
+                return false;
+            }
         }
         return super.hurtServer(level, source, amount, type);
     }
@@ -331,6 +342,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
         if (holder != null) {
             holder.onDeath();
+        }
+        if (mobTag != null) {
+            plugin.getCreatureManager().removeTaggedMob(mobTag);
         }
     }
 
@@ -556,24 +570,64 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         removeStand.runTaskLater(plugin, timeout * 20L);
     }
 
+    public void setMobTag(String tag) {
+        if (mobTag != null && !mobTag.equals(tag)) {
+            plugin.getCreatureManager().removeTaggedMob(mobTag);
+        }
+        this.mobTag = tag;
+        plugin.getCreatureManager().addTaggedMob(tag, this);
+    }
+
+    public String getMobTag() {
+        return mobTag;
+    }
+
+    public void setFaction(String faction) {
+        TeamManager teamManager = Spellbook.getInstance().getTeamManager();
+        if (data.getFaction() != null) {
+            SpellbookTeam team = teamManager.getTeam(data.getFaction());
+            if (team == null) {
+                teamManager.createTeam(data.getFaction(), data.getFaction(), Color.RED);
+                team = teamManager.getTeam(data.getFaction());
+            }
+            teamManager.setTeam(getBukkitLivingEntity(), team);
+        }
+    }
+
     private void registerAetherGoals() {
         if (data.getGoals().isEmpty() && data.getTargets().isEmpty()) {
             goalSelector.addGoal(0, new RandomStrollGoal(this, 1));
             goalSelector.addGoal(1, new RandomLookAroundGoal(this));
             goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false));
-            targetSelector.addGoal(0, new HurtByTargetGoal(this));
-            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+            targetSelector.addGoal(0, new HurtByTargetGoal(this, this.getClass()));
+            if (data.getFaction() == null) {
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, null));
+                return;
+            }
+            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false, this::testSpellbookTeam));
             return;
         }
         for (AEPathfinderGoal aeGoal : data.getGoals()) {
             goalSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
         }
         if (data.getTargets().isEmpty()) {
-            targetSelector.addGoal(0, new HurtByTargetGoal(this));
-            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+            targetSelector.addGoal(0, new HurtByTargetGoal(this, this.getClass()));
+            if (data.getFaction() == null) {
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, null));
+                return;
+            }
+            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false, this::testSpellbookTeam));
             return;
         }
         for (AEPathfinderGoal aeGoal : data.getTargets()) {
+            if (aeGoal instanceof NearestAttackableTarget nearestAttackableTarget) {
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, nearestAttackableTarget.getTarget(), 10, nearestAttackableTarget.isCheckVisibility(), false, this::testSpellbookTeam));
+                continue; // Always add the spellbook team test
+            }
+            if (aeGoal instanceof HurtByTarget) {
+                targetSelector.addGoal(aeGoal.getPrio(), new HurtByTargetGoal(this, this.getClass()));
+                continue; // Always add the class exclusion
+            }
             targetSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
         }
     }
@@ -581,8 +635,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
+        Aether.log("Reading additional save data for entity " + this);
         Optional<String> papyrusId = input.getString("papyrus-entity-id");
         if (papyrusId.isEmpty()) {
+            Aether.log("Failed to load entity data: No papyrus ID found for entity " + this);
+            remove(RemovalReason.DISCARDED);
             return;
         }
         data = plugin.getCreatureManager().getByID(papyrusId.get());
@@ -601,6 +658,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
             Aether.log("Loaded " + data.getID() + " at level " + mobLevel);
         }
+        Optional<String> savedTag = input.getString("aether-mob-tag");
+        savedTag.ifPresent(this::setMobTag);
+        Optional<String> savedFaction = input.getString("aether-mob-faction");
+        savedFaction.ifPresent(this::setFaction);
 
         bukkitLivingEntity = new CraftCustomMob(MinecraftServer.getServer().server, this);
         bukkitLivingEntity.setHandle(this);
@@ -619,11 +680,38 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         output.putString("papyrus-entity-id", data.getID());
         output.putInt("aether-mob-version", version);
         output.putInt("aether-mob-level", mobLevel);
+        if (mobTag != null) {
+            output.putString("aether-mob-tag", mobTag);
+            plugin.getCreatureManager().addTaggedMob(mobTag, this);
+        }
+        if (data.getFaction() != null) {
+            output.putString("aether-mob-faction", data.getFaction());
+            Spellbook.getInstance().getTeamManager().removeEntityFromTeam(getBukkitLivingEntity());
+        }
+        Aether.log("Saved custom entity with class " + this.getClass().getSimpleName() + " and ID " + data.getID());
+    }
+
+    @Override
+    public boolean shouldBeSaved() {
+        return data.isPersistent();
+    }
+
+    @Override
+    public boolean saveAsPassenger(ValueOutput output, boolean includeAll, boolean includeNonSaveable, boolean forceSerialization) {
+        // Add debug logging
+        Aether.log("saveAsPassenger called - removalReason: " + this.getRemovalReason() + " shouldSave: " + this.shouldBeSaved() + " isPersist: " + this.isPersistenceRequired());
+
+        return super.saveAsPassenger(output, includeAll, includeNonSaveable, forceSerialization);
+    }
+
+    @Override
+    public boolean save(ValueOutput output) {
+        Aether.log("save() called");
+        addAdditionalSaveData(output);
+        return super.save(output);
     }
 
     private void onLoad() {
-        ServerLevel level = (ServerLevel) level();
-        level.chunkSource.removeEntity(this);
         if (data.getQXLSection() != null) {
             holder = AetherHolder.loadFromConfigSection(data.getQXLSection(), this);
             if (holder != null) {
@@ -661,8 +749,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         setNoGravity(!data.isGravity());
         setInvulnerable(data.isInvulnerable());
         setPersistenceRequired(data.isPersistent());
+        persist = data.isPersistent();
         collides = data.hasCollision();
         maxAirTicks = data.getMaximumAir();
+        getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).setBaseValue(10); // 0.5 second of invulnerability after being hit by default
 
         applyLevelAttributes();
 
@@ -762,5 +852,16 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
     }
 
+    public boolean testSpellbookTeam(LivingEntity target, ServerLevel level) {
+        if (target instanceof AetherBaseMob mob) {
+            if (mob.data.getFaction() == null) {
+                return true;
+            }
+            if (mob.getData() == this.getData()) {
+                return false; // Same mob type, don't attack
+            }
+            return !Spellbook.canAttack(this.getBukkitLivingEntity(), mob.getBukkitLivingEntity());
+        }
+        return true;
+    }
 }
-

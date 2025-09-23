@@ -19,6 +19,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.map.MinecraftFont;
 import org.bukkit.util.BoundingBox;
 
 import java.util.HashMap;
