@@ -36,6 +36,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
@@ -115,7 +116,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
         super((EntityType<? extends Monster>) type, world);
-        Aether.log("Entity loading constructor called for " + type);
     }
 
     public AetherBaseMob(NPCData data, World world) {
@@ -138,7 +138,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         bukkitLivingEntity.setType(data.getDisplayType());
         entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
         version = data.getCurrentVersion();
-        Aether.log("Loading Aether mob " + data.getID());
         onLoad();
         onFirstSpawn();
     }
@@ -635,7 +634,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
-        Aether.log("Reading additional save data for entity " + this);
         Optional<String> papyrusId = input.getString("papyrus-entity-id");
         if (papyrusId.isEmpty()) {
             Aether.log("Failed to load entity data: No papyrus ID found for entity " + this);
@@ -649,6 +647,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             return;
         }
         this.displayType = data.getDisplayType();
+        entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
         Optional<Integer> papyrusVersion = input.getInt("papyrus-entity-version");
         version = papyrusVersion.orElse(0);
 
@@ -656,7 +655,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (savedLevel.isPresent()) {
             mobLevel = savedLevel.get();
             levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
-            Aether.log("Loaded " + data.getID() + " at level " + mobLevel);
         }
         Optional<String> savedTag = input.getString("aether-mob-tag");
         savedTag.ifPresent(this::setMobTag);
@@ -677,19 +675,41 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void addAdditionalSaveData(ValueOutput output) {
         super.addAdditionalSaveData(output);
-        output.putString("papyrus-entity-id", data.getID());
-        output.putInt("aether-mob-version", version);
-        output.putInt("aether-mob-level", mobLevel);
-        if (mobTag != null) {
-            output.putString("aether-mob-tag", mobTag);
-            plugin.getCreatureManager().addTaggedMob(mobTag, this);
+        try {
+            output.putString("papyrus-entity-id", data.getID());
+            output.putInt("aether-mob-version", version);
+            output.putInt("aether-mob-level", mobLevel);
+            if (mobTag != null) {
+                output.putString("aether-mob-tag", mobTag);
+                plugin.getCreatureManager().addTaggedMob(mobTag, this);
+            }
+            if (data.getFaction() != null) {
+                output.putString("aether-mob-faction", data.getFaction());
+                Spellbook.getInstance().getTeamManager().removeEntityFromTeam(getBukkitLivingEntity());
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to save entity data for " + data.getID() + " (" + getUUID() + "): " + e.getMessage());
         }
-        if (data.getFaction() != null) {
-            output.putString("aether-mob-faction", data.getFaction());
-            Spellbook.getInstance().getTeamManager().removeEntityFromTeam(getBukkitLivingEntity());
-        }
-        Aether.log("Saved custom entity with class " + this.getClass().getSimpleName() + " and ID " + data.getID());
     }
+
+    @Override
+    public boolean saveAsPassenger(ValueOutput output, boolean includeAll, boolean includeNonSaveable, boolean forceSerialization) {
+        if (this.getRemovalReason() != null && !this.getRemovalReason().shouldSave() && !forceSerialization) {
+            return false;
+        } else {
+            // We need to handle the encodeId ourselves to avoid issues with player NPCs and to ensure its called at all
+            EntityType<?> type = this.getType();
+            if (type == EntityType.PLAYER) {
+                type = EntityType.ZOMBIE;
+            }
+            ResourceLocation key = EntityType.getKey(type);
+            String outputKey = key.toString();
+            output.putString("id", outputKey);
+            this.saveWithoutId(output , includeAll, includeNonSaveable, forceSerialization); // CraftBukkit - pass on includeAll // Paper - Raw entity serialization API
+            return true;
+        }
+    }
+
 
     @Override
     public boolean shouldBeSaved() {
@@ -697,18 +717,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     @Override
-    public boolean saveAsPassenger(ValueOutput output, boolean includeAll, boolean includeNonSaveable, boolean forceSerialization) {
-        // Add debug logging
-        Aether.log("saveAsPassenger called - removalReason: " + this.getRemovalReason() + " shouldSave: " + this.shouldBeSaved() + " isPersist: " + this.isPersistenceRequired());
-
-        return super.saveAsPassenger(output, includeAll, includeNonSaveable, forceSerialization);
-    }
-
-    @Override
-    public boolean save(ValueOutput output) {
-        Aether.log("save() called");
-        addAdditionalSaveData(output);
-        return super.save(output);
+    public boolean isPersistenceRequired() {
+        return data.isPersistent();
     }
 
     private void onLoad() {
