@@ -100,7 +100,14 @@ public class AetherPlayer extends AetherBaseMob {
     @Override
     public void lookAt(Entity entity, float maxYRotIncrease, float maxXRotIncrease) {
         super.lookAt(entity, maxYRotIncrease, maxXRotIncrease);
-        yBodyRot = Mth.rotateIfNecessary(yBodyRot, yHeadRot, (float) getMaxHeadYRot());
+        yBodyRot = Mth.rotateIfNecessary(yBodyRot, yHeadRot, maxYRotIncrease);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        // Rotate the NPC
+        setYRot(yBodyRot);
     }
 
     private void sendPlayerStuff(ServerPlayer serverPlayer) {
