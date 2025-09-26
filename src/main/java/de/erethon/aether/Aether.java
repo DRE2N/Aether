@@ -6,7 +6,9 @@ import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
-import de.erethon.aether.qxl.actions.MobWalkAction;
+import de.erethon.aether.qxl.actions.HideMobAction;
+import de.erethon.aether.qxl.actions.WalkMobAction;
+import de.erethon.aether.qxl.actions.ShowMobAction;
 import de.erethon.aether.qxl.actions.SpawnMobAction;
 import de.erethon.aether.qxl.actions.SpawnerAction;
 import de.erethon.aether.qxl.objectives.InteractMobObjective;
@@ -26,7 +28,6 @@ import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.QRegistries;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.world.entity.EntityType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -43,7 +44,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public final class Aether extends EPlugin implements Listener {
 
@@ -163,7 +163,9 @@ public final class Aether extends EPlugin implements Listener {
         if (questsXL != null) {
             questsXL.registerComponent(QRegistries.ACTIONS, "spawn_mob", SpawnMobAction::new);
             questsXL.registerComponent(QRegistries.ACTIONS, "spawner", SpawnerAction::new);
-            questsXL.registerComponent(QRegistries.ACTIONS, "mob_walk", MobWalkAction::new);
+            questsXL.registerComponent(QRegistries.ACTIONS, "walk_mob", WalkMobAction::new);
+            questsXL.registerComponent(QRegistries.ACTIONS, "show_mob", ShowMobAction::new);
+            questsXL.registerComponent(QRegistries.ACTIONS, "hide_mob", HideMobAction::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "kill_mob", KillMobObjective::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "interact_mob", InteractMobObjective::new);
         }

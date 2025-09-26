@@ -16,7 +16,7 @@ import java.util.Set;
 public class CreatureManager {
 
     private Set<NPCData> creatures = new HashSet<>();
-    private Map<String, AetherBaseMob> activeTaggedMobs = new HashMap<>();
+    private Map<String, Set<AetherBaseMob>> activeTaggedMobs = new HashMap<>();
 
     public CreatureManager() {
         load();
@@ -45,15 +45,48 @@ public class CreatureManager {
     }
 
     public void addTaggedMob(String tag, AetherBaseMob mob) {
-        activeTaggedMobs.put(tag, mob);
+        activeTaggedMobs.computeIfAbsent(tag, k -> new HashSet<>()).add(mob);
     }
 
+    /**
+     * Get the first mob with the specified tag.
+     * @param tag The tag to search for
+     * @return The first mob with the tag, or null if none exist
+     */
     public AetherBaseMob getTaggedMob(String tag) {
-        return activeTaggedMobs.get(tag);
+        Set<AetherBaseMob> mobs = activeTaggedMobs.get(tag);
+        if (mobs == null || mobs.isEmpty()) {
+            return null;
+        }
+        return mobs.iterator().next();
+    }
+
+    /**
+     * Get all mobs with the specified tag.
+     * @param tag The tag to search for
+     * @return A set of all mobs with the tag, or an empty set if none exist
+     */
+    public Set<AetherBaseMob> getTaggedMobs(String tag) {
+        return activeTaggedMobs.getOrDefault(tag, new HashSet<>());
     }
 
     public void removeTaggedMob(String tag) {
         activeTaggedMobs.remove(tag);
+    }
+
+    /**
+     * Remove a specific mob from a tag.
+     * @param tag The tag to remove the mob from
+     * @param mob The specific mob to remove
+     */
+    public void removeTaggedMob(String tag, AetherBaseMob mob) {
+        Set<AetherBaseMob> mobs = activeTaggedMobs.get(tag);
+        if (mobs != null) {
+            mobs.remove(mob);
+            if (mobs.isEmpty()) {
+                activeTaggedMobs.remove(tag);
+            }
+        }
     }
 
     public void reload() {

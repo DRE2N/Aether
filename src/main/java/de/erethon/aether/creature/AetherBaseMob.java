@@ -56,7 +56,9 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.behavior.StayCloseToTarget;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
@@ -144,6 +146,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     public void addToWorld() {
         ServerLevel level = (ServerLevel) level();
+        if (data.isInstancable()) {
+            getBukkitLivingEntity().setVisibleByDefault(false);
+        }
         level.addFreshEntity(this);
     }
 
@@ -343,7 +348,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             holder.onDeath();
         }
         if (mobTag != null) {
-            plugin.getCreatureManager().removeTaggedMob(mobTag);
+            plugin.getCreatureManager().removeTaggedMob(mobTag, this);
         }
     }
 
@@ -629,6 +634,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             }
             targetSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
         }
+        // Always add the "go home" goal, it won't do anything if no home is set
+        goalSelector.addGoal(16, new MoveTowardsRestrictionGoal(this, 1.2f));
     }
 
     @Override

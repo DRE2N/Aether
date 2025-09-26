@@ -12,6 +12,7 @@ import de.erethon.questsxl.common.QLocation;
 import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
 import de.erethon.questsxl.error.FriendlyError;
+import net.minecraft.core.BlockPos;
 import org.bukkit.Location;
 import org.bukkit.World;
 
@@ -24,6 +25,7 @@ import org.bukkit.World;
                 "  mob: bandit",
                 "  tag: guard_leader",
                 "  level: 69",
+                "  homeRange: 32",
                 "  location:",
                 "    x: 1",
                 "    y: 2",
@@ -39,6 +41,8 @@ public class SpawnMobAction extends QBaseAction {
     NPCData npcData = null;
     @QParamDoc(name = "location", description = "The QLocation to spawn the mob at", required = true)
     QLocation location = null;
+    @QParamDoc(name = "homeRange", description = "Set the home range of the mob. The mob will try to stay within this range of the spawn location. Default: -1 (no home)")
+    int homeRange = -1;
     @QParamDoc(name = "level", description = "Override the mob's level. Default: -1 (no override)")
     int overrideLevel = -1;
     @QParamDoc(name = "tag" , description = "Tag the spawned mob with an ID to be able to reference it later")
@@ -61,6 +65,9 @@ public class SpawnMobAction extends QBaseAction {
             if (tag != null) {
                 activeNPC.setMobTag(tag);
             }
+            if (homeRange != -1) {
+                activeNPC.setHomeTo(new BlockPos((int) activeNPC.getX(), (int) activeNPC.getY(), (int) activeNPC.getZ()), homeRange);
+            }
         }
         catch (Exception e) {
             FriendlyError error = new FriendlyError(id,"Failed to spawn mob", e.getMessage(), "Mob ID: " + npcData.getID()).addStacktrace(e.getStackTrace());
@@ -77,6 +84,7 @@ public class SpawnMobAction extends QBaseAction {
         npcData = creatureManager.getByID(cfg.getString("mob"));
         overrideLevel = cfg.getInt("level", -1);
         tag = cfg.getString("tag", null);
+        homeRange = cfg.getInt("homeRange", -1);
         if (npcData == null) { // Legacy support
             npcData = creatureManager.getByID(cfg.getString("id"));
         }
