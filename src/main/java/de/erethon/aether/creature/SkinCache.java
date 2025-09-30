@@ -57,8 +57,23 @@ public class SkinCache {
 
     public void loadCache() {
         authToken = diskCache.getString("mineskin-auth");
+        Aether.log("Raw auth token from config: '" + authToken + "'");
+        if (authToken == null) {
+            authToken = "";
+            Aether.log("Auth token was null, setting to empty string");
+        } else {
+            authToken = authToken.trim(); // Trim whitespace
+            Aether.log("Auth token loaded and trimmed: '" + authToken + "' (length: " + authToken.length() + ")");
+        }
         for (String s : diskCache.getStringList("skins")) {
+            if (s == null || s.trim().isEmpty()) {
+                continue;
+            }
             String[] split = s.split(";");
+            if (split.length != 3) {
+                Aether.log("Skipping malformed skin entry: " + s);
+                continue;
+            }
             skins.add(new Skin(split[0], split[1], split[2]));
         }
         Aether.log("Loaded " + skins.size() + " skins from local cache.");
@@ -70,6 +85,10 @@ public class SkinCache {
             skinsList.add(skin.link() + ";" + skin.texture() + ";" + skin.signature());
         }
         diskCache.set("skins", skinsList);
+        // Preserve the auth token when saving
+        if (authToken != null && !authToken.isEmpty()) {
+            diskCache.set("mineskin-auth", authToken);
+        }
         try {
             diskCache.save(cacheFile);
         } catch (IOException e) {

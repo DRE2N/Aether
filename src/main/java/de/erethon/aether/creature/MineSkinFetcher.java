@@ -47,7 +47,7 @@ public class MineSkinFetcher {
                 con.setConnectTimeout(1000);
                 con.setReadTimeout(30000);
                 con.setRequestProperty("User-Agent", "Erethon-Aether/1.0");
-                con.setRequestProperty("Authorization", "Bearer: + " + auth);
+                con.setRequestProperty("Authorization", "Bearer " + auth);
                 con.setRequestProperty("Content-Type", "application/json");
 
                 JSONObject jsonBody = new JSONObject();

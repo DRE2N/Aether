@@ -872,7 +872,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     public boolean testSpellbookTeam(LivingEntity target, ServerLevel level) {
         if (target instanceof AetherBaseMob mob) {
             if (mob.data.getFaction() == null) {
-                return true;
+                    return true;
             }
             if (mob.getData() == this.getData()) {
                 return false; // Same mob type, don't attack

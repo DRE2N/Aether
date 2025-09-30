@@ -12,6 +12,7 @@ import de.erethon.questsxl.common.QLocation;
 import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
 import de.erethon.questsxl.error.FriendlyError;
+import de.erethon.questsxl.livingworld.QEvent;
 import net.minecraft.core.BlockPos;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -64,6 +65,9 @@ public class SpawnMobAction extends QBaseAction {
             activeNPC.addToWorld();
             if (tag != null) {
                 activeNPC.setMobTag(tag);
+            }
+            if (quester instanceof QEvent event) {
+                homeRange = event.getRange();
             }
             if (homeRange != -1) {
                 activeNPC.setHomeTo(new BlockPos((int) activeNPC.getX(), (int) activeNPC.getY(), (int) activeNPC.getZ()), homeRange);

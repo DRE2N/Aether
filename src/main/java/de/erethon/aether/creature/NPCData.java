@@ -59,7 +59,7 @@ public class NPCData {
     private EntityType displayType;
     private MobCategory mobCategoryOverride;
     private Component displayName = Component.text("NPC");
-    private boolean instancable = true;
+    private boolean instancable = false;
     private boolean hasCollision = true;
     private boolean persistent = false;
     private boolean invulnerable;
@@ -360,7 +360,7 @@ public class NPCData {
             }
         }
         currentVersion = cfg.getInt("version", 0);
-        instancable = cfg.getBoolean("instancable", true);
+        instancable = cfg.getBoolean("instancable", false);
         modelID = cfg.getString("model", "");
         hasCollision = cfg.getBoolean("config.collision", true);
         persistent = cfg.getBoolean("config.persistent", false);
