@@ -316,7 +316,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         dead = true;
         getCombatTracker().recheckStatus();
         if (entity != null) {
-            entity.killedEntity((ServerLevel) this.level(), this);
+            entity.killedEntity((ServerLevel) this.level(), this, damageSource);
         }
         gameEvent(GameEvent.ENTITY_DIE);
         level().broadcastEntityEvent(this, (byte) 3);
