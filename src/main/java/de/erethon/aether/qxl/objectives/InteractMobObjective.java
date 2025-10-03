@@ -46,6 +46,11 @@ public class InteractMobObjective extends QBaseObjective<CreatureInteractEvent> 
     }
 
     @Override
+    protected QTranslatable getDefaultDisplayText(Player player) {
+        return QTranslatable.fromString("de=Interagiere mit " + (mob != null ? mob : "einem Mob") + "; en=Interact with " + (mob != null ? mob : "a mob"));
+    }
+
+    @Override
     public void load(QConfig cfg) {
         super.load(cfg);
         mob = cfg.getString("mob", null);
@@ -53,11 +58,6 @@ public class InteractMobObjective extends QBaseObjective<CreatureInteractEvent> 
         if (mob == null) {
             throw new IllegalArgumentException("mob is required");
         }
-    }
-
-    @Override
-    protected QTranslatable getDefaultDisplayText() {
-        return QTranslatable.fromString("en=Interact with " + (mob != null ? mob : "a mob") + "; de=Interagiere mit " + (mob != null ? mob : "einem Mob"));
     }
 
     @Override

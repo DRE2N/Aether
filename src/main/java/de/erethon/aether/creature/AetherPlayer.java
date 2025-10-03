@@ -2,35 +2,35 @@ package de.erethon.aether.creature;
 
 import com.destroystokyo.paper.profile.CraftPlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
+import com.magmaguy.freeminecraftmodels.utils.DataMappings;
+import de.erethon.aether.Aether;
 import de.erethon.aether.tools.NMSUtils;
-import io.papermc.paper.adventure.PaperAdventure;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.kyori.adventure.translation.GlobalTranslator;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.GameType;
+import net.minecraft.world.entity.decoration.Mannequin;
+import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.Level;
 import org.bukkit.World;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.EnumSet;
-import java.util.Locale;
+import java.util.Optional;
+
+import static net.minecraft.world.entity.Avatar.DATA_PLAYER_MODE_CUSTOMISATION;
+import static net.minecraft.world.entity.decoration.Mannequin.ALL_LAYERS;
 
 public class AetherPlayer extends AetherBaseMob {
+
+    private static EntityDataAccessor<ResolvableProfile> DATA_PLAYER_PROFILE = null;
+    private static EntityDataAccessor<Optional<net.minecraft.network.chat.Component>> DATA_DESCRIPTION = null;
 
     public AetherPlayer(EntityType<? extends Mob> type, Level world) {
         super(type, world);
@@ -47,22 +47,26 @@ public class AetherPlayer extends AetherBaseMob {
     @Override
     protected void onFirstSpawn() {
         super.onFirstSpawn();
-        getAttribute(Attributes.WAYPOINT_TRANSMIT_RANGE).setBaseValue(0); // Do not transmit waypoints for NPCs
+        if (DATA_PLAYER_PROFILE == null) {
+            DATA_PLAYER_PROFILE = DataMappings.getAccessor(Mannequin.class, "DATA_PROFILE");
+        }
+        if (DATA_DESCRIPTION == null) {
+            DATA_DESCRIPTION = DataMappings.getAccessor(Mannequin.class, "DATA_DESCRIPTION");
+        }
+        getEntityData().set(DATA_PLAYER_MODE_CUSTOMISATION,  ALL_LAYERS);
+        getEntityData().set(DATA_PLAYER_PROFILE, getResolvableProfile());
+        getEntityData().set(DATA_DESCRIPTION, Optional.empty());
     }
 
     @Override
     public void startSeenByPlayer(ServerPlayer serverPlayer) {
         super.startSeenByPlayer(serverPlayer);
-        sendPlayerStuff(serverPlayer);
     }
 
     @Override
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
-        for (ServerPlayerConnection serverPlayerConnection : moonrise$getTrackedEntity().seenBy) {
-            sendPlayerStuff(serverPlayerConnection.getPlayer());
-        }
         detectEquipmentUpdates();
-        return NMSUtils.getAddEntityPacketWithType(this, EntityType.PLAYER);
+        return NMSUtils.getAddEntityPacketWithType(this, EntityType.MANNEQUIN);
     }
 
     @Override
@@ -110,30 +114,12 @@ public class AetherPlayer extends AetherBaseMob {
         setYRot(yBodyRot);
     }
 
-    private void sendPlayerStuff(ServerPlayer serverPlayer) {
-        ServerGamePacketListenerImpl connection = serverPlayer.connection;
-        Component displayName = data.getDisplayName();
-        Locale locale = serverPlayer.adventure$locale;
-        Component translated = GlobalTranslator.render(displayName, locale);
-        CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), PlainTextComponentSerializer.plainText().serialize(translated));
+    private ResolvableProfile getResolvableProfile() {
+        CraftPlayerProfile craftPlayerProfile = new CraftPlayerProfile(getUUID(), "NPC");
         Skin skin = plugin.getSkinCache().get(data.getSkinLink());
         if (skin != null) {
             craftPlayerProfile.getProperties().add(new ProfileProperty("textures", skin.texture(), skin.signature()));
         }
-        getEntityData().set(Player.DATA_PLAYER_MODE_CUSTOMISATION, (byte) 127); // Show all skin layers
-        getEntityData().markDirty(Player.DATA_PLAYER_MODE_CUSTOMISATION);
-        ClientboundPlayerInfoUpdatePacket infoUpdatePacket = new ClientboundPlayerInfoUpdatePacket(
-                EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
-                new ClientboundPlayerInfoUpdatePacket.Entry(getUUID(), craftPlayerProfile.buildGameProfile(), false, -1, GameType.SURVIVAL, PaperAdventure.asVanilla(translated), true, 0, null));
-
-        ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(getId(), getEntityData().packDirty());
-        connection.send(infoUpdatePacket);
-        BukkitRunnable entityDataPacketSender = new BukkitRunnable() {
-            @Override
-            public void run() {
-                connection.send(entityDataPacket);
-            }
-        };
-        entityDataPacketSender.runTaskLater(plugin, 3);
+        return craftPlayerProfile.buildResolvableProfile();
     }
 }

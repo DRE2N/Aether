@@ -53,6 +53,11 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
     }
 
     @Override
+    protected QTranslatable getDefaultDisplayText(Player player) {
+        return QTranslatable.fromString("de=Töte Mob; en=Kill mob");
+    }
+
+    @Override
     public void load(QConfig cfg) {
         super.load(cfg);
         String[] npcIds = cfg.getStringArray("mobs", new String[]{});
@@ -61,10 +66,6 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
         radius = cfg.getInt("radius", -1);
     }
 
-    @Override
-    protected QTranslatable getDefaultDisplayText() {
-        return QTranslatable.fromString("en=Kill " + (mobs != null ? String.join(", ", mobs) : "a mob") + "; de=Töte " + (mobs != null ? String.join(", ", mobs) : "einen Mob"));
-    }
 
     @Override
     public Class<CreatureDeathEvent> getEventType() {

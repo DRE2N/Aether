@@ -181,6 +181,7 @@ public final class Aether extends EPlugin implements Listener {
         errors.clear();
         creatureManager.reload();
         spawnerManager.reloadSpawners();
+        skinCache.refresh();
         if (errors.isEmpty()) {
             return;
         }

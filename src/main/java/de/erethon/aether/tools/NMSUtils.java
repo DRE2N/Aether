@@ -1,9 +1,5 @@
 package de.erethon.aether.tools;
 
-import de.erethon.aether.creature.NPCData;
-import de.erethon.bedrock.chat.MessageUtil;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -13,10 +9,7 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.event.entity.CreatureSpawnEvent;
-
-import java.util.Optional;
 
 public class NMSUtils {
 

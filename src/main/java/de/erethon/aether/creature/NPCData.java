@@ -348,6 +348,9 @@ public class NPCData {
             return;
         }
         displayType = optional.get().value();
+        if (displayType == EntityType.PLAYER) {
+            displayType = EntityType.MANNEQUIN; // Legacy support
+        }
         mobCategoryOverride = MobCategory.valueOf(cfg.getString("mobCategory", "MONSTER").toUpperCase());
         // Localized names
         displayName = Component.translatable("aether.entity." + getID().toLowerCase() + ".name");
@@ -376,24 +379,23 @@ public class NPCData {
             skins = cfg.getStringList("skins");
             Aether.log("Loaded " + skins.size() + " skins.");
         }
+        Registry<Attribute> attributeRegistry = BuiltInRegistries.ATTRIBUTE;
+        // Populate with default for display type
+        org.bukkit.entity.EntityType bukkitDisplayType = CraftEntityType.minecraftToBukkit(displayType);
+        Attributable attributable = bukkitDisplayType.getDefaultAttributes();
+        for (org.bukkit.attribute.Attribute attribute : org.bukkit.Registry.ATTRIBUTE.stream().toList()) {
+            Holder<Attribute> attributeHolder = CraftAttribute.bukkitToMinecraftHolder(attribute);
+            if (attributeHolder == Attributes.MOVEMENT_SPEED)  {
+                attributes.put(attributeHolder, 0.2); // Default is very high here, lets instead hardcode a better default
+                continue;
+            }
+            if (attributable.getAttribute(attribute) == null) continue;
+            double bukkitValue = attributable.getAttribute(attribute).getBaseValue();
+            if (bukkitValue == 0.0) continue; // Skip attributes with no value
+            attributes.put(attributeHolder, bukkitValue);
+        }
         // Attributes
         if (cfg.contains("attributes") && cfg.isConfigurationSection("attributes")) {
-            Registry<Attribute> attributeRegistry = BuiltInRegistries.ATTRIBUTE;
-            // Populate with default for display type
-            org.bukkit.entity.EntityType bukkitDisplayType = CraftEntityType.minecraftToBukkit(displayType);
-            Attributable attributable = bukkitDisplayType.getDefaultAttributes();
-            for (org.bukkit.attribute.Attribute attribute : org.bukkit.Registry.ATTRIBUTE.stream().toList()) {
-                if (attributable.getAttribute(attribute) == null) continue;
-                double bukkitValue = attributable.getAttribute(attribute).getBaseValue();
-                if (bukkitValue == 0.0) continue; // Skip attributes with no value
-                Holder<Attribute> attributeHolder = CraftAttribute.bukkitToMinecraftHolder(attribute);
-                attributes.put(attributeHolder, bukkitValue);
-            }
-            if (displayType == EntityType.PLAYER) {
-                // Set default follow range for players
-                attributes.put(Attributes.FOLLOW_RANGE, 16.0);
-            }
-
             for (String key : cfg.getConfigurationSection("attributes").getKeys(false)) {
                 ConfigurationSection section = cfg.getConfigurationSection("attributes." + key);
                 if (section == null) {

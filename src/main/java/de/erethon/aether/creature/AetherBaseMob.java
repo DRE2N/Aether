@@ -1,5 +1,6 @@
 package de.erethon.aether.creature;
 
+import com.magmaguy.freeminecraftmodels.utils.DataMappings;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.ai.goals.HurtByTarget;
@@ -14,7 +15,6 @@ import de.erethon.aether.events.CreatureInteractEvent;
 import de.erethon.aether.events.CreatureLoadEvent;
 import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.aether.tools.NMSUtils;
-import de.erethon.daedalus.utils.DataMappings;
 import de.erethon.hecate.Hecate;
 import de.erethon.hecate.data.HCharacter;
 import de.erethon.hecate.progression.LevelUtil;
@@ -23,6 +23,7 @@ import de.erethon.papyrus.CraftPDamageType;
 import de.erethon.papyrus.entities.CraftCustomMob;
 import de.erethon.papyrus.entities.MobSpawnCategoryOverrideProvider;
 import de.erethon.questsxl.QuestsXL;
+import de.erethon.questsxl.dialogue.QDialogueManager;
 import de.erethon.questsxl.player.QPlayer;
 import de.erethon.spellbook.Spellbook;
 import de.erethon.spellbook.teams.SpellbookTeam;
@@ -298,10 +299,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public EntityType<?> getType() {
-        if (displayType != null && displayType != EntityType.PLAYER) {
+        if (displayType != null) {
             return displayType;
         }
-        return EntityType.PLAYER;
+        return EntityType.PIG;
     }
 
     @Override
@@ -532,12 +533,19 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     protected @NotNull InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (hand == InteractionHand.OFF_HAND) { // Called for both hands, we only want main hand
+            return super.mobInteract(player, hand);
+        }
         CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
         Bukkit.getPluginManager().callEvent(event);
         try {
             QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
             if (qPlayer != null && holder != null) {
                 holder.onRightClick(qPlayer);
+            }
+            QDialogueManager dialogueManager = QuestsXL.get().getDialogueManager();
+            if ( dialogueManager != null) {
+                dialogueManager.onNPCRightClick(data.getID(), (org.bukkit.entity.Player) player.getBukkitEntity());
             }
         } catch (Exception e) {
             Aether.log("Failed to handle interaction for " + data.getID() + ": " + e.getMessage());
@@ -707,7 +715,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             // We need to handle the encodeId ourselves to avoid issues with player NPCs and to ensure its called at all
             EntityType<?> type = this.getType();
             if (type == EntityType.PLAYER) {
-                type = EntityType.ZOMBIE;
+                type = EntityType.MANNEQUIN;
             }
             ResourceLocation key = EntityType.getKey(type);
             String outputKey = key.toString();
@@ -770,6 +778,16 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         collides = data.hasCollision();
         maxAirTicks = data.getMaximumAir();
         getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).setBaseValue(10); // 0.5 second of invulnerability after being hit by default
+
+        // Apply base attributes
+        for (Map.Entry<Holder<Attribute>, Double> entry : data.getAttributes().entrySet()) {
+            Holder<Attribute> attributeHolder = entry.getKey();
+            double value = entry.getValue();
+
+            if (getAttribute(attributeHolder) != null) {
+                getAttribute(attributeHolder).setBaseValue(value);
+            }
+        }
 
         applyLevelAttributes();
 
@@ -860,9 +878,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                     bonus = range.min() + (random.nextDouble() * (range.max() - range.min()));
                 }
 
-                double currentValue = getAttribute(minecraftAttributeHolder).getBaseValue();
-                double newValue = currentValue + bonus;
-                getAttribute(minecraftAttributeHolder).setBaseValue(newValue);
+                getAttribute(minecraftAttributeHolder).setBaseValue(bonus);
             } catch (Exception e) {
                 Aether.log("Failed to apply level attribute bonus for " + bukkitAttribute.getKey() + " on " + data.getID() + ": " + e.getMessage());
             }

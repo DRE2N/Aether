@@ -5,17 +5,16 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SkinCache {
 
     File cacheFile;
     YamlConfiguration diskCache;
     Aether plugin = Aether.getInstance();
-    Set<Skin> skins = new HashSet<>();
+    Map<String, Skin> skins = new ConcurrentHashMap<>(); // Changed to Map for faster lookups
+    Set<String> pendingSkins = Collections.synchronizedSet(new HashSet<>()); // Track skins being fetched
     private String authToken = "";
 
     public SkinCache(File cacheFile) {
@@ -25,29 +24,74 @@ public class SkinCache {
     }
 
     public Skin get(String link) {
-        for (Skin skin : skins) {
-            if (skin.link().equals(link)) {
-                return skin;
-            }
+        if (link == null || link.isEmpty()) {
+            return null;
         }
-        fetch(link);
-        return null;
+
+        // Check if we have it cached
+        Skin cached = skins.get(link);
+        if (cached != null) {
+            return cached;
+        }
+
+        // Don't fetch if already pending
+        if (!pendingSkins.contains(link) && !MineSkinFetcher.skinsInQueue.contains(link)) {
+            fetch(link);
+        }
+
+        return null; // Skin not available yet
     }
 
     public void fetch(String link) {
-        MineSkinFetcher.fetchSkinFromIdAsync(link, skinData ->  {
-            if (skinData == null) {
-                return;
+        if (link == null || link.isEmpty()) {
+            return;
+        }
+
+        // Check if already cached or being fetched
+        if (skins.containsKey(link)) {
+            return;
+        }
+
+        if (pendingSkins.contains(link)) {
+            return;
+        }
+
+        pendingSkins.add(link);
+        Aether.log("Initiating skin fetch for: " + link);
+
+        MineSkinFetcher.fetchSkinFromIdAsync(link, new MineSkinFetcher.Callback() {
+            @Override
+            public void call(Skin skinData) {
+                if (skinData == null) {
+                    pendingSkins.remove(link);
+                    return;
+                }
+                skins.put(link, skinData);
+                pendingSkins.remove(link);
+                saveCache();
+                Aether.log("Skin cached and saved: " + link);
             }
-            skins.add(new Skin(link, skinData.texture(), skinData.signature()));
-            MineSkinFetcher.skinsInQueue.remove(link);
-            saveCache();
+
+            @Override
+            public void failed(String url) {
+                pendingSkins.remove(url);
+                Aether.log("Skin fetch failed permanently: " + url);
+            }
         });
     }
 
     public void refresh() {
+        List<String> toRefresh = new ArrayList<>();
         for (NPCData npcData : plugin.getCreatureManager().getCreatures()) {
-            fetch(npcData.getSkinLink());
+            String skinLink = npcData.getSkinLink();
+            if (skinLink != null && !skinLink.isEmpty() && !skins.containsKey(skinLink)) {
+                toRefresh.add(skinLink);
+            }
+        }
+
+        Aether.log("Refreshing " + toRefresh.size() + " uncached skins...");
+        for (String link : toRefresh) {
+            fetch(link);
         }
     }
 
@@ -65,7 +109,9 @@ public class SkinCache {
             authToken = authToken.trim(); // Trim whitespace
             Aether.log("Auth token loaded and trimmed: '" + authToken + "' (length: " + authToken.length() + ")");
         }
-        for (String s : diskCache.getStringList("skins")) {
+
+        List<String> skinsList = diskCache.getStringList("skins");
+        for (String s : skinsList) {
             if (s == null || s.trim().isEmpty()) {
                 continue;
             }
@@ -74,14 +120,14 @@ public class SkinCache {
                 Aether.log("Skipping malformed skin entry: " + s);
                 continue;
             }
-            skins.add(new Skin(split[0], split[1], split[2]));
+            skins.put(split[0], new Skin(split[0], split[1], split[2]));
         }
         Aether.log("Loaded " + skins.size() + " skins from local cache.");
     }
 
     public void saveCache() {
         List<String> skinsList = new ArrayList<>();
-        for (Skin skin : skins) {
+        for (Skin skin : skins.values()) {
             skinsList.add(skin.link() + ";" + skin.texture() + ";" + skin.signature());
         }
         diskCache.set("skins", skinsList);

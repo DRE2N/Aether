@@ -1,8 +1,8 @@
 package de.erethon.aether.creature;
 
+import com.magmaguy.freeminecraftmodels.customentity.DynamicEntity;
+import com.magmaguy.freeminecraftmodels.utils.DataMappings;
 import de.erethon.aether.Aether;
-import de.erethon.daedalus.customentity.DynamicEntity;
-import de.erethon.daedalus.utils.DataMappings;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
