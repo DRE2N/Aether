@@ -736,7 +736,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         return data.isPersistent();
     }
 
-    private void onLoad() {
+    protected void onLoad() {
         if (data.getQXLSection() != null) {
             holder = AetherHolder.loadFromConfigSection(data.getQXLSection(), this);
             if (holder != null) {

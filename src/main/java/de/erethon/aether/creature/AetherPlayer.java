@@ -3,16 +3,16 @@ package de.erethon.aether.creature;
 import com.destroystokyo.paper.profile.CraftPlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import com.magmaguy.freeminecraftmodels.utils.DataMappings;
-import de.erethon.aether.Aether;
 import de.erethon.aether.tools.NMSUtils;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -31,6 +31,7 @@ public class AetherPlayer extends AetherBaseMob {
 
     private static EntityDataAccessor<ResolvableProfile> DATA_PLAYER_PROFILE = null;
     private static EntityDataAccessor<Optional<net.minecraft.network.chat.Component>> DATA_DESCRIPTION = null;
+    private static EntityDataAccessor<Byte> DATA_PLAYER_MAIN_HAND = null;
 
     public AetherPlayer(EntityType<? extends Mob> type, Level world) {
         super(type, world);
@@ -53,9 +54,13 @@ public class AetherPlayer extends AetherBaseMob {
         if (DATA_DESCRIPTION == null) {
             DATA_DESCRIPTION = DataMappings.getAccessor(Mannequin.class, "DATA_DESCRIPTION");
         }
+        if (DATA_PLAYER_MAIN_HAND == null) {
+            DATA_PLAYER_MAIN_HAND = DataMappings.getAccessor(Avatar.class, "DATA_PLAYER_MAIN_HAND");
+        }
         getEntityData().set(DATA_PLAYER_MODE_CUSTOMISATION,  ALL_LAYERS);
         getEntityData().set(DATA_PLAYER_PROFILE, getResolvableProfile());
         getEntityData().set(DATA_DESCRIPTION, Optional.empty());
+        getEntityData().set(DATA_PLAYER_MAIN_HAND, (byte) 1); // Right hand
     }
 
     @Override
@@ -67,6 +72,12 @@ public class AetherPlayer extends AetherBaseMob {
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
         detectEquipmentUpdates();
         return NMSUtils.getAddEntityPacketWithType(this, EntityType.MANNEQUIN);
+    }
+
+    @Override
+    public boolean doHurtTarget(ServerLevel level, Entity target) {
+        swing(InteractionHand.MAIN_HAND, false);
+        return super.doHurtTarget(level, target);
     }
 
     @Override
