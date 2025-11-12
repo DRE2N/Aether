@@ -1,42 +1,36 @@
 package de.erethon.aether.listener;
 
-import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
-import com.destroystokyo.paper.event.entity.EntityPathfindEvent;
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import de.erethon.aether.Aether;
-import de.erethon.aether.creature.ActiveCreatureManager;
-import de.erethon.aether.creature.ActiveNPC;
-import de.erethon.aether.creature.InstancedNPC;
-import de.erethon.aether.events.CreatureDeathEvent;
-import de.erethon.aether.events.InstancedCreatureDeathEvent;
-import de.erethon.bedrock.chat.MessageUtil;
-import io.papermc.paper.event.entity.EntityMoveEvent;
-import net.minecraft.world.entity.LivingEntity;
+import de.erethon.aether.creature.AetherBaseMob;
+import de.erethon.papyrus.entities.CraftCustomMob;
+import de.erethon.spellbook.api.SpellEffectAddEvent;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
-import org.bukkit.craftbukkit.entity.CraftMob;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Item;
-import org.bukkit.entity.Mob;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityShootBowEvent;
-import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.event.entity.EntityTransformEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 
 public class EntityListener implements Listener {
 
     Aether plugin = Aether.getInstance();
-    ActiveCreatureManager creatures = plugin.getActiveCreatureManager();
+
+    public EntityListener(Aether plugin) {
+        this.plugin = plugin;
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
+    @EventHandler
+    public void onEntityDeath(SpellEffectAddEvent event) {
+        LivingEntity entity = (LivingEntity) event.getTarget();
+        if (entity instanceof CraftCustomMob mob && mob.getHandle() instanceof AetherBaseMob aetherMob) {
+            if (aetherMob.getData().isInvulnerable()) {
+                event.setCancelled(true);
+                return;
+            }
+            if (aetherMob.getData().isInvulnerableToPlayers() && event.getEffect().getCaster() instanceof Player) {
+                event.setCancelled(true);;
+            }
+        }
+    }
 
 }
