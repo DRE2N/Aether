@@ -26,6 +26,9 @@ public class AetherHolder implements QComponent, Quester {
     private Set<QAction> attackActions = new HashSet<>();
 
     public void onDeath() {
+        if (deathActions == null || deathActions.isEmpty()) {
+            return;
+        }
         for (QAction action : deathActions) {
             try {
                 action.play(this);
@@ -38,6 +41,9 @@ public class AetherHolder implements QComponent, Quester {
     }
 
     public void onRightClick(Quester quester) {
+        if (rightClickActions == null || rightClickActions.isEmpty()) {
+            return;
+        }
         for (QAction action : rightClickActions) {
             try {
                 action.play(quester);
@@ -50,6 +56,9 @@ public class AetherHolder implements QComponent, Quester {
     }
 
     public void onLeftClick(Quester quester) {
+        if (leftClickActions == null || leftClickActions.isEmpty()) {
+            return;
+        }
         for (QAction action : leftClickActions) {
             try {
                 action.play(quester);
@@ -62,6 +71,9 @@ public class AetherHolder implements QComponent, Quester {
     }
 
     public void onSpawn() {
+        if (spawnActions == null || spawnActions.isEmpty()) {
+            return;
+        }
         for (QAction action : spawnActions) {
             try {
                 action.play(this);
@@ -74,6 +86,9 @@ public class AetherHolder implements QComponent, Quester {
     }
 
     public void onDamage(Quester quester) {
+        if (damageActions == null || damageActions.isEmpty()) {
+            return;
+        }
         for (QAction action : damageActions) {
             try {
                 action.play(quester);
@@ -86,6 +101,9 @@ public class AetherHolder implements QComponent, Quester {
     }
 
     public void onAttack(Quester quester) {
+        if (attackActions == null || attackActions.isEmpty()) {
+            return;
+        }
         for (QAction action : attackActions) {
             try {
                 action.play(quester);
