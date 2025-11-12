@@ -138,4 +138,9 @@ public class AetherHolder implements QComponent, Quester {
     public void setParent(QComponent qComponent) {
 
     }
+
+    @Override
+    public String id() {
+        return mob.getData().getID();
+    }
 }

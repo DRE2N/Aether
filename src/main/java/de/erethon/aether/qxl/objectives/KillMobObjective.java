@@ -43,14 +43,15 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
             }
             return;
         }
-        check(event.getNpc(), event.getKiller(), active);
-    }
-
-    private void check(NPCData npc, Player player, ActiveObjective active) {
-        if (mobs.contains(npc.getID())) {
-            checkCompletion(active, this, plugin.getDatabaseManager().getCurrentPlayer(player));
+        if (mobs.contains(event.getNpc().getID())) {
+            if (event.getKiller() instanceof Player player) {
+                checkCompletion(active, this, plugin.getDatabaseManager().getCurrentPlayer(player));
+            } else {
+                checkCompletion(active, this);
+            }
         }
     }
+
 
     @Override
     protected QTranslatable getDefaultDisplayText(Player player) {

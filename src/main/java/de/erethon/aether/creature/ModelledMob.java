@@ -40,12 +40,12 @@ public class ModelledMob extends AetherBaseMob {
         super(type, world);
     }
 
-    public ModelledMob(NPCData data, World world, Integer overrideLevel) {
-        super(data, world, overrideLevel);
+    public ModelledMob(NPCData data, World world) {
+        this(data, world, null);
     }
 
-    public ModelledMob(NPCData data, World world) {
-        super(data, world);
+    public ModelledMob(NPCData data, World world, Integer overrideLevel) {
+        super(data, world, overrideLevel);
         displayType = EntityType.PIG; // Hardcode this for now
         String id = data.cfg.getString("modelId");
         if (id == null) {
@@ -54,6 +54,11 @@ public class ModelledMob extends AetherBaseMob {
         }
         entityData = DataMappings.getSynchedEntityData(displayType);
         this.model = new ModeledEntity(id, getBukkitEntity().getLocation());
+        if (model == null) {
+            Aether.addException("ModelledMob " + data.getID(), "Could not find model with id " + id, "Make sure the model is loaded correctly", null);
+            valid = false;
+            return;
+        }
         hitboxHeight = model.getSkeletonBlueprint().getHitbox().getHeight();
         getBukkitEntity().setVisibleByDefault(false);
         getBukkitEntity().getPersistentDataContainer().set(MARKER_KEY, PersistentDataType.BOOLEAN, true);

@@ -171,7 +171,7 @@ public class AESpawner {
             activeNPC.persist = false;
             MoveTowardsRestrictionGoal goal = new MoveTowardsRestrictionGoal(activeNPC, 0.15);
             activeNPC.goalSelector.addGoal(7, goal);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (Exception e) {
             Aether.log("Spawner " + id + " failed to spawn mob: " + e.getMessage());
             e.printStackTrace();
             endWave(now);

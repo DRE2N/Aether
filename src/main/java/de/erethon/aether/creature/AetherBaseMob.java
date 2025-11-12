@@ -108,8 +108,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private AetherHolder holder;
     private String mobTag = null;
 
-    private int mobLevel = 1;
-    private MobLevelInfo levelInfo;
+    protected int mobLevel = 1;
+    protected MobLevelInfo levelInfo;
 
     private boolean isTalking = false;
     private boolean isChargingCrossbow = false;
@@ -250,6 +250,14 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount, CraftPDamageType type) {
+        if (source.getEntity() instanceof LivingEntity livingEntity && !Spellbook.canAttack(livingEntity.getBukkitLivingEntity(), getBukkitLivingEntity())) {
+            return false;
+        }
+        if (source.getEntity() instanceof Player) {
+            if (data.isInvulnerableToPlayers()) {
+                return false;
+            }
+        }
         for (SpellCastEntry spell : data.getOnDamagedSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -337,8 +345,8 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             }
         }
         // Death event
-        if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.Player player) {
-            CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, player, this);
+        if (damageSource.getEntity() != null && damageSource.getEntity().getBukkitEntity() instanceof org.bukkit.entity.LivingEntity livingEntity) {
+            CreatureDeathEvent creatureDeathEvent = new CreatureDeathEvent(data, livingEntity, this);
             Bukkit.getPluginManager().callEvent(creatureDeathEvent);
         }
 

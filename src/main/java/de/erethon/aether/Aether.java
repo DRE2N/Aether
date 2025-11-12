@@ -7,6 +7,7 @@ import de.erethon.aether.creature.SkinCache;
 import de.erethon.aether.listener.EntityListener;
 import de.erethon.aether.listener.PlayerListener;
 import de.erethon.aether.qxl.actions.HideMobAction;
+import de.erethon.aether.qxl.actions.RemoveMobAction;
 import de.erethon.aether.qxl.actions.WalkMobAction;
 import de.erethon.aether.qxl.actions.ShowMobAction;
 import de.erethon.aether.qxl.actions.SpawnMobAction;
@@ -142,7 +143,7 @@ public final class Aether extends EPlugin implements Listener {
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
-        entityListener = new EntityListener();
+        entityListener = new EntityListener(this);
         skinCache = new SkinCache(SKINS);
         spawnerManager = new SpawnerManager();
         mobSpawnConfig = new MobSpawnConfig();
@@ -166,6 +167,7 @@ public final class Aether extends EPlugin implements Listener {
             questsXL.registerComponent(QRegistries.ACTIONS, "walk_mob", WalkMobAction::new);
             questsXL.registerComponent(QRegistries.ACTIONS, "show_mob", ShowMobAction::new);
             questsXL.registerComponent(QRegistries.ACTIONS, "hide_mob", HideMobAction::new);
+            questsXL.registerComponent(QRegistries.ACTIONS, "remove_mob", RemoveMobAction::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "kill_mob", KillMobObjective::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "interact_mob", InteractMobObjective::new);
         }

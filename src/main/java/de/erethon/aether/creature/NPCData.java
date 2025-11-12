@@ -63,6 +63,7 @@ public class NPCData {
     private boolean hasCollision = true;
     private boolean persistent = false;
     private boolean invulnerable;
+    private boolean invulnerableToPlayers = false;
     private boolean glowing;
     private boolean gravity = true;
     private boolean nameTagVisible;
@@ -260,6 +261,10 @@ public class NPCData {
         return invulnerable;
     }
 
+    public boolean isInvulnerableToPlayers() {
+        return invulnerableToPlayers;
+    }
+
     public boolean isGlowing() {
         return glowing;
     }
@@ -368,6 +373,7 @@ public class NPCData {
         hasCollision = cfg.getBoolean("config.collision", true);
         persistent = cfg.getBoolean("config.persistent", false);
         invulnerable = cfg.getBoolean("config.invulnerable", false);
+        invulnerableToPlayers = cfg.getBoolean("config.invulnerableToPlayers", false);
         glowing = cfg.getBoolean("config.glowing", false);
         gravity = cfg.getBoolean("config.gravity", true);
         nameTagVisible = cfg.getBoolean("config.nametagVisible", false);
