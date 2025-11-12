@@ -105,12 +105,12 @@ public class AetherHolder implements QComponent, Quester {
         String mobID = mob.getData().getID();
         holder.mob = mob;
         try {
-            holder.rightClickActions = (Set<QAction>) QConfigLoader.load(holder, mobID, section.getConfigurationSection("rightClickActions"), QRegistries.ACTIONS);
-            holder.leftClickActions = (Set<QAction>) QConfigLoader.load(holder, mobID, section.getConfigurationSection("leftClickActions"), QRegistries.ACTIONS);
-            holder.deathActions = (Set<QAction>) QConfigLoader.load(holder, mobID, section.getConfigurationSection("deathActions"), QRegistries.ACTIONS);
-            holder.spawnActions = (Set<QAction>) QConfigLoader.load(holder, mobID, section.getConfigurationSection("spawnActions"), QRegistries.ACTIONS);
-            holder.damageActions = (Set<QAction>) QConfigLoader.load(holder, mobID, section.getConfigurationSection("damageActions"), QRegistries.ACTIONS);
-            holder.attackActions = (Set<QAction>) QConfigLoader.load(holder, mobID, section.getConfigurationSection("attackActions"), QRegistries.ACTIONS);
+            holder.rightClickActions = (Set<QAction>) QConfigLoader.load(holder, "rightClickActions", section, QRegistries.ACTIONS);
+            holder.leftClickActions = (Set<QAction>) QConfigLoader.load(holder, "leftClickActions", section, QRegistries.ACTIONS);
+            holder.deathActions = (Set<QAction>) QConfigLoader.load(holder, "deathActions", section, QRegistries.ACTIONS);
+            holder.spawnActions = (Set<QAction>) QConfigLoader.load(holder, "spawnActions", section, QRegistries.ACTIONS);
+            holder.damageActions = (Set<QAction>) QConfigLoader.load(holder, "damageActions", section, QRegistries.ACTIONS);
+            holder.attackActions = (Set<QAction>) QConfigLoader.load(holder, "attackActions", section, QRegistries.ACTIONS);
         } catch (Exception e) {
             FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to load actions", e.getMessage(), "Mob ID: " + mobID);
             error.addStacktrace(e.getStackTrace());
