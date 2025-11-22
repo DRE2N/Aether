@@ -752,8 +752,13 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             }
         }
         registerAetherGoals();
+        // Set home location/range if configured
         if (data.getHomeLocation() != null) {
             setHomeTo(data.getHomeLocation(), data.getHomeRange());
+        }
+        // Homes can also be just a range around the spawn point
+        if (data.getHomeLocation() == null && data.getHomeRange() != -1) {
+            setHomeTo(new BlockPos(getBlockX(), getBlockY(), getBlockZ()), data.getHomeRange());
         }
         drops.clear();
         setDropChance(EquipmentSlot.HEAD, 0);

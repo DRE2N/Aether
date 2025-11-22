@@ -102,8 +102,8 @@ public class NPCData {
     String faction = null;
     EntityType projectile;
     BoundingBox hitbox;
-    private BlockPos homeLocation;
-    private int homeRange;
+    private BlockPos homeLocation = null;
+    private int homeRange = -1;
 
     private final Set<SpellCastEntry> onDamagedSpells = new HashSet<>();
     private final Set<SpellCastEntry> onTimerSpells = new HashSet<>();
@@ -508,7 +508,9 @@ public class NPCData {
             if (section == null) {
                 Aether.addException(ID, "No configuration found for homeLocation", "Ensure the configuration is correct and not empty", null);
             } else {
-                homeLocation = new BlockPos(section.getInt("x"), section.getInt("y"), section.getInt("z"));
+                if (section.contains("x") && section.contains("y") && section.contains("z")) {
+                    homeLocation = new BlockPos(section.getInt("x"), section.getInt("y"), section.getInt("z"));
+                }
                 homeRange = section.getInt("range", 32);
             }
         }
