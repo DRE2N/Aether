@@ -21,7 +21,7 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-val papyrusVersion = "1.21.10-R0.1-SNAPSHOT"
+val papyrusVersion = "1.21.11-R0.1-SNAPSHOT"
 paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 dependencies {
@@ -29,7 +29,7 @@ dependencies {
 
     compileOnly("de.erethon", "Daedalus", "1.4-SNAPSHOT")
 
-    compileOnly("de.erethon.hephaestus:Hephaestus:1.0.4-SNAPSHOT")
+    compileOnly("de.erethon.hephaestus:Hephaestus:1.0.5-SNAPSHOT")
     compileOnly("de.erethon.questsxl:QuestsXL:1.0.5-SNAPSHOT")
     compileOnly("de.erethon.hecate:Hecate:1.2-SNAPSHOT")
     compileOnly("de.erethon.factions:Factions:1.0-SNAPSHOT")
@@ -41,7 +41,7 @@ tasks {
             project.buildDir.mkdir()
         }
         val f = File(project.buildDir, "server.jar");
-        uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
+        //uri("https://github.com/DRE2N/Papyrus/releases/download/latest/papyrus-paperclip-$papyrusVersion-mojmap.jar").toURL().openStream().use { it.copyTo(f.outputStream()) }
         serverJar(f)
         runDirectory.set(file("C:\\Dev\\Erethon"))
     }

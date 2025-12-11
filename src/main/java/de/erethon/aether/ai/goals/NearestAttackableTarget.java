@@ -3,8 +3,7 @@ package de.erethon.aether.ai.goals;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalClass;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.protocol.game.ServerPacketListener;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,7 +29,7 @@ public class NearestAttackableTarget extends AEPathfinderGoal {
 
     @Override
     public void load(String[] args) {
-        Optional<EntityType<?>> byName = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.tryParse("minecraft:" + args[0].toLowerCase()));
+        Optional<EntityType<?>> byName = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.tryParse("minecraft:" + args[0].toLowerCase()));
         if (byName.isPresent()) {
             EntityType<?> entityType = byName.get();
             target = entityType.getClass();

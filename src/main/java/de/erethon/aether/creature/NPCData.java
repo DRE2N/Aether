@@ -18,7 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -347,7 +347,7 @@ public class NPCData {
         }
         // General
         String displayTypeString = cfg.getString("displayType", "pig");
-        Optional<Holder.Reference<EntityType<?>>> optional = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.fromNamespaceAndPath("minecraft", displayTypeString));
+        Optional<Holder.Reference<EntityType<?>>> optional = BuiltInRegistries.ENTITY_TYPE.get(Identifier.fromNamespaceAndPath("minecraft", displayTypeString));
         if (optional.isEmpty()) {
             Aether.addException(ID, "Could not find displayType " + displayTypeString, "Ensure the displayType exists in vanilla", null);
             return;
@@ -420,7 +420,7 @@ public class NPCData {
                 }
                 Attribute attribute;
                 try {
-                    attribute = attributeRegistry.get(ResourceLocation.fromNamespaceAndPath("minecraft", id)).get().value();
+                    attribute = attributeRegistry.get(Identifier.fromNamespaceAndPath("minecraft", id)).get().value();
                 } catch (Exception e) {
                     Aether.addException(ID, "Could not find attribute " + id, "Ensure the attribute exists", e);
                     continue;

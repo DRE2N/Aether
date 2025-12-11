@@ -14,7 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.biome.Biome;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
@@ -332,7 +332,7 @@ public class NaturalSpawnCommand extends ECommand {
         CraftWorld craftWorld = (CraftWorld) loc.getWorld();
         Holder<Biome> biomeHolder = craftWorld.getHandle().getBiome(new BlockPos(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
         String biomeName = biomeHolder.unwrapKey()
-                .map(ResourceKey::location)
+                .map(ResourceKey::identifier)
                 .map(Object::toString)
                 .orElse("unknown");
 
@@ -393,7 +393,7 @@ public class NaturalSpawnCommand extends ECommand {
                 CraftWorld craftWorld = (CraftWorld) loc.getWorld();
                 Holder<Biome> biomeHolder = craftWorld.getHandle().getBiome(new BlockPos(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
                 return biomeHolder.unwrapKey()
-                        .map(ResourceKey::location)
+                        .map(ResourceKey::identifier)
                         .map(Object::toString)
                         .orElse("minecraft:plains");
             }
@@ -474,7 +474,7 @@ public class NaturalSpawnCommand extends ECommand {
                     targets.addAll(regions);
                 } else if (type.equals("biome")) {
                     CraftWorld craftWorld = (CraftWorld) loc.getWorld();
-                    for (ResourceLocation holder : craftWorld.getHandle().registryAccess().lookupOrThrow(Registries.BIOME).keySet()) {
+                    for (Identifier holder : craftWorld.getHandle().registryAccess().lookupOrThrow(Registries.BIOME).keySet()) {
                         targets.add(holder.toString());
                     }
                 }

@@ -37,7 +37,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
@@ -69,9 +69,9 @@ import net.minecraft.world.entity.monster.CrossbowAttackMob;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
@@ -289,11 +289,6 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void onCrossbowAttackPerformed() {
         noActionTime = 0;
-    }
-
-    @Override
-    public boolean canFireProjectileWeapon(ProjectileWeaponItem projectileWeapon) {
-        return projectileWeapon == Items.CROSSBOW;
     }
 
     public boolean isChargingCrossbow() {
@@ -725,7 +720,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             if (type == EntityType.PLAYER) {
                 type = EntityType.MANNEQUIN;
             }
-            ResourceLocation key = EntityType.getKey(type);
+            Identifier key = EntityType.getKey(type);
             String outputKey = key.toString();
             output.putString("id", outputKey);
             this.saveWithoutId(output , includeAll, includeNonSaveable, forceSerialization); // CraftBukkit - pass on includeAll // Paper - Raw entity serialization API

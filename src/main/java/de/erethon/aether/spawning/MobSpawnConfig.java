@@ -37,7 +37,7 @@ public class MobSpawnConfig {
 
     public WeightedList<String> getSpawnsForBiome(Holder<Biome> biomeHolder) {
         String biomeName = biomeHolder.unwrapKey()
-                .map(ResourceKey::location)
+                .map(ResourceKey::identifier)
                 .map(Object::toString)
                 .orElse("minecraft:plains"); // Fallback for safety
         return biomeSpawns.getOrDefault(biomeName, WeightedList.of());
@@ -49,7 +49,7 @@ public class MobSpawnConfig {
 
     public double getBiomeSpawnChance(Holder<Biome> biomeHolder) {
         String biomeName = biomeHolder.unwrapKey()
-                .map(ResourceKey::location)
+                .map(ResourceKey::identifier)
                 .map(Object::toString)
                 .orElse("minecraft:plains");
         return biomeSpawnChances.getOrDefault(biomeName, 1.0);
