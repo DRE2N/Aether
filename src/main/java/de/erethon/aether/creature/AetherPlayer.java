@@ -15,6 +15,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.item.component.ResolvableProfile;
@@ -31,7 +32,7 @@ public class AetherPlayer extends AetherBaseMob {
 
     private static EntityDataAccessor<ResolvableProfile> DATA_PLAYER_PROFILE = null;
     private static EntityDataAccessor<Optional<net.minecraft.network.chat.Component>> DATA_DESCRIPTION = null;
-    private static EntityDataAccessor<Byte> DATA_PLAYER_MAIN_HAND = null;
+    private static EntityDataAccessor<HumanoidArm> DATA_PLAYER_MAIN_HAND = null;
 
     public AetherPlayer(EntityType<? extends Mob> type, Level world) {
         super(type, world);
@@ -60,7 +61,7 @@ public class AetherPlayer extends AetherBaseMob {
         getEntityData().set(DATA_PLAYER_MODE_CUSTOMISATION,  ALL_LAYERS);
         getEntityData().set(DATA_PLAYER_PROFILE, getResolvableProfile());
         getEntityData().set(DATA_DESCRIPTION, Optional.empty());
-        getEntityData().set(DATA_PLAYER_MAIN_HAND, (byte) 1); // Right hand
+        getEntityData().set(DATA_PLAYER_MAIN_HAND, HumanoidArm.RIGHT); // Right hand
     }
 
     @Override
