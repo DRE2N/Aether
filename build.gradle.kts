@@ -29,7 +29,7 @@ dependencies {
 
     compileOnly("de.erethon", "Daedalus", "1.4-SNAPSHOT")
 
-    compileOnly("de.erethon.hephaestus:Hephaestus:1.0.5-SNAPSHOT")
+    compileOnly("de.erethon.hephaestus:Hephaestus:1.0.6-SNAPSHOT")
     compileOnly("de.erethon.questsxl:QuestsXL:1.0.5-SNAPSHOT")
     compileOnly("de.erethon.hecate:Hecate:1.2-SNAPSHOT")
     compileOnly("de.erethon.factions:Factions:1.0-SNAPSHOT")

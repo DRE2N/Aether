@@ -418,7 +418,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 // Roll for this player
                 if (random.nextFloat() <= scaledChance) {
                     // Never drop items below the mob's level
-                    ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack(mobLevel).getVanillaStack());
+                    ItemEntity itemEntity = new ItemEntity(level(), getX(), getY(), getZ(), item.rollRandomStack(mobLevel, mobLevel).getVanillaStack());
                     itemEntity.setTarget(player.getUUID());
                     itemEntity.getBukkitEntity().setVisibleByDefault(false);
                     org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
