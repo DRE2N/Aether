@@ -43,6 +43,7 @@ import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -156,8 +157,12 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void tick() {
         super.tick();
+        float headBodyDiff = Mth.wrapDegrees(yHeadRot - yBodyRot);
+        if (Math.abs(headBodyDiff) > 30.0f) {
+            yBodyRot += headBodyDiff * 0.3f;
+        }
         getBukkitLivingEntity().setMaxEnergy(100);
-        getBukkitLivingEntity().setEnergy(100); // Mobs have infinite energy
+        getBukkitLivingEntity().setEnergy(100);
     }
 
     private void logDebug(String message) {
