@@ -42,11 +42,13 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.CombatTracker;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -107,7 +109,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     protected EntityType<?> displayType;
     private int version = 0;
     protected CraftCustomMob bukkitLivingEntity;
-    private AetherHolder holder;
+    public AetherHolder holder;
     private String mobTag = null;
 
     protected int mobLevel = 1;
@@ -145,6 +147,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         version = data.getCurrentVersion();
         onLoad();
         onFirstSpawn();
+        if (!holder.checkSpawnConditions()) {
+            remove(Entity.RemovalReason.DISCARDED);
+            return;
+        }
     }
 
     public void addToWorld() {

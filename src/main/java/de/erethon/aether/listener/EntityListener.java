@@ -6,11 +6,13 @@ import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.papyrus.entities.CraftCustomMob;
 import de.erethon.spellbook.api.SpellEffectAddEvent;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
+import io.papermc.paper.event.player.PlayerTrackEntityEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 public class EntityListener implements Listener {
@@ -51,6 +53,13 @@ public class EntityListener implements Listener {
             if (aetherMob.getData().isInvulnerableToPlayers() && event.getHitBy() instanceof Player) {
                 event.setCancelled(true);
             }
+        }
+    }
+
+    @EventHandler
+    public void onTrackingStart(PlayerTrackEntityEvent event) {
+        if (event.getEntity() instanceof CraftCustomMob mob && mob.getHandle() instanceof AetherBaseMob aetherMob) {
+            event.setCancelled(!aetherMob.holder.checkVisibilityConditions(event.getPlayer()));
         }
     }
 

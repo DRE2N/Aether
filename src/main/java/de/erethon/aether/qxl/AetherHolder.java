@@ -7,9 +7,12 @@ import de.erethon.questsxl.common.QComponent;
 import de.erethon.questsxl.common.QConfigLoader;
 import de.erethon.questsxl.common.QRegistries;
 import de.erethon.questsxl.common.Quester;
+import de.erethon.questsxl.condition.QCondition;
 import de.erethon.questsxl.error.FriendlyError;
+import de.erethon.questsxl.player.QPlayer;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,12 +21,36 @@ public class AetherHolder implements QComponent, Quester {
 
     private AetherBaseMob mob;
 
+    private Set<QCondition> visibilityConditions = new HashSet<>();
+    private Set<QCondition> spawnConditions = new HashSet<>();
     private Set<QAction> rightClickActions = new HashSet<>();
     private Set<QAction> leftClickActions = new HashSet<>();
     private Set<QAction> deathActions = new HashSet<>();
     private Set<QAction> spawnActions = new HashSet<>();
     private Set<QAction> damageActions = new HashSet<>();
     private Set<QAction> attackActions = new HashSet<>();
+
+    public boolean checkVisibilityConditions(Player player) {
+        QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer(player);
+        if (qPlayer == null) {
+            return false;
+        }
+        for (QCondition condition : visibilityConditions) {
+            if (!condition.check(qPlayer)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean checkSpawnConditions() {
+        for (QCondition condition : spawnConditions) {
+            if (!condition.check(this)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public void onDeath() {
         if (deathActions == null || deathActions.isEmpty()) {
@@ -123,6 +150,8 @@ public class AetherHolder implements QComponent, Quester {
         String mobID = mob.getData().getID();
         holder.mob = mob;
         try {
+            holder.visibilityConditions = (Set<QCondition>) QConfigLoader.load(holder, "visibilityConditions", section, QRegistries.CONDITIONS);
+            holder.spawnConditions = (Set<QCondition>) QConfigLoader.load(holder, "spawnConditions", section, QRegistries.CONDITIONS);
             holder.rightClickActions = (Set<QAction>) QConfigLoader.load(holder, "rightClickActions", section, QRegistries.ACTIONS);
             holder.leftClickActions = (Set<QAction>) QConfigLoader.load(holder, "leftClickActions", section, QRegistries.ACTIONS);
             holder.deathActions = (Set<QAction>) QConfigLoader.load(holder, "deathActions", section, QRegistries.ACTIONS);
