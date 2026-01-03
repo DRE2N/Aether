@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 @QLoadableDoc(
         value = "deliver_item",
         description = "Deliver a specific item to a mob to complete this objective.",
-        shortExample = "deliver_item: item=minecraft:diamond, amount=5",
+        shortExample = "deliver_item: item=minecraft:diamond; amount=5",
         longExample = {
                 "deliver_item:",
                 "  item: minecraft:diamond # The item that needs to be delivered.",

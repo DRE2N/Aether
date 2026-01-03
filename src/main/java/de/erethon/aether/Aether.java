@@ -12,6 +12,7 @@ import de.erethon.aether.qxl.actions.WalkMobAction;
 import de.erethon.aether.qxl.actions.ShowMobAction;
 import de.erethon.aether.qxl.actions.SpawnMobAction;
 import de.erethon.aether.qxl.actions.SpawnerAction;
+import de.erethon.aether.qxl.conditions.CharacterLevelCondition;
 import de.erethon.aether.qxl.objectives.DeliverItemObjective;
 import de.erethon.aether.qxl.objectives.InteractMobObjective;
 import de.erethon.aether.qxl.objectives.KillMobObjective;
@@ -169,6 +170,7 @@ public final class Aether extends EPlugin implements Listener {
             questsXL.registerComponent(QRegistries.ACTIONS, "show_mob", ShowMobAction::new);
             questsXL.registerComponent(QRegistries.ACTIONS, "hide_mob", HideMobAction::new);
             questsXL.registerComponent(QRegistries.ACTIONS, "remove_mob", RemoveMobAction::new);
+            questsXL.registerComponent(QRegistries.CONDITIONS, "character_level", CharacterLevelCondition::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "deliver_item", DeliverItemObjective::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "kill_mob", KillMobObjective::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "interact_mob", InteractMobObjective::new);
