@@ -13,6 +13,7 @@ import de.erethon.aether.combat.SpellCastEntry;
 import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.CreatureInteractEvent;
 import de.erethon.aether.events.CreatureLoadEvent;
+import de.erethon.aether.events.MobDeliverItemEvent;
 import de.erethon.aether.qxl.AetherHolder;
 import de.erethon.aether.tools.NMSUtils;
 import de.erethon.hecate.Hecate;
@@ -544,8 +545,27 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (hand == InteractionHand.OFF_HAND) { // Called for both hands, we only want main hand
             return super.mobInteract(player, hand);
         }
+        // Interaction event
         CreatureInteractEvent event = new CreatureInteractEvent((org.bukkit.entity.Player) player.getBukkitEntity(), this, data);
         Bukkit.getPluginManager().callEvent(event);
+
+        // Item delivery
+        ItemStack itemInHand = player.getItemInHand(hand);
+        if (!itemInHand.isEmpty()) {
+            HItem hItem = Aether.getInstance().getItemLibrary().get(itemInHand).getItem();
+            if (hItem != null) {
+                int amount = itemInHand.getCount();
+                MobDeliverItemEvent deliverEvent = new MobDeliverItemEvent((org.bukkit.entity.Player) player.getBukkitEntity(), data.getID(), hItem, amount);
+                deliverEvent.callEvent();
+                itemInHand.setCount(deliverEvent.getAmount());
+                if (itemInHand.getCount() <= 0) {
+                    player.setItemInHand(hand, new ItemStack(Items.AIR));
+                }
+                return super.mobInteract(player, hand); // Do not process dialogue if an item was delivered
+            }
+        }
+
+        // QXL
         try {
             QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
             if (qPlayer != null && holder != null) {
