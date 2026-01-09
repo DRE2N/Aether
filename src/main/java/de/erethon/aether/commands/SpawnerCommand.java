@@ -658,13 +658,16 @@ public class SpawnerCommand extends ECommand {
 
     private String mapPropertyKey(String property) {
         switch (property) {
-            case "mobsaperspawn":
             case "mobsperspawn":
                 return "mobsPerSpawn";
             case "radiusy":
                 return "radiusY";
             case "maxmobsrangey":
                 return "maxMobsRangeY";
+            case "activationrange":
+                return "activationRange";
+            case "maxmobsrange":
+                return "maxMobsRange";
             case "wavesize":
                 return "waveSize";
             case "wavecooldown":
@@ -673,6 +676,8 @@ public class SpawnerCommand extends ECommand {
                 return "minLevel";
             case "maxlevel":
                 return "maxLevel";
+            case "probability":
+                return "chance";
             default:
                 return property;
         }
