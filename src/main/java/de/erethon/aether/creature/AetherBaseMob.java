@@ -147,7 +147,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         version = data.getCurrentVersion();
         onLoad();
         onFirstSpawn();
-        if (!holder.checkSpawnConditions()) {
+        if (holder != null && !holder.checkSpawnConditions()) {
             remove(Entity.RemovalReason.DISCARDED);
             return;
         }

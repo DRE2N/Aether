@@ -58,7 +58,7 @@ public class EntityListener implements Listener {
 
     @EventHandler
     public void onTrackingStart(PlayerTrackEntityEvent event) {
-        if (event.getEntity() instanceof CraftCustomMob mob && mob.getHandle() instanceof AetherBaseMob aetherMob) {
+        if (event.getEntity() instanceof CraftCustomMob mob && mob.getHandle() instanceof AetherBaseMob aetherMob && aetherMob.holder != null) {
             event.setCancelled(!aetherMob.holder.checkVisibilityConditions(event.getPlayer()));
         }
     }
