@@ -2,12 +2,12 @@ package de.erethon.aether.qxl.objectives;
 
 import de.erethon.aether.events.MobDeliverItemEvent;
 import de.erethon.hephaestus.items.HItem;
-import de.erethon.questsxl.common.QConfig;
-import de.erethon.questsxl.common.QLoadableDoc;
-import de.erethon.questsxl.common.QParamDoc;
-import de.erethon.questsxl.common.QTranslatable;
-import de.erethon.questsxl.objective.ActiveObjective;
-import de.erethon.questsxl.objective.QBaseObjective;
+import de.erethon.questsxl.common.doc.QLoadableDoc;
+import de.erethon.questsxl.common.doc.QParamDoc;
+import de.erethon.questsxl.common.script.QConfig;
+import de.erethon.questsxl.common.script.QTranslatable;
+import de.erethon.questsxl.component.objective.ActiveObjective;
+import de.erethon.questsxl.component.objective.QBaseObjective;
 import org.bukkit.entity.Player;
 
 @QLoadableDoc(

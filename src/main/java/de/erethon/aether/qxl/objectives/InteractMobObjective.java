@@ -1,20 +1,14 @@
 package de.erethon.aether.qxl.objectives;
 
 import de.erethon.aether.creature.NPCData;
-import de.erethon.aether.events.CreatureDeathEvent;
 import de.erethon.aether.events.CreatureInteractEvent;
-import de.erethon.questsxl.common.QConfig;
-import de.erethon.questsxl.common.QLoadableDoc;
-import de.erethon.questsxl.common.QParamDoc;
-import de.erethon.questsxl.common.QTranslatable;
-import de.erethon.questsxl.livingworld.QEvent;
-import de.erethon.questsxl.objective.ActiveObjective;
-import de.erethon.questsxl.objective.QBaseObjective;
+import de.erethon.questsxl.common.doc.QLoadableDoc;
+import de.erethon.questsxl.common.doc.QParamDoc;
+import de.erethon.questsxl.common.script.QConfig;
+import de.erethon.questsxl.common.script.QTranslatable;
+import de.erethon.questsxl.component.objective.ActiveObjective;
+import de.erethon.questsxl.component.objective.QBaseObjective;
 import org.bukkit.entity.Player;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 @QLoadableDoc(
         value = "interact_mob",

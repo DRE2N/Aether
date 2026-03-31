@@ -2,12 +2,12 @@ package de.erethon.aether.qxl;
 
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.questsxl.QuestsXL;
-import de.erethon.questsxl.action.QAction;
 import de.erethon.questsxl.common.QComponent;
-import de.erethon.questsxl.common.QConfigLoader;
 import de.erethon.questsxl.common.QRegistries;
 import de.erethon.questsxl.common.Quester;
-import de.erethon.questsxl.condition.QCondition;
+import de.erethon.questsxl.common.script.QConfigLoader;
+import de.erethon.questsxl.component.action.QAction;
+import de.erethon.questsxl.component.condition.QCondition;
 import de.erethon.questsxl.error.FriendlyError;
 import de.erethon.questsxl.player.QPlayer;
 import org.bukkit.Location;

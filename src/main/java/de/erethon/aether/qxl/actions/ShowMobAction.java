@@ -4,24 +4,17 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.questsxl.QuestsXL;
-import de.erethon.questsxl.action.QBaseAction;
-import de.erethon.questsxl.common.QConfig;
-import de.erethon.questsxl.common.QLoadableDoc;
-import de.erethon.questsxl.common.QLocation;
-import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
+import de.erethon.questsxl.common.doc.QLoadableDoc;
+import de.erethon.questsxl.common.doc.QParamDoc;
+import de.erethon.questsxl.common.script.QConfig;
+import de.erethon.questsxl.component.action.QBaseAction;
 import de.erethon.questsxl.error.FriendlyError;
 import de.erethon.questsxl.livingworld.QEvent;
 import de.erethon.questsxl.player.QPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
-import net.minecraft.world.entity.ai.goal.RandomSwimmingGoal;
-import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.HashSet;
 import java.util.Set;
 
 enum ShowMode {
@@ -54,7 +47,7 @@ public class ShowMobAction extends QBaseAction {
 
 
     @Override
-    public void play(Quester quester) {
+    public void playInternal(Quester quester) {
         if (!conditions(quester)) return;
         try {
             Set<AetherBaseMob> mobs = creatureManager.getTaggedMobs(tag);

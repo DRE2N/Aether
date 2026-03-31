@@ -4,11 +4,11 @@ import de.erethon.hecate.Hecate;
 import de.erethon.hecate.data.DatabaseManager;
 import de.erethon.hecate.data.HPlayer;
 import de.erethon.hecate.progression.LevelUtil;
-import de.erethon.questsxl.common.QConfig;
-import de.erethon.questsxl.common.QLoadableDoc;
-import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
-import de.erethon.questsxl.condition.QBaseCondition;
+import de.erethon.questsxl.common.doc.QLoadableDoc;
+import de.erethon.questsxl.common.doc.QParamDoc;
+import de.erethon.questsxl.common.script.QConfig;
+import de.erethon.questsxl.component.condition.QBaseCondition;
 import de.erethon.questsxl.player.QPlayer;
 
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +34,7 @@ public class CharacterLevelCondition extends QBaseCondition {
     private int maxLevel;
 
     @Override
-    public boolean check(Quester quester) {
+    public boolean checkInternal(Quester quester) {
         if (!(quester instanceof QPlayer player)) {
             return fail(quester);
         }

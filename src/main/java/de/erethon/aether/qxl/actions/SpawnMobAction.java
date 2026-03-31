@@ -5,12 +5,12 @@ import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.questsxl.QuestsXL;
-import de.erethon.questsxl.action.QBaseAction;
-import de.erethon.questsxl.common.QConfig;
-import de.erethon.questsxl.common.QLoadableDoc;
-import de.erethon.questsxl.common.QLocation;
-import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
+import de.erethon.questsxl.common.doc.QLoadableDoc;
+import de.erethon.questsxl.common.doc.QParamDoc;
+import de.erethon.questsxl.common.script.QConfig;
+import de.erethon.questsxl.common.script.QLocation;
+import de.erethon.questsxl.component.action.QBaseAction;
 import de.erethon.questsxl.error.FriendlyError;
 import de.erethon.questsxl.livingworld.QEvent;
 import net.minecraft.core.BlockPos;
@@ -52,7 +52,7 @@ public class SpawnMobAction extends QBaseAction {
     String tag = null;
 
     @Override
-    public void play(Quester quester) {
+    public void playInternal(Quester quester) {
         if (!conditions(quester)) return;
         Location pLocation = quester.getLocation();
         for (int i = 0; i < amount; i++) {

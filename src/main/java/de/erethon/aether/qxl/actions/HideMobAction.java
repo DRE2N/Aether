@@ -4,11 +4,11 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.questsxl.QuestsXL;
-import de.erethon.questsxl.action.QBaseAction;
-import de.erethon.questsxl.common.QConfig;
-import de.erethon.questsxl.common.QLoadableDoc;
-import de.erethon.questsxl.common.QParamDoc;
 import de.erethon.questsxl.common.Quester;
+import de.erethon.questsxl.common.doc.QLoadableDoc;
+import de.erethon.questsxl.common.doc.QParamDoc;
+import de.erethon.questsxl.common.script.QConfig;
+import de.erethon.questsxl.component.action.QBaseAction;
 import de.erethon.questsxl.error.FriendlyError;
 import de.erethon.questsxl.livingworld.QEvent;
 import de.erethon.questsxl.player.QPlayer;
@@ -39,7 +39,7 @@ public class HideMobAction extends QBaseAction {
 
 
     @Override
-    public void play(Quester quester) {
+    public void playInternal(Quester quester) {
         if (!conditions(quester)) return;
         try {
             Set<AetherBaseMob> mobs = creatureManager.getTaggedMobs(tag);
