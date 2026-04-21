@@ -16,7 +16,7 @@ public class MeleeAttackGoal extends AEPathfinderGoal {
 
     @Override
     public Goal get(LivingEntity entity) {
-        return new net.minecraft.world.entity.ai.goal.MeleeAttackGoal((PathfinderMob) entity, speedModifier, followTargetIfNotSeen);
+        return new AEMeleeAttackGoal((PathfinderMob) entity, speedModifier, followTargetIfNotSeen);
     }
 
     @Override

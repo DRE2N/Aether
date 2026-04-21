@@ -4,8 +4,10 @@ import com.magmaguy.freeminecraftmodels.utils.DataMappings;
 import de.erethon.aether.Aether;
 import de.erethon.aether.ai.behavior.BehaviorTrigger;
 import de.erethon.aether.ai.behavior.MobBehaviorController;
+import de.erethon.aether.ai.goals.AEMeleeAttackGoal;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.ai.goals.HurtByTarget;
+import de.erethon.aether.ai.goals.MobSeparationGoal;
 import de.erethon.aether.ai.goals.NearestAttackableTarget;
 import de.erethon.aether.combat.MobAttributeRange;
 import de.erethon.aether.combat.MobLevelInfo;
@@ -64,7 +66,6 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.StayCloseToTarget;
-import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
@@ -122,6 +123,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     private boolean isTalking = false;
     private boolean isChargingCrossbow = false;
+    private boolean pendingRetaliation = false;
     private MobBehaviorController behaviorController;
 
     private org.bukkit.entity.Player lastAttackingPlayer;
@@ -294,6 +296,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         if (source.getEntity() instanceof Player player) {
             lastAttackingPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
+            pendingRetaliation = true;
             try {
                 QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
                 if (qPlayer != null && holder != null) {
@@ -345,6 +348,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public void die(DamageSource damageSource) {
+        PlayerCombatTracker.getInstance().unregister(getUUID());
         // We need to re-implement this logic, otherwise we cause normal death events for plugins
         Entity entity = damageSource.getEntity();
         dead = true;
@@ -555,6 +559,26 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason) {
+        PlayerCombatTracker tracker = PlayerCombatTracker.getInstance();
+
+        // Unregister from any previous player slot when target changes
+        if (!(entityliving instanceof Player)) {
+            tracker.unregister(getUUID());
+        }
+
+        if (entityliving instanceof Player player) {
+            if (pendingRetaliation) {
+                pendingRetaliation = false;
+                tracker.forceRegister(player.getUUID(), this);
+            } else {
+                tracker.evictExpired(player.getUUID());
+                if (!tracker.canEngage(player.getUUID(), getUUID())) {
+                    return false;
+                }
+                tracker.register(player.getUUID(), this);
+            }
+        }
+
         boolean bool = super.setTarget(entityliving, reason);
         if (behaviorController != null && entityliving != null) {
             behaviorController.trigger(BehaviorTrigger.TARGET);
@@ -707,10 +731,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     private void registerAetherGoals() {
+        goalSelector.addGoal(1, new MobSeparationGoal(this));
         if (data.getGoals().isEmpty() && data.getTargets().isEmpty()) {
             goalSelector.addGoal(0, new RandomStrollGoal(this, 1));
             goalSelector.addGoal(1, new RandomLookAroundGoal(this));
-            goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.4, false));
+            goalSelector.addGoal(2, new AEMeleeAttackGoal(this, 1.4, false));
             targetSelector.addGoal(0, new HurtByTargetGoal(this, this.getClass()));
             if (data.getFaction() == null) {
                 targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, null));
