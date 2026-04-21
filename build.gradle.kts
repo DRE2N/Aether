@@ -8,8 +8,8 @@ repositories {
 plugins {
     `java-library`
     `maven-publish`
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.18"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
     id("net.minecrell.plugin-yml.bukkit") version "0.5.1"
 }
 
@@ -18,10 +18,10 @@ version = "1.0.1-SNAPSHOT"
 description = "Mob and NPC plugin for Erethon"
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
 }
 
-val papyrusVersion = "1.21.11-R0.1-SNAPSHOT"
+val papyrusVersion = "26.1.2-SNAPSHOT"
 paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 dependencies {
@@ -48,7 +48,7 @@ tasks {
 
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(21)
+        options.release.set(25)
     }
 
     javadoc {
@@ -79,7 +79,6 @@ tasks {
     }
 
     assemble {
-        dependsOn(reobfJar)
         dependsOn(sourcesJar)
     }
 }

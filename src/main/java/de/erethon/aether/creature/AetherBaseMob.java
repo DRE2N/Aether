@@ -2,6 +2,8 @@ package de.erethon.aether.creature;
 
 import com.magmaguy.freeminecraftmodels.utils.DataMappings;
 import de.erethon.aether.Aether;
+import de.erethon.aether.ai.behavior.BehaviorTrigger;
+import de.erethon.aether.ai.behavior.MobBehaviorController;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.ai.goals.HurtByTarget;
 import de.erethon.aether.ai.goals.NearestAttackableTarget;
@@ -66,6 +68,7 @@ import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -97,9 +100,11 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob, MobSpawnCategoryOverrideProvider {
@@ -117,6 +122,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     private boolean isTalking = false;
     private boolean isChargingCrossbow = false;
+    private MobBehaviorController behaviorController;
+
+    private org.bukkit.entity.Player lastAttackingPlayer;
 
     private Map<Player, Double> damageTracker = new HashMap<>();
 
@@ -170,6 +178,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         getBukkitLivingEntity().setMaxEnergy(100);
         getBukkitLivingEntity().setEnergy(100);
+        if (behaviorController != null) {
+            behaviorController.tick();
+        }
     }
 
     private void logDebug(String message) {
@@ -239,6 +250,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
+        if (behaviorController != null) {
+            behaviorController.trigger(BehaviorTrigger.ATTACK);
+        }
         for (SpellCastEntry spell : data.getOnAttackSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -279,6 +293,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             castSpell(spell);
         }
         if (source.getEntity() instanceof Player player) {
+            lastAttackingPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
             try {
                 QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
                 if (qPlayer != null && holder != null) {
@@ -294,6 +309,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             if (data.getFaction() != null && !Spellbook.canAttack(player.getBukkitEntity(), getBukkitLivingEntity())) {
                 return false;
             }
+        }
+        if (behaviorController != null) {
+            behaviorController.trigger(BehaviorTrigger.DAMAGED);
         }
         return super.hurtServer(level, source, amount, type);
     }
@@ -339,6 +357,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         setPose(Pose.DYING);
 
         // onDeath spells
+        if (behaviorController != null) {
+            behaviorController.trigger(BehaviorTrigger.DEATH);
+        }
         for (SpellCastEntry spell : data.getOnDeathSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -535,6 +556,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason) {
         boolean bool = super.setTarget(entityliving, reason);
+        if (behaviorController != null && entityliving != null) {
+            behaviorController.trigger(BehaviorTrigger.TARGET);
+        }
         for (SpellCastEntry spell : data.getOnTargetSpells()) {
             if (spell.getSpell() == null) {
                 logDebug("Spell " + spell + " does not exist");
@@ -637,6 +661,48 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 team = teamManager.getTeam(data.getFaction());
             }
             teamManager.setTeam(getBukkitLivingEntity(), team);
+        }
+    }
+
+    public void clearAllAIGoals() {
+        Set<net.minecraft.world.entity.ai.goal.Goal> goalsToRemove = new HashSet<>();
+        for (WrappedGoal wrappedGoal : goalSelector.getAvailableGoals()) {
+            goalsToRemove.add(wrappedGoal.getGoal());
+        }
+        goalsToRemove.forEach(goalSelector::removeGoal);
+
+        Set<net.minecraft.world.entity.ai.goal.Goal> targetsToRemove = new HashSet<>();
+        for (WrappedGoal wrappedGoal : targetSelector.getAvailableGoals()) {
+            targetsToRemove.add(wrappedGoal.getGoal());
+        }
+        targetsToRemove.forEach(targetSelector::removeGoal);
+    }
+
+    public void resetDefaultGoals() {
+        clearAllAIGoals();
+        registerAetherGoals();
+    }
+
+    public void applyGoalProfile(String profileId) {
+        GoalProfile profile = data.getBehaviorGoalProfile(profileId);
+        if (profile == null) {
+            Aether.addException(data.getID(), "Unknown behavior goal profile: " + profileId, "Define ai.behavior.goalProfiles." + profileId, null);
+            return;
+        }
+        clearAllAIGoals();
+        for (AEPathfinderGoal aeGoal : profile.goals()) {
+            goalSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
+        }
+        for (AEPathfinderGoal aeGoal : profile.targets()) {
+            if (aeGoal instanceof NearestAttackableTarget nearestAttackableTarget) {
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, nearestAttackableTarget.getTarget(), 10, nearestAttackableTarget.isCheckVisibility(), false, this::testSpellbookTeam));
+                continue;
+            }
+            if (aeGoal instanceof HurtByTarget) {
+                targetSelector.addGoal(aeGoal.getPrio(), new HurtByTargetGoal(this, this.getClass()));
+                continue;
+            }
+            targetSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
         }
     }
 
@@ -771,6 +837,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     protected void onLoad() {
+        if (data.getBehaviorDefinition() != null) {
+            behaviorController = new MobBehaviorController(this, data.getBehaviorDefinition());
+        }
         if (data.getQXLSection() != null) {
             holder = AetherHolder.loadFromConfigSection(data.getQXLSection(), this);
             if (holder != null) {
@@ -812,7 +881,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         setGlowingTag(data.isGlowing());
         setNoGravity(!data.isGravity());
         setInvulnerable(data.isInvulnerable());
-        setPersistenceRequired(data.isPersistent());
+        persistenceRequired = data.isPersistent();
         persist = data.isPersistent();
         collides = data.hasCollision();
         maxAirTicks = data.getMaximumAir();
@@ -935,5 +1004,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             return !Spellbook.canAttack(this.getBukkitLivingEntity(), mob.getBukkitLivingEntity());
         }
         return true;
+    }
+
+    public org.bukkit.entity.Player getLastAttackingPlayer() {
+        return lastAttackingPlayer;
     }
 }

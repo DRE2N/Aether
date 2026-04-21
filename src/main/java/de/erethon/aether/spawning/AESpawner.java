@@ -167,7 +167,7 @@ public class AESpawner {
             BlockPos bp = new BlockPos(centerLocation.getBlockX(), centerLocation.getBlockY(), centerLocation.getBlockZ());
             // Make them stay around the spawner area
             activeNPC.setHomeTo(bp, radius);
-            activeNPC.setPersistenceRequired(false);
+            activeNPC.persistenceRequired = false;
             activeNPC.persist = false;
             MoveTowardsRestrictionGoal goal = new MoveTowardsRestrictionGoal(activeNPC, 0.15);
             activeNPC.goalSelector.addGoal(7, goal);

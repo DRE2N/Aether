@@ -1,6 +1,8 @@
 package de.erethon.aether.creature;
 
 import de.erethon.aether.Aether;
+import de.erethon.aether.ai.behavior.BehaviorDefinition;
+import de.erethon.aether.ai.behavior.BehaviorLoader;
 import de.erethon.aether.ai.GoalLoader;
 import de.erethon.aether.ai.goals.AEPathfinderGoal;
 import de.erethon.aether.combat.MobAttributeRange;
@@ -117,6 +119,8 @@ public class NPCData {
     // AI
     private Set<AEPathfinderGoal> goals = new HashSet<>();
     private Set<AEPathfinderGoal> targets = new HashSet<>();
+    private BehaviorDefinition behaviorDefinition;
+    private final Map<String, GoalProfile> behaviorGoalProfiles = new HashMap<>();
 
     // Loot
     private int dropXP = 0;
@@ -299,6 +303,18 @@ public class NPCData {
 
     public Set<AEPathfinderGoal> getTargets() {
         return targets;
+    }
+
+    public BehaviorDefinition getBehaviorDefinition() {
+        return behaviorDefinition;
+    }
+
+    public GoalProfile getBehaviorGoalProfile(String profileId) {
+        return behaviorGoalProfiles.get(profileId);
+    }
+
+    public Map<String, GoalProfile> getBehaviorGoalProfiles() {
+        return behaviorGoalProfiles;
     }
 
     public Set<SpellCastEntry> getOnDamagedSpells() {
@@ -532,6 +548,33 @@ public class NPCData {
                 Aether.addException(ID, "Error loading targets", "Ensure the targets are properly configured", e);
                 Aether.log("Error loading targets for " + ID);
                 e.printStackTrace();
+            }
+        }
+        if (cfg.contains("ai.behavior")) {
+            behaviorDefinition = BehaviorLoader.load(ID, cfg.getConfigurationSection("ai.behavior"));
+        }
+        if (cfg.contains("ai.behavior.goalProfiles")) {
+            ConfigurationSection profiles = cfg.getConfigurationSection("ai.behavior.goalProfiles");
+            if (profiles != null) {
+                for (String profileId : profiles.getKeys(false)) {
+                    ConfigurationSection profile = profiles.getConfigurationSection(profileId);
+                    if (profile == null) {
+                        continue;
+                    }
+                    Set<AEPathfinderGoal> profileGoals = new HashSet<>();
+                    Set<AEPathfinderGoal> profileTargets = new HashSet<>();
+                    try {
+                        if (profile.contains("goals")) {
+                            profileGoals = GoalLoader.loadGoals(profile.getStringList("goals"));
+                        }
+                        if (profile.contains("targets")) {
+                            profileTargets = GoalLoader.loadGoals(profile.getStringList("targets"));
+                        }
+                        behaviorGoalProfiles.put(profileId, new GoalProfile(profileGoals, profileTargets));
+                    } catch (Exception e) {
+                        Aether.addException(ID, "Error loading behavior goalProfile " + profileId, "Ensure goals/targets in ai.behavior.goalProfiles are valid", e);
+                    }
+                }
             }
         }
 
