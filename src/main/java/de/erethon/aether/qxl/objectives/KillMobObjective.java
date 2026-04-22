@@ -34,13 +34,10 @@ public class KillMobObjective extends QBaseObjective<CreatureDeathEvent> {
 
     @Override
     public void check(ActiveObjective active, CreatureDeathEvent event) {
-        if (radius > 0) {
-            if (active.getHolder() instanceof QEvent qEvent) {
-                if (event.getKiller().getLocation().distance(qEvent.getLocation()) >= radius) {
-                    return;
-                }
+        if (radius > 0 && active.getHolder() instanceof QEvent qEvent) {
+            if (event.getKiller().getLocation().distance(qEvent.getLocation()) >= radius) {
+                return;
             }
-            return;
         }
         if (mobs.contains(event.getNpc().getID())) {
             if (event.getKiller() instanceof Player player) {
