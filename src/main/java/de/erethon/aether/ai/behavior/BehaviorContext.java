@@ -9,10 +9,19 @@ public class BehaviorContext {
 
     private final MobBehaviorController controller;
     private final AetherBaseMob mob;
+    private BehaviorTrigger currentTrigger = BehaviorTrigger.TICK;
 
     public BehaviorContext(MobBehaviorController controller, AetherBaseMob mob) {
         this.controller = controller;
         this.mob = mob;
+    }
+
+    public BehaviorTrigger trigger() {
+        return currentTrigger;
+    }
+
+    void setTrigger(BehaviorTrigger trigger) {
+        this.currentTrigger = trigger;
     }
 
     public AetherBaseMob mob() {

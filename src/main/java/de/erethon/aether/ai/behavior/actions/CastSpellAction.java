@@ -4,6 +4,7 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.ai.SpellTargetMode;
 import de.erethon.aether.ai.behavior.AetherAction;
 import de.erethon.aether.ai.behavior.BehaviorContext;
+import de.erethon.aether.ai.behavior.CombatGoalCompat;
 import de.erethon.spellbook.api.SpellData;
 import de.erethon.spellbook.api.SpellbookAPI;
 import net.minecraft.world.entity.Entity;
@@ -25,6 +26,10 @@ public class CastSpellAction extends AetherAction {
 
     @Override
     public void execute(BehaviorContext context) {
+        if (CombatGoalCompat.shouldDeferTickSpellToGoals(context.mob(), context.trigger())) {
+            return;
+        }
+
         String cooldownKey = "spell:" + spellId;
         if (!context.isCooldownReady(cooldownKey)) {
             return;

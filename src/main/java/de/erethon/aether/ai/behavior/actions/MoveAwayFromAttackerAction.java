@@ -2,6 +2,7 @@ package de.erethon.aether.ai.behavior.actions;
 
 import de.erethon.aether.ai.behavior.AetherAction;
 import de.erethon.aether.ai.behavior.BehaviorContext;
+import net.minecraft.world.entity.PathfinderMob;
 import org.bukkit.entity.Player;
 
 public class MoveAwayFromAttackerAction extends AetherAction {
@@ -15,17 +16,21 @@ public class MoveAwayFromAttackerAction extends AetherAction {
     }
 
     @Override
+    public boolean runsBeforeGoals() {
+        return true;
+    }
+
+    @Override
     public void execute(BehaviorContext context) {
         Player attacker = context.lastAttacker();
-        if (attacker == null) {
+        if (attacker == null || !(context.mob() instanceof PathfinderMob mob)) {
             return;
         }
-        double dx = context.mob().getX() - attacker.getLocation().getX();
-        double dz = context.mob().getZ() - attacker.getLocation().getZ();
+        double dx = mob.getX() - attacker.getLocation().getX();
+        double dz = mob.getZ() - attacker.getLocation().getZ();
         double len = Math.max(0.001, Math.sqrt(dx * dx + dz * dz));
-        double targetX = context.mob().getX() + (dx / len) * distance;
-        double targetZ = context.mob().getZ() + (dz / len) * distance;
-        context.mob().getMoveControl().setWantedPosition(targetX, context.mob().getY(), targetZ, speed);
+        double targetX = mob.getX() + (dx / len) * distance;
+        double targetZ = mob.getZ() + (dz / len) * distance;
+        mob.getNavigation().moveTo(targetX, mob.getY(), targetZ, speed);
     }
 }
-

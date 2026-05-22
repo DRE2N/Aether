@@ -46,13 +46,11 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.damagesource.CombatTracker;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -65,7 +63,6 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.behavior.StayCloseToTarget;
 import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
@@ -82,7 +79,6 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.storage.ValueInput;
@@ -107,6 +103,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob, MobSpawnCategoryOverrideProvider {
 
@@ -124,11 +121,20 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     private boolean isTalking = false;
     private boolean isChargingCrossbow = false;
     private boolean pendingRetaliation = false;
+    private boolean inSetTarget = false;
+    private boolean skipPostTargetSideEffects = false;
     private MobBehaviorController behaviorController;
 
     private org.bukkit.entity.Player lastAttackingPlayer;
 
-    private Map<Player, Double> damageTracker = new HashMap<>();
+    private final Map<Player, Double> damageTracker = new HashMap<>();
+
+    protected Set<org.bukkit.entity.Player> getDamageParticipants() {
+        return damageTracker.keySet().stream()
+                .map(p -> (org.bukkit.entity.Player) p.getBukkitEntity())
+                .filter(p -> p != null && p.isOnline())
+                .collect(Collectors.toSet());
+    }
 
     // Constructor for entity loading
     public AetherBaseMob(EntityType<? extends Mob> type, Level world) {
@@ -173,6 +179,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public void tick() {
+        if (behaviorController != null) {
+            behaviorController.tickBeforeGoals();
+        }
         super.tick();
         float headBodyDiff = Mth.wrapDegrees(yHeadRot - yBodyRot);
         if (Math.abs(headBodyDiff) > 30.0f) {
@@ -181,7 +190,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         getBukkitLivingEntity().setMaxEnergy(100);
         getBukkitLivingEntity().setEnergy(100);
         if (behaviorController != null) {
-            behaviorController.tick();
+            behaviorController.tickAfterGoals();
         }
     }
 
@@ -206,19 +215,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public @NotNull CraftEntity getBukkitEntity() {
-        if (bukkitLivingEntity == null) {
-            return new CraftCustomMob(MinecraftServer.getServer().server, this);
-        } else {
-            return bukkitLivingEntity;
-        }
+        return Objects.requireNonNullElseGet(bukkitLivingEntity, () -> new CraftCustomMob(MinecraftServer.getServer().server, this));
     }
 
     public @NotNull CraftLivingEntity getBukkitLivingEntity() {
-        if (bukkitLivingEntity == null) {
-            return new CraftCustomMob(MinecraftServer.getServer().server, this);
-        } else {
-            return bukkitLivingEntity;
-        }
+        return Objects.requireNonNullElseGet(bukkitLivingEntity, () -> new CraftCustomMob(MinecraftServer.getServer().server, this));
     }
 
 
@@ -313,10 +314,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
                 return false;
             }
         }
-        if (behaviorController != null) {
+        boolean hurt = super.hurtServer(level, source, amount, type);
+        if (hurt && behaviorController != null) {
             behaviorController.trigger(BehaviorTrigger.DAMAGED);
         }
-        return super.hurtServer(level, source, amount, type);
+        return hurt;
     }
 
     @Override
@@ -557,41 +559,83 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
     }
 
+    /**
+     * Sets target from behavior actions without re-entering {@link #setTarget} side effects
+     * (avoids Paper/Mob {@code setTarget} recursion and {@code TARGET} triggers during {@code DAMAGED}).
+     */
+    public boolean setCombatTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason) {
+        skipPostTargetSideEffects = true;
+        try {
+            return setTarget(entityliving, reason);
+        } finally {
+            skipPostTargetSideEffects = false;
+        }
+    }
+
     @Override
     public boolean setTarget(LivingEntity entityliving, EntityTargetEvent.TargetReason reason) {
-        PlayerCombatTracker tracker = PlayerCombatTracker.getInstance();
-
-        // Unregister from any previous player slot when target changes
-        if (!(entityliving instanceof Player)) {
-            tracker.unregister(getUUID());
+        if (inSetTarget) {
+            return super.setTarget(entityliving, reason);
         }
+        inSetTarget = true;
+        try {
+            PlayerCombatTracker tracker = PlayerCombatTracker.getInstance();
 
-        if (entityliving instanceof Player player) {
-            if (pendingRetaliation) {
-                pendingRetaliation = false;
-                tracker.forceRegister(player.getUUID(), this);
-            } else {
-                tracker.evictExpired(player.getUUID());
-                if (!tracker.canEngage(player.getUUID(), getUUID())) {
-                    return false;
+            if (!(entityliving instanceof Player)) {
+                tracker.unregister(getUUID());
+            }
+
+            if (entityliving instanceof Player player) {
+                if (pendingRetaliation) {
+                    pendingRetaliation = false;
+                    tracker.forceRegister(player.getUUID(), this);
+                } else {
+                    tracker.evictExpired(player.getUUID());
+                    if (!tracker.canEngage(player.getUUID(), getUUID())) {
+                        return false;
+                    }
+                    tracker.register(player.getUUID(), this);
                 }
-                tracker.register(player.getUUID(), this);
             }
-        }
 
-        boolean bool = super.setTarget(entityliving, reason);
-        if (behaviorController != null && entityliving != null) {
-            behaviorController.trigger(BehaviorTrigger.TARGET);
-        }
-        for (SpellCastEntry spell : data.getOnTargetSpells()) {
-            if (spell.getSpell() == null) {
-                logDebug("Spell " + spell + " does not exist");
-                continue;
+            boolean applied = super.setTarget(entityliving, reason);
+            if (applied && entityliving != null && !skipPostTargetSideEffects) {
+                schedulePostTargetSideEffects(entityliving);
             }
-            logDebug("Casting onTarget spell " + spell.getSpell().getName());
-            castSpell(spell);
+            return applied;
+        } finally {
+            inSetTarget = false;
         }
-        return bool;
+    }
+
+    private void schedulePostTargetSideEffects(LivingEntity entityliving) {
+        if (!(level() instanceof ServerLevel)) {
+            return;
+        }
+        java.util.UUID targetId = entityliving.getUUID();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!isAlive() || isRemoved()) {
+                    return;
+                }
+                LivingEntity current = getTarget();
+                if (current == null || !current.getUUID().equals(targetId)) {
+                    return;
+                }
+                if (behaviorController != null) {
+                    behaviorController.trigger(BehaviorTrigger.TARGET);
+                }
+                for (SpellCastEntry spell : data.getOnTargetSpells()) {
+                    if (spell.getSpell() == null) {
+                        logDebug("Spell " + spell + " does not exist");
+                        continue;
+                    }
+                    logDebug("Casting onTarget spell " + spell.getSpell().getName());
+                    castSpell(spell);
+                }
+            }
+        }.runTask(plugin);
     }
 
     @Override
@@ -719,7 +763,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         for (AEPathfinderGoal aeGoal : profile.targets()) {
             if (aeGoal instanceof NearestAttackableTarget nearestAttackableTarget) {
-                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, nearestAttackableTarget.getTarget(), 10, nearestAttackableTarget.isCheckVisibility(), false, this::testSpellbookTeam));
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, nearestAttackableTarget.getTarget(), 32, nearestAttackableTarget.isCheckVisibility(), false, this::testSpellbookTeam));
                 continue;
             }
             if (aeGoal instanceof HurtByTarget) {
@@ -731,7 +775,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     private void registerAetherGoals() {
-        goalSelector.addGoal(1, new MobSeparationGoal(this));
+        goalSelector.addGoal(8, new MobSeparationGoal(this));
         if (data.getGoals().isEmpty() && data.getTargets().isEmpty()) {
             goalSelector.addGoal(0, new RandomStrollGoal(this, 1));
             goalSelector.addGoal(1, new RandomLookAroundGoal(this));
@@ -758,7 +802,7 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         for (AEPathfinderGoal aeGoal : data.getTargets()) {
             if (aeGoal instanceof NearestAttackableTarget nearestAttackableTarget) {
-                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, nearestAttackableTarget.getTarget(), 10, nearestAttackableTarget.isCheckVisibility(), false, this::testSpellbookTeam));
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, nearestAttackableTarget.getTarget(), 32, nearestAttackableTarget.isCheckVisibility(), false, this::testSpellbookTeam));
                 continue; // Always add the spellbook team test
             }
             if (aeGoal instanceof HurtByTarget) {

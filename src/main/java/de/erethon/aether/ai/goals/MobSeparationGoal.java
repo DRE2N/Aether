@@ -13,6 +13,8 @@ public class MobSeparationGoal extends Goal {
     private static final double SEPARATION_RADIUS = 1.8;
     private static final double MOVE_DISTANCE = 2.5;
     private static final int MIN_CROWD_COUNT = 2;
+    /** Do not override chase/attack pathing while closing on the current target. */
+    private static final double COMBAT_CHASE_RANGE = 20.0;
 
     private final Mob mob;
 
@@ -23,12 +25,15 @@ public class MobSeparationGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return mob.getTarget() != null && getCrowdCount() >= MIN_CROWD_COUNT;
+        if (mob.getTarget() == null || getCrowdCount() < MIN_CROWD_COUNT) {
+            return false;
+        }
+        return mob.distanceTo(mob.getTarget()) > COMBAT_CHASE_RANGE;
     }
 
     @Override
     public boolean canContinueToUse() {
-        return mob.getTarget() != null && getCrowdCount() >= MIN_CROWD_COUNT;
+        return canUse();
     }
 
     @Override

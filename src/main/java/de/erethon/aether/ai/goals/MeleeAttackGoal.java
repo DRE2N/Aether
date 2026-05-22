@@ -11,7 +11,7 @@ public class MeleeAttackGoal extends AEPathfinderGoal {
     boolean followTargetIfNotSeen;
 
     public MeleeAttackGoal() {
-        goalClass = GoalClass.LOOK;
+        goalClass = GoalClass.MOVE;
     }
 
     @Override

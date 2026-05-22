@@ -25,7 +25,11 @@ public class MobBehaviorController {
         this.context = new BehaviorContext(this, mob);
     }
 
-    public void tick() {
+    /**
+     * Targeting, goal profiles, and approach movement — runs before {@link AetherBaseMob}'s goal tick
+     * so melee/ranged goals can attack in the same tick.
+     */
+    public void tickBeforeGoals() {
         if (behavior == null || mob.isDeadOrDying()) {
             return;
         }
@@ -34,6 +38,28 @@ public class MobBehaviorController {
 
         if (currentStateId == null) {
             switchState(behavior.initialState());
+        }
+
+        BehaviorStateDefinition state = getCurrentState();
+        if (state == null) {
+            return;
+        }
+
+        applyTransitions(state);
+
+        if (worldTicks % behavior.tickInterval() != 0) {
+            return;
+        }
+
+        runActions(state, BehaviorTrigger.TICK, true);
+    }
+
+    /**
+     * Spells, retreat movement, look — runs after goals so casts do not override melee attacks.
+     */
+    public void tickAfterGoals() {
+        if (behavior == null || mob.isDeadOrDying() || currentStateId == null) {
+            return;
         }
         if (worldTicks % behavior.tickInterval() != 0) {
             return;
@@ -44,15 +70,19 @@ public class MobBehaviorController {
             return;
         }
 
-        applyTransitions(state);
-        runActions(getCurrentState(), BehaviorTrigger.TICK);
+        runActions(state, BehaviorTrigger.TICK, false);
     }
 
     public void trigger(BehaviorTrigger trigger) {
         if (behavior == null || currentStateId == null) {
             return;
         }
-        runActions(getCurrentState(), trigger);
+        BehaviorStateDefinition state = getCurrentState();
+        if (state == null) {
+            return;
+        }
+        runActions(state, trigger, true);
+        runActions(state, trigger, false);
     }
 
     private void applyTransitions(BehaviorStateDefinition state) {
@@ -77,7 +107,8 @@ public class MobBehaviorController {
         }
         BehaviorStateDefinition previous = getCurrentState();
         if (previous != null) {
-            runActions(previous, BehaviorTrigger.EXIT);
+            runActions(previous, BehaviorTrigger.EXIT, false);
+            runActions(previous, BehaviorTrigger.EXIT, true);
         }
 
         if (!behavior.states().containsKey(toState)) {
@@ -88,7 +119,8 @@ public class MobBehaviorController {
         currentStateId = toState;
         stateTicks = 0;
         BehaviorStateDefinition current = getCurrentState();
-        runActions(current, BehaviorTrigger.ENTER);
+        runActions(current, BehaviorTrigger.ENTER, true);
+        runActions(current, BehaviorTrigger.ENTER, false);
     }
 
     private BehaviorStateDefinition getCurrentState() {
@@ -98,8 +130,7 @@ public class MobBehaviorController {
         return behavior.states().get(currentStateId);
     }
 
-
-    private void runActions(BehaviorStateDefinition state, BehaviorTrigger trigger) {
+    private void runActions(BehaviorStateDefinition state, BehaviorTrigger trigger, boolean beforeGoals) {
         if (state == null) {
             return;
         }
@@ -113,7 +144,11 @@ public class MobBehaviorController {
             case EXIT -> state.onExit();
         };
 
+        context.setTrigger(trigger);
         for (AetherAction action : actions) {
+            if (action.runsBeforeGoals() != beforeGoals) {
+                continue;
+            }
             try {
                 action.execute(context);
             } catch (Exception e) {
@@ -138,5 +173,3 @@ public class MobBehaviorController {
         return worldTicks;
     }
 }
-
-

@@ -12,6 +12,11 @@ public class ApplyGoalProfileAction extends AetherAction {
     }
 
     @Override
+    public boolean runsBeforeGoals() {
+        return true;
+    }
+
+    @Override
     public void execute(BehaviorContext context) {
         context.mob().applyGoalProfile(profileId);
     }

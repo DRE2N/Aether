@@ -63,7 +63,7 @@ public class PlayerCombatTracker {
             AttackerEntry entry = it.next().getValue();
             if (now - entry.joinedAt > SLOT_TIMEOUT_MS) {
                 it.remove();
-                entry.mob.setTarget(null, EntityTargetEvent.TargetReason.FORGOT_TARGET);
+                entry.mob.setCombatTarget(null, EntityTargetEvent.TargetReason.FORGOT_TARGET);
             }
         }
         if (attackers.isEmpty()) activeCombat.remove(playerUUID);
