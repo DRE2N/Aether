@@ -3,6 +3,7 @@ package de.erethon.aether.ai.goals;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
+import de.erethon.aether.creature.AetherBaseMob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
@@ -10,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import java.util.EnumSet;
 
 /**
- * Melee attack goal that paths toward the target until {@link Mob#isWithinMeleeAttackRange} is true.
+ * Melee attack goal that paths toward the target until {@link MeleeReachUtil} says to stop chasing.
  */
 public class AEMeleeAttackGoal extends Goal {
 
@@ -28,6 +29,9 @@ public class AEMeleeAttackGoal extends Goal {
 
     @Override
     public boolean canUse() {
+        if (shouldDeferToBehavior()) {
+            return false;
+        }
         LivingEntity target = this.mob.getTarget();
         if (target == null || !target.isAlive()) {
             return false;
@@ -41,6 +45,10 @@ public class AEMeleeAttackGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         return canUse();
+    }
+
+    private boolean shouldDeferToBehavior() {
+        return this.mob instanceof AetherBaseMob base && base.shouldSuppressCombatGoalsFromBehavior();
     }
 
     @Override
@@ -70,10 +78,10 @@ public class AEMeleeAttackGoal extends Goal {
         this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
         this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
 
-        if (this.mob.isWithinMeleeAttackRange(target)) {
-            this.mob.getNavigation().stop();
-        } else {
+        if (MeleeReachUtil.shouldKeepChasingForMelee(this.mob, target)) {
             this.mob.getNavigation().moveTo(target, this.speedModifier);
+        } else {
+            this.mob.getNavigation().stop();
         }
 
         this.checkAndPerformAttack(target);
@@ -95,7 +103,7 @@ public class AEMeleeAttackGoal extends Goal {
     protected boolean canPerformAttack(LivingEntity target) {
         boolean canSee = this.followingTargetEvenIfNotSeen || this.mob.getSensing().hasLineOfSight(target);
         return this.ticksUntilNextAttack <= 0
-                && this.mob.isWithinMeleeAttackRange(target)
+                && MeleeReachUtil.isWithinLenientAttackRange(this.mob, target)
                 && canSee;
     }
 }

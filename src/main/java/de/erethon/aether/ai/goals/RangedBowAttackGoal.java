@@ -3,8 +3,7 @@ package de.erethon.aether.ai.goals;
 import de.erethon.aether.ai.GoalClass;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.RangedAttackMob;
+import de.erethon.aether.creature.AetherBaseMob;
 
 public class RangedBowAttackGoal extends AEPathfinderGoal {
 
@@ -18,7 +17,7 @@ public class RangedBowAttackGoal extends AEPathfinderGoal {
 
     @Override
     public Goal get(LivingEntity entity) {
-        return new net.minecraft.world.entity.ai.goal.RangedBowAttackGoal<>((Monster & RangedAttackMob) entity, speedMod, attackIntervalMin, attackRadiusSquare);
+        return new AERangedBowAttackGoal((AetherBaseMob) entity, speedMod, attackIntervalMin, attackRadiusSquare);
     }
 
     @Override

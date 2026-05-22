@@ -994,6 +994,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         return data;
     }
 
+    public boolean shouldSuppressCombatGoalsFromBehavior() {
+        return behaviorController != null && behaviorController.shouldSuppressCombatGoals();
+    }
+
     @Override
     public void performRangedAttack(LivingEntity target, float distanceFactor) {
         if (getItemInHand(InteractionHand.MAIN_HAND).getItem() == Items.CROSSBOW) { // We need to handle crossbow attacks separately

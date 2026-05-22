@@ -1,6 +1,7 @@
 package de.erethon.aether.ai.behavior;
 
 import de.erethon.aether.Aether;
+import de.erethon.aether.ai.behavior.actions.MoveAwayFromAttackerAction;
 import de.erethon.aether.creature.AetherBaseMob;
 
 import java.util.Comparator;
@@ -171,5 +172,21 @@ public class MobBehaviorController {
 
     int getWorldTicks() {
         return worldTicks;
+    }
+
+    /**
+     * When the current state's {@code onTick} uses {@link MoveAwayFromAttackerAction}, melee/ranged goals must not run
+     * or they overwrite retreat/kite pathing on the same tick.
+     */
+    public boolean shouldSuppressCombatGoals() {
+        BehaviorStateDefinition state = getCurrentState();
+        if (state == null) {
+            return false;
+        }
+        return state.onTick().stream().anyMatch(MoveAwayFromAttackerAction.class::isInstance);
+    }
+
+    public String getCurrentStateId() {
+        return currentStateId;
     }
 }

@@ -3,7 +3,7 @@ package de.erethon.aether.ai.behavior.actions;
 import de.erethon.aether.ai.behavior.AetherAction;
 import de.erethon.aether.ai.behavior.BehaviorContext;
 import de.erethon.aether.ai.behavior.CombatGoalCompat;
-import de.erethon.aether.ai.goals.AEMeleeAttackGoal;
+import de.erethon.aether.ai.goals.MeleeReachUtil;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 
@@ -35,7 +35,7 @@ public class MoveToTargetAction extends AetherAction {
             return;
         }
 
-        if (mob.isWithinMeleeAttackRange(target)) {
+        if (!MeleeReachUtil.shouldKeepChasingForMelee(mob, target)) {
             return;
         }
 
