@@ -7,6 +7,7 @@ import de.erethon.aether.creature.AetherBaseMob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.EnumSet;
 
@@ -79,7 +80,16 @@ public class AEMeleeAttackGoal extends Goal {
         this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
 
         if (MeleeReachUtil.shouldKeepChasingForMelee(this.mob, target)) {
-            this.mob.getNavigation().moveTo(target, this.speedModifier);
+            Vec3 approach = computeApproachPosition(target);
+            this.mob.getNavigation().moveTo(approach.x, approach.y, approach.z, this.speedModifier);
+        } else if (MobSeparationHelper.hasCrowd(this.mob)) {
+            Vec3 offset = MobSeparationHelper.separationOffset(this.mob, 1.0);
+            this.mob.getNavigation().moveTo(
+                    this.mob.getX() + offset.x,
+                    this.mob.getY(),
+                    this.mob.getZ() + offset.z,
+                    this.speedModifier * 0.85
+            );
         } else {
             this.mob.getNavigation().stop();
         }
@@ -105,5 +115,17 @@ public class AEMeleeAttackGoal extends Goal {
         return this.ticksUntilNextAttack <= 0
                 && MeleeReachUtil.isWithinLenientAttackRange(this.mob, target)
                 && canSee;
+    }
+
+    private Vec3 computeApproachPosition(LivingEntity target) {
+        double dist = Math.max(0.001, this.mob.distanceTo(target));
+        double nx = (this.mob.getX() - target.getX()) / dist;
+        double nz = (this.mob.getZ() - target.getZ()) / dist;
+        double stopAt = Math.max(0.1, MeleeReachUtil.approximateMeleeReach(this.mob, target) - MeleeReachUtil.CHASE_INSET_BLOCKS);
+
+        double x = target.getX() + nx * stopAt;
+        double z = target.getZ() + nz * stopAt;
+        Vec3 separation = MobSeparationHelper.separationOffset(this.mob, 1.4);
+        return new Vec3(x + separation.x, target.getY(), z + separation.z);
     }
 }
