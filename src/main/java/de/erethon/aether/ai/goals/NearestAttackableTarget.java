@@ -1,21 +1,15 @@
 package de.erethon.aether.ai.goals;
 
-import de.erethon.aether.Aether;
 import de.erethon.aether.ai.GoalClass;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.player.Player;
 
 import java.util.Optional;
 
 public class NearestAttackableTarget extends AEPathfinderGoal {
 
-    Class target;
+    Class<? extends LivingEntity> target;
     boolean checkVisibility;
 
     public NearestAttackableTarget() {
@@ -24,26 +18,26 @@ public class NearestAttackableTarget extends AEPathfinderGoal {
 
     @Override
     public Goal get(LivingEntity entity) {
+        if (target == null) {
+            throw new IllegalStateException("Nearest attackable target class was not loaded.");
+        }
         return new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>((Mob) entity, target, checkVisibility, false);
     }
 
     @Override
     public void load(String[] args) {
-        Optional<EntityType<?>> byName = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.tryParse("minecraft:" + args[0].toLowerCase()));
-        if (byName.isPresent()) {
-            EntityType<?> entityType = byName.get();
-            target = entityType.getClass();
-            if (target == Player.class) {
-                target = ServerPlayer.class;
-            }
-        } else {
-            Aether.addException("NearestAttackableTargetGoal",  "Could not find entity type " + args[0], "Please check your entity type name.", null);
-            return;
+        if (args.length < 2) {
+            throw new IllegalArgumentException("Expected nearest_attackable config: <entityType>;<checkVisibility>");
         }
+        Optional<Class<? extends LivingEntity>> targetClass = TargetEntityClassResolver.resolve(args[0]);
+        if (targetClass.isEmpty()) {
+            throw new IllegalArgumentException("Could not find entity type " + args[0]);
+        }
+        target = targetClass.get();
         checkVisibility = Boolean.parseBoolean(args[1]);
     }
 
-    public Class getTarget() {
+    public Class<? extends LivingEntity> getTarget() {
         return target;
     }
 

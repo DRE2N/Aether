@@ -79,7 +79,8 @@ public class AEMeleeAttackGoal extends Goal {
         this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
         this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
 
-        if (MeleeReachUtil.shouldKeepChasingForMelee(this.mob, target)) {
+        boolean canSee = this.followingTargetEvenIfNotSeen || this.mob.getSensing().hasLineOfSight(target);
+        if (MeleeReachUtil.shouldKeepChasingForMelee(this.mob, target) || !canSee) {
             Vec3 approach = computeApproachPosition(target);
             this.mob.getNavigation().moveTo(approach.x, approach.y, approach.z, this.speedModifier);
         } else if (MobSeparationHelper.hasCrowd(this.mob)) {
@@ -125,7 +126,6 @@ public class AEMeleeAttackGoal extends Goal {
 
         double x = target.getX() + nx * stopAt;
         double z = target.getZ() + nz * stopAt;
-        Vec3 separation = MobSeparationHelper.separationOffset(this.mob, 1.4);
-        return new Vec3(x + separation.x, target.getY(), z + separation.z);
+        return new Vec3(x, target.getY(), z);
     }
 }

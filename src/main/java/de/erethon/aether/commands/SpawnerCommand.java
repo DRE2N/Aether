@@ -678,6 +678,8 @@ public class SpawnerCommand extends ECommand {
                 return "maxLevel";
             case "probability":
                 return "chance";
+            case "maxmobs":
+                return "maxMobs";
             default:
                 return property;
         }

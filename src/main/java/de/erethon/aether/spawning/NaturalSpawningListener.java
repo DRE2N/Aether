@@ -4,6 +4,7 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.NPCData;
 import de.erethon.factions.Factions;
+import de.erethon.factions.region.PvERegion;
 import de.erethon.factions.region.Region;
 import de.erethon.factions.region.RegionManager;
 import de.erethon.factions.region.RegionMode;
@@ -11,8 +12,8 @@ import de.erethon.papyrus.events.MobSpawnFinalizedEvent;
 import de.erethon.papyrus.events.MobSpawnForBiomeEvent;
 import de.erethon.papyrus.events.PreCategorySpawnEvent;
 import net.minecraft.core.Holder;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.WeightedList;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
@@ -49,80 +50,103 @@ public class NaturalSpawningListener implements Listener {
     @EventHandler
     private void onFinalizeSpawn(MobSpawnFinalizedEvent event) {
         Location loc = new Location(event.getLevel().getWorld(), event.getPos().getX(), event.getPos().getY(), event.getPos().getZ());
-
         Region region = regionManager.getRegionByLocation(loc);
+        Holder<Biome> biome = event.getLevel().getBiome(event.getPos());
 
-        NPCData data = null;
-        if (region != null) {
-            if (!regionNpcDataCache.containsKey(region)) {
-                WeightedList.Builder<NPCData> builder = WeightedList.builder();
-                WeightedList<String> regionMobs = spawnConfig.getSpawnsForRegion(region.getName());
-                for (var entry : regionMobs.unwrap()) {
-                    NPCData npcData = plugin.getCreatureManager().getByID(entry.value());
-                    if (npcData != null) {
-                        builder.add(npcData, entry.weight());
-                    }
-                }
-                regionNpcDataCache.put(region, builder.build());
-            }
-            WeightedList<NPCData> npcDataList = regionNpcDataCache.get(region);
-            if (!npcDataList.isEmpty()) {
-                Optional<NPCData> selected = npcDataList.getRandom(event.getLevel().getRandom());
-                if (selected.isPresent()) {
-                    data = selected.get();
-                }
-            }
-
-            if (data == null) {
-                Holder<Biome> biome = event.getLevel().getBiome(event.getPos());
-                if (!npcDataCache.containsKey(biome)) {
-                    WeightedList.Builder<NPCData> builder = WeightedList.builder();
-                    WeightedList<String> biomeMobs = spawnConfig.getSpawnsForBiome(biome);
-                    for (var entry : biomeMobs.unwrap()) {
-                        NPCData npcData = plugin.getCreatureManager().getByID(entry.value());
-                        if (npcData != null) {
-                            builder.add(npcData, entry.weight());
-                        }
-                    }
-                    npcDataCache.put(biome, builder.build());
-                }
-                WeightedList<NPCData> npcDataList2 = npcDataCache.get(biome);
-                if (!npcDataList2.isEmpty()) {
-                    Optional<NPCData> selected = npcDataList2.getRandom(event.getLevel().getRandom());
-                    if (selected.isPresent()) {
-                        data = selected.get();
-                    }
-                }
-            }
-
-            if (data == null) {
-                return;
-            }
-            if (data.getMobCategoryOverride() != event.getMobCategory()) {
-                return; // Only spawn if the categories match
-            }
-            Class<? extends AetherBaseMob> toSpawn = data.getEntityClass();
-            AetherBaseMob activeNPC;
-            Mob currentMob = event.getMob();
-            int level = -1;
-            if (region.getLowerLevelBound() != 0 && region.getUpperLevelBound() != 0 && region.getUpperLevelBound() > region.getLowerLevelBound()) {
-                level = random.nextInt(region.getLowerLevelBound(), region.getUpperLevelBound());
-            }
-            try {
-                if (level != -1) {
-                    activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(data, event.getLevel().getWorld(), level);
-                } else {
-                    activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(data, event.getLevel().getWorld());
-                }
-                activeNPC.setPos(currentMob.getX(), currentMob.getY(), currentMob.getZ());
-                activeNPC.spawnReason = CreatureSpawnEvent.SpawnReason.NATURAL;
-                event.setMob(activeNPC);
-                event.getLevel().chunkSource.chunkMap.updatePlayerMobTypeMap(activeNPC);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                plugin.getLogger().warning("Failed to spawn custom mob " + data.getID() + ": " + e.getMessage());
-            }
+        NPCData data = region == null ? null : selectMatchingMob(getRegionNpcData(region), event.getMobCategory(), event.getLevel().getRandom());
+        if (data == null) {
+            data = selectMatchingMob(getBiomeNpcData(biome), event.getMobCategory(), event.getLevel().getRandom());
+        }
+        if (data == null) {
+            return;
         }
 
+        Class<? extends AetherBaseMob> toSpawn = data.getEntityClass();
+        AetherBaseMob activeNPC;
+        Mob currentMob = event.getMob();
+        int mobLevel = selectRegionLevel(region);
+        try {
+            if (mobLevel != -1) {
+                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(data, event.getLevel().getWorld(), mobLevel);
+            } else {
+                activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(data, event.getLevel().getWorld());
+            }
+            activeNPC.setPos(currentMob.getX(), currentMob.getY(), currentMob.getZ());
+            activeNPC.spawnReason = CreatureSpawnEvent.SpawnReason.NATURAL;
+            event.setMob(activeNPC);
+            event.getLevel().chunkSource.chunkMap.updatePlayerMobTypeMap(activeNPC);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            plugin.getLogger().warning("Failed to spawn custom mob " + data.getID() + ": " + e.getMessage());
+        }
+    }
+
+    private WeightedList<NPCData> getRegionNpcData(Region region) {
+        if (!regionNpcDataCache.containsKey(region)) {
+            regionNpcDataCache.put(region, buildNpcDataList(spawnConfig.getSpawnsForRegion(region.getName())));
+        }
+        return regionNpcDataCache.get(region);
+    }
+
+    private WeightedList<NPCData> getBiomeNpcData(Holder<Biome> biome) {
+        if (!npcDataCache.containsKey(biome)) {
+            npcDataCache.put(biome, buildNpcDataList(spawnConfig.getSpawnsForBiome(biome)));
+        }
+        return npcDataCache.get(biome);
+    }
+
+    private WeightedList<NPCData> buildNpcDataList(WeightedList<String> configuredMobs) {
+        WeightedList.Builder<NPCData> builder = WeightedList.builder();
+        for (var entry : configuredMobs.unwrap()) {
+            NPCData npcData = plugin.getCreatureManager().getByID(entry.value());
+            if (npcData != null) {
+                builder.add(npcData, entry.weight());
+            }
+        }
+        return builder.build();
+    }
+
+    private NPCData selectMatchingMob(WeightedList<NPCData> npcDataList, MobCategory mobCategory, RandomSource randomSource) {
+        if (npcDataList.isEmpty()) {
+            return null;
+        }
+        WeightedList.Builder<NPCData> builder = WeightedList.builder();
+        for (var entry : npcDataList.unwrap()) {
+            NPCData npcData = entry.value();
+            if (npcData.getMobCategoryOverride() == mobCategory) {
+                builder.add(npcData, entry.weight());
+            }
+        }
+        WeightedList<NPCData> matchingMobs = builder.build();
+        if (matchingMobs.isEmpty()) {
+            return null;
+        }
+        Optional<NPCData> selected = matchingMobs.getRandom(randomSource);
+        return selected.orElse(null);
+    }
+
+    private int selectRegionLevel(Region region) {
+        if (!(region instanceof PvERegion pveRegion)) {
+            return -1;
+        }
+        int lowerLevelBound = pveRegion.getLowerLevelBound();
+        int upperLevelBound = pveRegion.getUpperLevelBound();
+        if (lowerLevelBound == -1 || upperLevelBound == -1 || upperLevelBound <= lowerLevelBound) {
+            return -1;
+        }
+        return random.nextInt(lowerLevelBound, upperLevelBound + 1);
+    }
+
+    private WeightedList<MobSpawnSettings.SpawnerData> buildPlaceholderSpawns(WeightedList<String> customSpawns, MobCategory mobCategory) {
+        WeightedList.Builder<MobSpawnSettings.SpawnerData> placeholderBuilder = WeightedList.builder();
+        for (var weightedEntry : customSpawns.unwrap()) {
+            NPCData npcData = plugin.getCreatureManager().getByID(weightedEntry.value());
+            if (npcData == null || npcData.getMobCategoryOverride() != mobCategory) {
+                continue;
+            }
+            MobSpawnSettings.SpawnerData placeholder = new MobSpawnSettings.SpawnerData(npcData.getNaturalSpawnType(), 1, 1);
+            placeholderBuilder.add(placeholder, weightedEntry.weight());
+        }
+        return placeholderBuilder.build();
     }
 
     @EventHandler
@@ -130,33 +154,28 @@ public class NaturalSpawningListener implements Listener {
         if (event.getMobCategory() != MobCategory.MONSTER) {
             return;
         }
-        WeightedList<String> customSpawns = null;
         Location loc = new Location(event.getLevel().getWorld(), event.getPos().getX(), event.getPos().getY(), event.getPos().getZ());
-
         Region region = regionManager.getRegionByLocation(loc);
         if (region != null) {
-            customSpawns = spawnConfig.getSpawnsForRegion(region.getName());
-        }
-        if (customSpawns == null || customSpawns.isEmpty()) {
-            Holder<Biome> biome = event.getLevel().getBiome(event.getPos());
-            if (spawnerDataCache.containsKey(biome)) {
-                event.setSpawnerData(spawnerDataCache.get(biome));
+            WeightedList<MobSpawnSettings.SpawnerData> regionPlaceholders = buildPlaceholderSpawns(spawnConfig.getSpawnsForRegion(region.getName()), event.getMobCategory());
+            if (!regionPlaceholders.isEmpty()) {
+                event.setSpawnerData(regionPlaceholders);
                 return;
             }
-            customSpawns = spawnConfig.getSpawnsForBiome(biome);
         }
-        if (customSpawns.isEmpty()) {
+
+        Holder<Biome> biome = event.getLevel().getBiome(event.getPos());
+        if (spawnerDataCache.containsKey(biome)) {
+            event.setSpawnerData(spawnerDataCache.get(biome));
             return;
         }
 
-        WeightedList.Builder<MobSpawnSettings.SpawnerData> placeholderBuilder = WeightedList.builder();
-        for (var weightedEntry : customSpawns.unwrap()) {
-            int weight = weightedEntry.weight();
-            MobSpawnSettings.SpawnerData placeholder = new MobSpawnSettings.SpawnerData(EntityType.ZOMBIE, 1, 1);
-            placeholderBuilder.add(placeholder, weight);
+        WeightedList<MobSpawnSettings.SpawnerData> biomePlaceholders = buildPlaceholderSpawns(spawnConfig.getSpawnsForBiome(biome), event.getMobCategory());
+        if (biomePlaceholders.isEmpty()) {
+            return;
         }
-        event.setSpawnerData(placeholderBuilder.build());
-        spawnerDataCache.put(event.getBiome(), event.getSpawnerData());
+        event.setSpawnerData(biomePlaceholders);
+        spawnerDataCache.put(biome, biomePlaceholders);
     }
 
     @EventHandler

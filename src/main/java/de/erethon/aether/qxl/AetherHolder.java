@@ -30,6 +30,20 @@ public class AetherHolder implements QComponent, Quester {
     private Set<QAction> damageActions = new HashSet<>();
     private Set<QAction> attackActions = new HashSet<>();
 
+    public boolean hasLoaded(String path) {
+        return switch (path) {
+            case "visibilityConditions" -> visibilityConditions != null && !visibilityConditions.isEmpty();
+            case "spawnConditions" -> spawnConditions != null && !spawnConditions.isEmpty();
+            case "rightClickActions" -> rightClickActions != null && !rightClickActions.isEmpty();
+            case "leftClickActions" -> leftClickActions != null && !leftClickActions.isEmpty();
+            case "deathActions" -> deathActions != null && !deathActions.isEmpty();
+            case "spawnActions" -> spawnActions != null && !spawnActions.isEmpty();
+            case "damageActions" -> damageActions != null && !damageActions.isEmpty();
+            case "attackActions" -> attackActions != null && !attackActions.isEmpty();
+            default -> false;
+        };
+    }
+
     public boolean checkVisibilityConditions(Player player) {
         QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer(player);
         if (qPlayer == null) {
@@ -148,16 +162,17 @@ public class AetherHolder implements QComponent, Quester {
             return null;
         }
         String mobID = mob.getData().getID();
+        String source = "aether:" + mobID;
         holder.mob = mob;
         try {
-            holder.visibilityConditions = (Set<QCondition>) QConfigLoader.load(holder, "visibilityConditions", section, QRegistries.CONDITIONS);
-            holder.spawnConditions = (Set<QCondition>) QConfigLoader.load(holder, "spawnConditions", section, QRegistries.CONDITIONS);
-            holder.rightClickActions = (Set<QAction>) QConfigLoader.load(holder, "rightClickActions", section, QRegistries.ACTIONS);
-            holder.leftClickActions = (Set<QAction>) QConfigLoader.load(holder, "leftClickActions", section, QRegistries.ACTIONS);
-            holder.deathActions = (Set<QAction>) QConfigLoader.load(holder, "deathActions", section, QRegistries.ACTIONS);
-            holder.spawnActions = (Set<QAction>) QConfigLoader.load(holder, "spawnActions", section, QRegistries.ACTIONS);
-            holder.damageActions = (Set<QAction>) QConfigLoader.load(holder, "damageActions", section, QRegistries.ACTIONS);
-            holder.attackActions = (Set<QAction>) QConfigLoader.load(holder, "attackActions", section, QRegistries.ACTIONS);
+            holder.visibilityConditions = (Set<QCondition>) QConfigLoader.load(holder, "visibilityConditions", section, QRegistries.CONDITIONS, source);
+            holder.spawnConditions = (Set<QCondition>) QConfigLoader.load(holder, "spawnConditions", section, QRegistries.CONDITIONS, source);
+            holder.rightClickActions = (Set<QAction>) QConfigLoader.load(holder, "rightClickActions", section, QRegistries.ACTIONS, source);
+            holder.leftClickActions = (Set<QAction>) QConfigLoader.load(holder, "leftClickActions", section, QRegistries.ACTIONS, source);
+            holder.deathActions = (Set<QAction>) QConfigLoader.load(holder, "deathActions", section, QRegistries.ACTIONS, source);
+            holder.spawnActions = (Set<QAction>) QConfigLoader.load(holder, "spawnActions", section, QRegistries.ACTIONS, source);
+            holder.damageActions = (Set<QAction>) QConfigLoader.load(holder, "damageActions", section, QRegistries.ACTIONS, source);
+            holder.attackActions = (Set<QAction>) QConfigLoader.load(holder, "attackActions", section, QRegistries.ACTIONS, source);
         } catch (Exception e) {
             FriendlyError error = new FriendlyError(mob.getData().getID(), "Failed to load actions", e.getMessage(), "Mob ID: " + mobID);
             error.addStacktrace(e.getStackTrace());

@@ -1,10 +1,6 @@
 package de.erethon.aether.ai.goals;
 
 import de.erethon.aether.ai.GoalClass;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
@@ -17,7 +13,7 @@ public class AEAvoidTargetGoal extends AEPathfinderGoal {
     double walkSpeedModifier;
     double sprintSpeedModifier;
     float maxDist;
-    Class toAvoid;
+    Class<? extends LivingEntity> toAvoid;
 
     public AEAvoidTargetGoal() {
         goalClass = GoalClass.MOVE;
@@ -25,20 +21,35 @@ public class AEAvoidTargetGoal extends AEPathfinderGoal {
 
     @Override
     public Goal get(LivingEntity entity) {
+        if (toAvoid == null) {
+            throw new IllegalStateException("Avoid target class was not loaded.");
+        }
         return new AvoidEntityGoal<>((PathfinderMob) entity, toAvoid, maxDist, walkSpeedModifier, sprintSpeedModifier);
     }
 
     @Override
     public void load(String[] args) {
         isCreatureOnly = true;
-        Optional<EntityType<?>> byName = BuiltInRegistries.ENTITY_TYPE.getOptional(Identifier.tryParse(args[0].toLowerCase()));
-        if (byName.isPresent()) {
-            EntityType<?> entityType = byName.get();
-            toAvoid = entityType.getClass();
+        if (args.length < 4) {
+            throw new IllegalArgumentException("Expected avoid_target config: <entityType>;<maxDistance>;<walkSpeedModifier>;<sprintSpeedModifier>");
         }
-        maxDist = Float.parseFloat(args[1]);
-        walkSpeedModifier = Double.parseDouble(args[2]);
-        sprintSpeedModifier = Double.parseDouble(args[3]);
+        Optional<Class<? extends LivingEntity>> toAvoidClass = TargetEntityClassResolver.resolve(args[0]);
+        if (toAvoidClass.isPresent()) {
+            toAvoid = toAvoidClass.get();
+            maxDist = Float.parseFloat(args[1]);
+            walkSpeedModifier = Double.parseDouble(args[2]);
+            sprintSpeedModifier = Double.parseDouble(args[3]);
+            return;
+        }
 
+        // Legacy docs used: <walkSpeedModifier>;<sprintSpeedModifier>;<maxDistance>;<entityType>
+        toAvoidClass = TargetEntityClassResolver.resolve(args[3]);
+        if (toAvoidClass.isEmpty()) {
+            throw new IllegalArgumentException("Could not find entity type " + args[0] + " or " + args[3]);
+        }
+        toAvoid = toAvoidClass.get();
+        walkSpeedModifier = Double.parseDouble(args[0]);
+        sprintSpeedModifier = Double.parseDouble(args[1]);
+        maxDist = Float.parseFloat(args[2]);
     }
 }

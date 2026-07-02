@@ -107,6 +107,8 @@ import java.util.stream.Collectors;
 
 public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowAttackMob, MobSpawnCategoryOverrideProvider {
 
+    private static final int DEFAULT_TARGET_RANGE = 32;
+
     protected Aether plugin = Aether.getInstance();
     protected NPCData data;
     protected EntityType<?> displayType;
@@ -150,8 +152,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         this.data = data;
         this.displayType = data.getDisplayType();
 
-        if (data.hasLevels()) {
-            mobLevel = Objects.requireNonNullElseGet(overrideLevel, data::selectRandomLevel);
+        if (overrideLevel != null) {
+            mobLevel = overrideLevel;
+            levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
+        } else if (data.hasLevels()) {
+            mobLevel = data.selectRandomLevel();
             levelInfo = data.getCompositeLevelInfoForLevel(mobLevel);
         }
 
@@ -179,6 +184,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public void tick() {
+        if (data == null) {
+            remove(RemovalReason.DISCARDED);
+            return;
+        }
         if (behaviorController != null) {
             behaviorController.tickBeforeGoals();
         }
@@ -267,8 +276,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         if (target instanceof Player player) {
             try {
                 QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
-                if (qPlayer != null && holder != null) {
-                    holder.onAttack(qPlayer);
+                AetherHolder qxlHolder = getOrLoadHolder("attackActions");
+                if (qPlayer != null && qxlHolder != null) {
+                    qxlHolder.onAttack(qPlayer);
                 }
             } catch (Exception e) {
                 Aether.log("Failed to handle attack for " + data.getID() + ": " + e.getMessage());
@@ -300,10 +310,16 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
             pendingRetaliation = true;
             try {
                 QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
-                if (qPlayer != null && holder != null) {
-                    holder.onLeftClick(qPlayer);
+                AetherHolder qxlHolder = getOrLoadHolder("leftClickActions");
+                if (qPlayer != null) {
+                    if (qxlHolder != null) {
+                        qxlHolder.onLeftClick(qPlayer);
+                    }
                     if (amount > 0) {
-                        holder.onDamage(qPlayer);
+                        qxlHolder = getOrLoadHolder("damageActions");
+                        if (qxlHolder != null) {
+                            qxlHolder.onDamage(qPlayer);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -345,11 +361,18 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public MobCategory getEffectiveMobCategory() {
+        if (data == null) {
+            return MobCategory.MONSTER;
+        }
         return data.getMobCategoryOverride();
     }
 
     @Override
     public void die(DamageSource damageSource) {
+        if (data == null) {
+            remove(RemovalReason.DISCARDED);
+            return;
+        }
         PlayerCombatTracker.getInstance().unregister(getUUID());
         // We need to re-implement this logic, otherwise we cause normal death events for plugins
         Entity entity = damageSource.getEntity();
@@ -387,8 +410,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         // Calculate damage distribution and distribute loot/XP
         distributeLootAndXP();
 
-        if (holder != null) {
-            holder.onDeath();
+        AetherHolder qxlHolder = getOrLoadHolder("deathActions");
+        if (qxlHolder != null) {
+            qxlHolder.onDeath();
         }
         if (mobTag != null) {
             plugin.getCreatureManager().removeTaggedMob(mobTag, this);
@@ -579,6 +603,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         inSetTarget = true;
         try {
+            if (entityliving != null && !isValidCombatTarget(entityliving)) {
+                return false;
+            }
+
             PlayerCombatTracker tracker = PlayerCombatTracker.getInstance();
 
             if (!(entityliving instanceof Player)) {
@@ -666,8 +694,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         // QXL
         try {
             QPlayer qPlayer = QuestsXL.get().getDatabaseManager().getCurrentPlayer((org.bukkit.entity.Player) player.getBukkitEntity());
-            if (qPlayer != null && holder != null) {
-                holder.onRightClick(qPlayer);
+            AetherHolder qxlHolder = getOrLoadHolder("rightClickActions");
+            if (qPlayer != null && qxlHolder != null) {
+                qxlHolder.onRightClick(qPlayer);
             }
             QDialogueManager dialogueManager = QuestsXL.get().getDialogueManager();
             if ( dialogueManager != null) {
@@ -775,29 +804,37 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     private void registerAetherGoals() {
-        goalSelector.addGoal(8, new MobSeparationGoal(this));
-        if (data.getGoals().isEmpty() && data.getTargets().isEmpty()) {
+        clearAllAIGoals();
+        boolean explicitlyNoGoals = data.hasConfiguredGoals() && data.getGoals().isEmpty();
+        boolean explicitlyNoTargets = data.hasConfiguredTargets() && data.getTargets().isEmpty();
+        if (!explicitlyNoGoals) {
+            goalSelector.addGoal(8, new MobSeparationGoal(this));
+        }
+        if (!data.hasConfiguredGoals() && !data.hasConfiguredTargets()) {
             goalSelector.addGoal(0, new RandomStrollGoal(this, 1));
             goalSelector.addGoal(1, new RandomLookAroundGoal(this));
             goalSelector.addGoal(2, new AEMeleeAttackGoal(this, 1.4, false));
             targetSelector.addGoal(0, new HurtByTargetGoal(this, this.getClass()));
             if (data.getFaction() == null) {
-                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, null));
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, DEFAULT_TARGET_RANGE, true, false, this::testSpellbookTeam));
                 return;
             }
-            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false, this::testSpellbookTeam));
+            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, DEFAULT_TARGET_RANGE, false, false, this::testSpellbookTeam));
             return;
         }
         for (AEPathfinderGoal aeGoal : data.getGoals()) {
             goalSelector.addGoal(aeGoal.getPrio(), aeGoal.get(this));
         }
         if (data.getTargets().isEmpty()) {
-            targetSelector.addGoal(0, new HurtByTargetGoal(this, this.getClass()));
-            if (data.getFaction() == null) {
-                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, null));
+            if (explicitlyNoGoals || explicitlyNoTargets) {
                 return;
             }
-            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false, this::testSpellbookTeam));
+            targetSelector.addGoal(0, new HurtByTargetGoal(this, this.getClass()));
+            if (data.getFaction() == null) {
+                targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, DEFAULT_TARGET_RANGE, true, false, this::testSpellbookTeam));
+                return;
+            }
+            targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, DEFAULT_TARGET_RANGE, false, false, this::testSpellbookTeam));
             return;
         }
         for (AEPathfinderGoal aeGoal : data.getTargets()) {
@@ -832,8 +869,11 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         }
         this.displayType = data.getDisplayType();
         entityData = DataMappings.getSynchedEntityData(data.getDisplayType());
-        Optional<Integer> papyrusVersion = input.getInt("papyrus-entity-version");
-        version = papyrusVersion.orElse(0);
+        Optional<Integer> savedVersion = input.getInt("aether-mob-version");
+        if (savedVersion.isEmpty()) {
+            savedVersion = input.getInt("papyrus-entity-version");
+        }
+        version = savedVersion.orElse(0);
 
         Optional<Integer> savedLevel = input.getInt("aether-mob-level");
         if (savedLevel.isPresent()) {
@@ -859,6 +899,10 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     @Override
     public void addAdditionalSaveData(ValueOutput output) {
         super.addAdditionalSaveData(output);
+        if (data == null) {
+            plugin.getLogger().warning("Skipping save for Aether entity " + getUUID() + " because no NPC data is loaded.");
+            return;
+        }
         try {
             output.putString("papyrus-entity-id", data.getID());
             output.putInt("aether-mob-version", version);
@@ -897,15 +941,25 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
 
     @Override
     public boolean shouldBeSaved() {
+        if (data == null) {
+            return false;
+        }
         return data.isPersistent();
     }
 
     @Override
     public boolean isPersistenceRequired() {
+        if (data == null) {
+            return false;
+        }
         return data.isPersistent();
     }
 
     protected void onLoad() {
+        if (data == null) {
+            remove(RemovalReason.DISCARDED);
+            return;
+        }
         if (data.getBehaviorDefinition() != null) {
             behaviorController = new MobBehaviorController(this, data.getBehaviorDefinition());
         }
@@ -938,6 +992,16 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         Bukkit.getPluginManager().callEvent(event);
     }
 
+    private AetherHolder getOrLoadHolder(String path) {
+        if (data == null || data.getQXLSection() == null) {
+            return holder;
+        }
+        if (holder == null || (data.getQXLSection().contains(path) && !holder.hasLoaded(path))) {
+            holder = AetherHolder.loadFromConfigSection(data.getQXLSection(), this);
+        }
+        return holder;
+    }
+
     protected void onFirstSpawn() {
         getBukkitEntity().getPersistentDataContainer().set(plugin.getKey(), PersistentDataType.BOOLEAN, true);
         Component name = Component.empty();
@@ -954,7 +1018,9 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
         persist = data.isPersistent();
         collides = data.hasCollision();
         maxAirTicks = data.getMaximumAir();
-        getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).setBaseValue(10); // 0.5 second of invulnerability after being hit by default
+        if (getAttribute(Attributes.COMBAT_HURTINVULNERABILITY) != null) {
+            getAttribute(Attributes.COMBAT_HURTINVULNERABILITY).setBaseValue(10); // 0.5 second of invulnerability after being hit by default
+        }
 
         // Apply base attributes
         for (Map.Entry<Holder<Attribute>, Double> entry : data.getAttributes().entrySet()) {
@@ -1067,14 +1133,21 @@ public class AetherBaseMob extends Monster implements RangedAttackMob, CrossbowA
     }
 
     public boolean testSpellbookTeam(LivingEntity target, ServerLevel level) {
+        return isValidCombatTarget(target);
+    }
+
+    private boolean isValidCombatTarget(LivingEntity target) {
+        if (target == null || target == this || !target.isAlive()) {
+            return false;
+        }
         if (target instanceof AetherBaseMob mob) {
-            if (mob.data.getFaction() == null) {
-                    return true;
+            if (data.getFaction() == null || mob.getData().getFaction() == null) {
+                return false;
             }
-            if (mob.getData() == this.getData()) {
-                return false; // Same mob type, don't attack
-            }
-            return !Spellbook.canAttack(this.getBukkitLivingEntity(), mob.getBukkitLivingEntity());
+            return Spellbook.canAttack(this.getBukkitLivingEntity(), mob.getBukkitLivingEntity());
+        }
+        if (target instanceof Player player) {
+            return Spellbook.canAttack(this.getBukkitLivingEntity(), player.getBukkitLivingEntity());
         }
         return true;
     }

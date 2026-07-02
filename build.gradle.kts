@@ -14,7 +14,7 @@ plugins {
 }
 
 group = "de.erethon.aether"
-version = "1.0.1-SNAPSHOT"
+version = "1.0.2-SNAPSHOT"
 description = "Mob and NPC plugin for Erethon"
 
 java {

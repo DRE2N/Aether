@@ -59,6 +59,7 @@ public class NPCData {
     ConfigurationSection cfg;
     private Class entityClass;
     private EntityType displayType;
+    private EntityType naturalSpawnType = EntityType.ZOMBIE;
     private MobCategory mobCategoryOverride;
     private Component displayName = Component.text("NPC");
     private boolean instancable = false;
@@ -119,6 +120,8 @@ public class NPCData {
     // AI
     private Set<AEPathfinderGoal> goals = new HashSet<>();
     private Set<AEPathfinderGoal> targets = new HashSet<>();
+    private boolean goalsConfigured;
+    private boolean targetsConfigured;
     private BehaviorDefinition behaviorDefinition;
     private final Map<String, GoalProfile> behaviorGoalProfiles = new HashMap<>();
 
@@ -150,6 +153,10 @@ public class NPCData {
 
     public @NotNull EntityType<?> getDisplayType() {
         return displayType;
+    }
+
+    public @NotNull EntityType<?> getNaturalSpawnType() {
+        return naturalSpawnType;
     }
 
     public MobCategory getMobCategoryOverride() {
@@ -305,6 +312,14 @@ public class NPCData {
         return targets;
     }
 
+    public boolean hasConfiguredGoals() {
+        return goalsConfigured;
+    }
+
+    public boolean hasConfiguredTargets() {
+        return targetsConfigured;
+    }
+
     public BehaviorDefinition getBehaviorDefinition() {
         return behaviorDefinition;
     }
@@ -372,6 +387,13 @@ public class NPCData {
         if (displayType == EntityType.PLAYER) {
             displayType = EntityType.MANNEQUIN; // Legacy support
         }
+        String naturalSpawnTypeString = cfg.getString("naturalSpawnType", "zombie");
+        Optional<Holder.Reference<EntityType<?>>> naturalSpawnTypeOptional = BuiltInRegistries.ENTITY_TYPE.get(parseMinecraftEntityType(naturalSpawnTypeString));
+        if (naturalSpawnTypeOptional.isEmpty()) {
+            Aether.addException(ID, "Could not find naturalSpawnType " + naturalSpawnTypeString, "Ensure the naturalSpawnType exists in vanilla", null);
+            return;
+        }
+        naturalSpawnType = naturalSpawnTypeOptional.get().value();
         mobCategoryOverride = MobCategory.valueOf(cfg.getString("mobCategory", "MONSTER").toUpperCase());
         // Localized names
         displayName = Component.translatable("aether.entity." + getID().toLowerCase() + ".name");
@@ -533,6 +555,7 @@ public class NPCData {
 
         // AI
         if (cfg.contains("ai.goals")) {
+            goalsConfigured = true;
             try {
                 goals = GoalLoader.loadGoals(cfg.getStringList("ai.goals"));
             } catch (Exception e) {
@@ -542,6 +565,7 @@ public class NPCData {
             }
         }
         if (cfg.contains("ai.targets")) {
+            targetsConfigured = true;
             try {
                 targets = GoalLoader.loadGoals(cfg.getStringList("ai.targets"));
             } catch (Exception e) {
@@ -607,8 +631,19 @@ public class NPCData {
         // Level System
         loadLevelSystem();
 
+        if (cfg.contains("qxl")) {
+            qxlSection = cfg.getConfigurationSection("qxl");
+        }
+
         Aether.log("Loaded NPC: " + getID());
         isValid = true;
+    }
+
+    private Identifier parseMinecraftEntityType(String input) {
+        if (input.contains(":")) {
+            return Identifier.tryParse(input);
+        }
+        return Identifier.fromNamespaceAndPath("minecraft", input);
     }
 
     public void loadDelayed() {
@@ -696,9 +731,6 @@ public class NPCData {
                     onTargetSpells.add(entry);
                 }
             }
-        }
-        if (cfg.contains("qxl")) {
-            qxlSection = cfg.getConfigurationSection("qxl");
         }
     }
 

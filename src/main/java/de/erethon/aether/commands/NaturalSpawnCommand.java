@@ -326,7 +326,7 @@ public class NaturalSpawnCommand extends ECommand {
 
         // Get current region
         Region region = regionManager.getRegionByLocation(loc);
-        String regionName = region != null ? region.getName(false) : "None";
+        String regionName = region != null ? region.getName() : "None";
 
         // Get current biome
         CraftWorld craftWorld = (CraftWorld) loc.getWorld();
@@ -388,7 +388,7 @@ public class NaturalSpawnCommand extends ECommand {
                     MessageUtil.sendMessage(player, "&cYou are not in a region.");
                     return null;
                 }
-                return region.getName(false);
+                return region.getName();
             } else if (type.equals("biome")) {
                 CraftWorld craftWorld = (CraftWorld) loc.getWorld();
                 Holder<Biome> biomeHolder = craftWorld.getHandle().getBiome(new BlockPos(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));

@@ -53,6 +53,10 @@ public class GoalLoader {
         for (String cfgString : cfg) {
             Aether.log("Raw: " + cfgString);
             String[] split = cfgString.split(";");
+            if (split.length < 2) {
+                Aether.addException("GoalLoader", "Invalid goal config: " + cfgString, "Expected format: '<prio>;<goal_name>;<goal_config>'", null);
+                continue;
+            }
             int priority;
             try {
                 priority = Integer.parseInt(split[0]);
@@ -142,4 +146,3 @@ public class GoalLoader {
         return goals;
     }
 }
-
