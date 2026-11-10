@@ -3,6 +3,7 @@ package de.erethon.aether.commands;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.NPCData;
+import de.erethon.aether.qxl.QxlInstanceScope;
 import de.erethon.bedrock.chat.MessageUtil;
 import de.erethon.bedrock.command.ECommand;
 import org.bukkit.Bukkit;
@@ -60,6 +61,7 @@ public class SpawnCommand extends ECommand {
                     Class<? extends AetherBaseMob> toSpawn = npcData.getEntityClass();
                     AetherBaseMob activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(npcData, player.getWorld());
                     activeNPC.setPos(player.getX(), player.getY(), player.getZ());
+                    activeNPC.setInstanceScope(QxlInstanceScope.getPlayerScopeAt(player, player.getLocation()));
                     activeNPC.addToWorld();
                     MessageUtil.sendMessage(commandSender, "&aNPC " + npcData.getID() + " gespawnt. BaseClass: " + activeNPC.getClass().getSimpleName());
                 } catch (Exception e) {

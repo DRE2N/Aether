@@ -56,6 +56,6 @@ public class CastSpellbookSpellGoalImpl extends Goal {
         if (mode == SpellTargetMode.LAST_DAMAGE && mob.getLastAttacker() instanceof Player) {
             mob.lookAt(mob.getLastAttacker(), targetMaxYawChange, targetMaxPitchChange);
         }
-        SpellbookAPI.getInstance().getQueue().addToQueue(spell.getActiveSpell(mob.getBukkitLivingEntity()));
+        SpellbookAPI.getInstance().getQueue().addToQueue(spell.getActiveSpell(mob.getBukkitEntity()));
     }
 }

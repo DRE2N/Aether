@@ -4,8 +4,12 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
+import de.erethon.aether.qxl.QxlInstanceScope;
 import de.erethon.hephaestus.utils.HRandom;
 import de.erethon.papyrus.entities.CustomMob;
+import de.erethon.questsxl.livingworld.QEvent;
+import org.bukkit.scheduler.BukkitTask;
+import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal;
 import org.bukkit.Bukkit;
@@ -67,6 +71,22 @@ public class AESpawner {
     }
 
     public void spawn() {
+        spawn(null);
+    }
+
+    public void startEventWave(QEvent event) {
+        var scope = event.getStageTasks();
+        if (scope == null || scope.isClosed()) return;
+        // A scripted wave has its own counters and cannot take over a world spawner's wave.
+        AESpawner wave = new AESpawner(config, id);
+        AtomicReference<BukkitTask> task = new AtomicReference<>();
+        task.set(scope.repeating(() -> {
+            wave.spawn(event);
+            if (!wave.inWave) task.get().cancel();
+        }, 0L, 1L));
+    }
+
+    private void spawn(QEvent event) {
         if (centerLocation.getWorld() == null || !centerLocation.isChunkLoaded()) {
             return;
         }
@@ -89,14 +109,12 @@ public class AESpawner {
             }
             // Capacity check before starting a wave
             if (!entityIDs.isEmpty()) {
-                int nearby = centerLocation.getNearbyLivingEntities(maxMobsRange, maxMobsRangeY, e -> {
-                    if (e instanceof CustomMob customMob) {
-                        String pid = customMob.getPapyrusId();
-                        return pid != null && entityIDs.contains(pid);
-                    }
-                    return false;
-                }).size();
-                if (nearby >= maxMobs) {
+                Set<String> scopes = QxlInstanceScope.getActiveScopesNear(centerLocation, activationRange);
+                List<String> targetScopes = scopes.isEmpty()
+                        ? Collections.singletonList(null)
+                        : new ArrayList<>(scopes);
+                int nearby = targetScopes.stream().mapToInt(this::countNearbyMobs).max().orElse(0);
+                if (targetScopes.stream().allMatch(scope -> countNearbyMobs(scope) >= maxMobs)) {
                     nextWaveTick = now + waveCooldown;
                     return;
                 }
@@ -116,18 +134,7 @@ public class AESpawner {
             return;
         }
         if (!entityIDs.isEmpty()) {
-            int nearby = centerLocation.getNearbyLivingEntities(maxMobsRange, maxMobsRangeY, e -> {
-                if (e instanceof CustomMob customMob) {
-                    String pid = customMob.getPapyrusId();
-                    return pid != null && entityIDs.contains(pid);
-                }
-                return false;
-            }).size();
-            if (nearby >= maxMobs) {
-                endWave(now);
-                return;
-            }
-            lastMobCount = nearby;
+            lastMobCount = countNearbyMobs(null);
         }
 
         // Attempt to spawn exactly one mob per intra cooldown
@@ -149,28 +156,18 @@ public class AESpawner {
             return;
         }
         Class<? extends AetherBaseMob> toSpawn = chosen.getEntityClass();
+        Set<String> activeScopes = QxlInstanceScope.getActiveScopesNear(loc, activationRange);
+        List<String> targetScopes = activeScopes.isEmpty()
+                ? Collections.singletonList(null)
+                : activeScopes.stream().filter(scope -> countNearbyMobs(scope) < maxMobs).toList();
+        if (targetScopes.isEmpty()) {
+            endWave(now);
+            return;
+        }
         try {
-            AetherBaseMob activeNPC;
-            if (minLevel != -1 && maxLevel != -1) {
-                int level;
-                if (minLevel == maxLevel) {
-                    level = minLevel;
-                } else {
-                    level = minLevel + new Random().nextInt(maxLevel - minLevel + 1);
-                }
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(chosen, loc.getWorld(), level);
-            } else {
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(chosen, loc.getWorld());
+            for (String instanceScope : targetScopes) {
+                spawnMob(toSpawn, chosen, loc, instanceScope, event);
             }
-            activeNPC.setPos(loc.getX(), loc.getY(), loc.getZ());
-            activeNPC.addToWorld();
-            BlockPos bp = new BlockPos(centerLocation.getBlockX(), centerLocation.getBlockY(), centerLocation.getBlockZ());
-            // Make them stay around the spawner area
-            activeNPC.setHomeTo(bp, radius);
-            activeNPC.persistenceRequired = false;
-            activeNPC.persist = false;
-            MoveTowardsRestrictionGoal goal = new MoveTowardsRestrictionGoal(activeNPC, 0.15);
-            activeNPC.goalSelector.addGoal(7, goal);
         } catch (Exception e) {
             Aether.log("Spawner " + id + " failed to spawn mob: " + e.getMessage());
             e.printStackTrace();
@@ -184,6 +181,45 @@ public class AESpawner {
         } else {
             nextIntraTick = now + cooldown;
         }
+    }
+
+    private void spawnMob(Class<? extends AetherBaseMob> toSpawn, NPCData chosen, Location location,
+                          String instanceScope, QEvent event) throws ReflectiveOperationException {
+        AetherBaseMob activeNPC;
+        if (minLevel != -1 && maxLevel != -1) {
+            int level = minLevel == maxLevel
+                    ? minLevel
+                    : minLevel + new Random().nextInt(maxLevel - minLevel + 1);
+            activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class)
+                    .newInstance(chosen, location.getWorld(), level);
+        } else {
+            activeNPC = toSpawn.getConstructor(NPCData.class, World.class)
+                    .newInstance(chosen, location.getWorld());
+        }
+        activeNPC.setPos(location.getX(), location.getY(), location.getZ());
+        activeNPC.setInstanceScope(instanceScope);
+        if (event != null && !activeNPC.attachToEvent(event)) return;
+        activeNPC.addToWorld();
+        BlockPos bp = new BlockPos(centerLocation.getBlockX(), centerLocation.getBlockY(),
+                centerLocation.getBlockZ());
+        activeNPC.setHomeTo(bp, radius);
+        activeNPC.persistenceRequired = false;
+        activeNPC.persist = false;
+        activeNPC.getGoalSelector().addGoal(7, new MoveTowardsRestrictionGoal(activeNPC, 0.15));
+    }
+
+    private int countNearbyMobs(String instanceScope) {
+        return centerLocation.getNearbyLivingEntities(maxMobsRange, maxMobsRangeY, entity -> {
+            if (!(entity instanceof CustomMob customMob)) {
+                return false;
+            }
+            String papyrusId = customMob.getPapyrusId();
+            if (papyrusId == null || !entityIDs.contains(papyrusId)) {
+                return false;
+            }
+            AetherBaseMob aetherMob = QxlInstanceScope.getAetherMob(entity);
+            return aetherMob != null && Objects.equals(instanceScope, aetherMob.getInstanceScope());
+        }).size();
     }
 
     private void endWave(int now) {

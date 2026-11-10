@@ -9,6 +9,7 @@ import de.erethon.aether.ai.behavior.actions.ClearTargetAction;
 import de.erethon.aether.ai.behavior.actions.LookAtTargetAction;
 import de.erethon.aether.ai.behavior.actions.MoveAwayFromAttackerAction;
 import de.erethon.aether.ai.behavior.actions.MoveToTargetAction;
+import de.erethon.aether.ai.behavior.actions.OpenBreakbarAction;
 import de.erethon.aether.ai.behavior.actions.ResetDefaultGoalsAction;
 import de.erethon.aether.ai.behavior.actions.SetCooldownAction;
 import de.erethon.aether.ai.behavior.actions.SetTargetLastAttackerAction;
@@ -16,6 +17,7 @@ import de.erethon.aether.ai.behavior.actions.SetTargetNearestPlayerAction;
 import de.erethon.aether.ai.behavior.conditions.AlwaysCondition;
 import de.erethon.aether.ai.behavior.conditions.AttackerDistanceGtCondition;
 import de.erethon.aether.ai.behavior.conditions.AttackerDistanceLtCondition;
+import de.erethon.aether.ai.behavior.conditions.BreakbarResultCondition;
 import de.erethon.aether.ai.behavior.conditions.CooldownReadyCondition;
 import de.erethon.aether.ai.behavior.conditions.HasTargetCondition;
 import de.erethon.aether.ai.behavior.conditions.HealthAbovePercentCondition;
@@ -159,6 +161,8 @@ public final class BehaviorLoader {
             case "attacker_distance_gt" -> new AttackerDistanceGtCondition(parseDouble(args, 1, 8));
             case "state_time_at_least" -> new StateTimeAtLeastCondition(parseInt(args, 1, 20));
             case "cooldown_ready" -> new CooldownReadyCondition(args.length > 1 ? args[1] : "default");
+            case "breakbar_broken" -> new BreakbarResultCondition(true);
+            case "breakbar_failed" -> new BreakbarResultCondition(false);
             case "random_chance" -> new RandomChanceCondition(parseDouble(args, 1, 100));
             case "qxl_visibility" -> new QxlVisibilityCondition();
             case "qxl_spawn" -> new QxlSpawnCondition();
@@ -171,6 +175,7 @@ public final class BehaviorLoader {
         String type = args[0].toLowerCase(Locale.ROOT);
         return switch (type) {
             case "set_cooldown" -> new SetCooldownAction(args.length > 1 ? args[1] : "default", parseInt(args, 2, 20));
+            case "open_breakbar" -> new OpenBreakbarAction();
             case "cast_spell" -> {
                 if (args.length < 2 || args[1].isBlank()) {
                     throw new IllegalArgumentException("cast_spell requires a spell id");

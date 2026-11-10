@@ -1,6 +1,7 @@
 package de.erethon.aether.spawning;
 
 import de.erethon.aether.Aether;
+import de.erethon.questsxl.livingworld.QEvent;
 import net.minecraft.world.level.ChunkPos;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -99,6 +100,12 @@ public class SpawnerManager extends BukkitRunnable implements Listener {
             if (spawner.getId().equals(id)) {
                 spawner.spawn();
             }
+        }
+    }
+
+    public void triggerEventSpawner(String id, QEvent event) {
+        for (AESpawner spawner : configuredSpawners) {
+            if (spawner.getId().equals(id)) spawner.startEventWave(event);
         }
     }
 

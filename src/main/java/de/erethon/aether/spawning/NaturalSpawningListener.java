@@ -1,5 +1,6 @@
 package de.erethon.aether.spawning;
 
+import com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.NPCData;
@@ -11,7 +12,9 @@ import de.erethon.factions.region.RegionMode;
 import de.erethon.papyrus.events.MobSpawnFinalizedEvent;
 import de.erethon.papyrus.events.MobSpawnForBiomeEvent;
 import de.erethon.papyrus.events.PreCategorySpawnEvent;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.random.WeightedList;
 import net.minecraft.world.entity.Mob;
@@ -20,11 +23,12 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftEntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.Random;
@@ -35,6 +39,7 @@ public class NaturalSpawningListener implements Listener {
     private final Factions factions = Factions.get();
     private final RegionManager regionManager = factions.getRegionManager();
     private final MobSpawnConfig spawnConfig;
+    private final NaturalEncounterSpawner encounters = new NaturalEncounterSpawner(plugin, regionManager);
 
     // Cache some values
     private final HashMap<Holder<Biome>, WeightedList<MobSpawnSettings.SpawnerData>> spawnerDataCache = new HashMap<>();
@@ -53,30 +58,56 @@ public class NaturalSpawningListener implements Listener {
         Region region = regionManager.getRegionByLocation(loc);
         Holder<Biome> biome = event.getLevel().getBiome(event.getPos());
 
-        NPCData data = region == null ? null : selectMatchingMob(getRegionNpcData(region), event.getMobCategory(), event.getLevel().getRandom());
+        WeightedList<NPCData> pool = region == null ? WeightedList.of() : getRegionNpcData(region);
+        NPCData data = selectMatchingMob(pool, event.getMobCategory(), event.getLevel().getRandom());
         if (data == null) {
-            data = selectMatchingMob(getBiomeNpcData(biome), event.getMobCategory(), event.getLevel().getRandom());
+            pool = getBiomeNpcData(biome);
+            data = selectMatchingMob(pool, event.getMobCategory(), event.getLevel().getRandom());
         }
         if (data == null) {
             return;
         }
 
-        Class<? extends AetherBaseMob> toSpawn = data.getEntityClass();
-        AetherBaseMob activeNPC;
         Mob currentMob = event.getMob();
         int mobLevel = selectRegionLevel(region);
         try {
-            if (mobLevel != -1) {
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(data, event.getLevel().getWorld(), mobLevel);
-            } else {
-                activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(data, event.getLevel().getWorld());
-            }
-            activeNPC.setPos(currentMob.getX(), currentMob.getY(), currentMob.getZ());
-            activeNPC.spawnReason = CreatureSpawnEvent.SpawnReason.NATURAL;
+            AetherBaseMob activeNPC = createMob(event.getLevel(), data, mobLevel);
+            activeNPC.snapTo(currentMob.position(), currentMob.getYRot(), currentMob.getXRot());
+            activeNPC.applyRelativeHome();
             event.setMob(activeNPC);
-            event.getLevel().chunkSource.chunkMap.updatePlayerMobTypeMap(activeNPC);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            event.getLevel().getChunkSource().chunkMap.updatePlayerMobTypeMap(activeNPC);
+            if (event.getMobCategory() == MobCategory.MONSTER && !activeNPC.isRemoved()) {
+                encounters.tryPlan(event.getLevel(), activeNPC, region, pool, mobLevel);
+            }
+        } catch (ReflectiveOperationException e) {
             plugin.getLogger().warning("Failed to spawn custom mob " + data.getID() + ": " + e.getMessage());
+        }
+    }
+
+    static AetherBaseMob createMob(ServerLevel level, NPCData data, int mobLevel)
+            throws ReflectiveOperationException {
+        Class<? extends AetherBaseMob> type = data.getEntityClass();
+        World world = level.getWorld();
+        AetherBaseMob mob = mobLevel == -1
+                ? type.getConstructor(NPCData.class, World.class).newInstance(data, world)
+                : type.getConstructor(NPCData.class, World.class, Integer.class).newInstance(data, world, mobLevel);
+        mob.spawnReason = CreatureSpawnEvent.SpawnReason.NATURAL;
+        return mob;
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    private void onPreCreatureSpawn(PreCreatureSpawnEvent event) {
+        if (event.getReason() != CreatureSpawnEvent.SpawnReason.NATURAL
+                || CraftEntityType.bukkitToMinecraft(event.getType()).getCategory() != MobCategory.MONSTER) {
+            return;
+        }
+        Location location = event.getSpawnLocation();
+        Region region = regionManager.getRegionByLocation(location);
+        BlockPos pos = BlockPos.containing(location.getX(), location.getY(), location.getZ());
+        ServerLevel level = ((CraftWorld) location.getWorld()).getHandle();
+        if ((region != null && (region.getMode() == RegionMode.SAFE_ZONE || region.getMode() == RegionMode.PVP))
+                || !encounters.allowsNaturalSpawn(level, pos)) {
+            event.setCancelled(true);
         }
     }
 
@@ -143,7 +174,7 @@ public class NaturalSpawningListener implements Listener {
             if (npcData == null || npcData.getMobCategoryOverride() != mobCategory) {
                 continue;
             }
-            MobSpawnSettings.SpawnerData placeholder = new MobSpawnSettings.SpawnerData(npcData.getNaturalSpawnType(), 1, 1);
+            MobSpawnSettings.SpawnerData placeholder = new MobSpawnSettings.SpawnerData(npcData.getNaturalSpawnType(), net.minecraft.util.valueproviders.ConstantInt.of(1));
             placeholderBuilder.add(placeholder, weightedEntry.weight());
         }
         return placeholderBuilder.build();

@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
@@ -88,6 +89,9 @@ public class ActiveNPC {
             livingBase.setCollidable(npcData.hasCollision());
             livingBase.setMaximumAir(npcData.getMaximumAir());
             livingBase.setMaximumNoDamageTicks(npcData.getNoDamageTicks());
+            if (livingBase.getAttribute(Attribute.COMBAT_HURTINVULNERABILITY) != null) {
+                livingBase.getAttribute(Attribute.COMBAT_HURTINVULNERABILITY).setBaseValue(npcData.getNoDamageTicks());
+            }
         }
         /*if (npcData.getDisplayType() == org.bukkit.entity.EntityType.PLAYER) {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -127,7 +131,7 @@ public class ActiveNPC {
             baseEntity.setCustomNameVisible(true);
             CraftWorld craftWorld = (CraftWorld) baseEntity.getWorld();
             Level world = craftWorld.getHandle();
-            stand = new ArmorStand(EntityType.ARMOR_STAND, world);
+            stand = new ArmorStand(net.minecraft.world.entity.EntityTypes.ARMOR_STAND, world);
             stand.setInvisible(true);
             stand.setMarker(true);
             stand.getBukkitEntity().setCustomName("§7§o" + strings[1]);
@@ -160,7 +164,7 @@ public class ActiveNPC {
 
     public void addGoal(int prio, Goal goal) {
         CraftMob mob = (CraftMob) baseEntity;
-        mob.getHandle().goalSelector.addGoal(prio, goal);
+        mob.getHandle().getGoalSelector().addGoal(prio, goal);
     }
 
     public void addTarget(int prio, Goal goal) {

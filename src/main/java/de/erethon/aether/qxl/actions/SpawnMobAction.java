@@ -4,6 +4,9 @@ import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.NPCData;
+import de.erethon.aether.qxl.QxlInstanceScope;
+import de.erethon.aether.qxl.QxlMobSpawner;
+import de.erethon.aether.spawning.EncounterSpawnPlacement;
 import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.Quester;
 import de.erethon.questsxl.common.doc.QLoadableDoc;
@@ -11,11 +14,15 @@ import de.erethon.questsxl.common.doc.QParamDoc;
 import de.erethon.questsxl.common.script.QConfig;
 import de.erethon.questsxl.common.script.QLocation;
 import de.erethon.questsxl.component.action.QBaseAction;
+import de.erethon.questsxl.content.ComponentValidationContributor;
 import de.erethon.questsxl.error.FriendlyError;
 import de.erethon.questsxl.livingworld.QEvent;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import org.bukkit.Location;
-import org.bukkit.World;
+
+import java.util.List;
+import java.util.Set;
 
 @QLoadableDoc(
         value = "spawn_mob",
@@ -33,7 +40,7 @@ import org.bukkit.World;
                 "    z: 3",
         }
 )
-public class SpawnMobAction extends QBaseAction {
+public class SpawnMobAction extends QBaseAction implements ComponentValidationContributor {
 
     Aether aether = Aether.getInstance();
     CreatureManager creatureManager = aether.getCreatureManager();
@@ -42,8 +49,8 @@ public class SpawnMobAction extends QBaseAction {
     NPCData npcData = null;
     @QParamDoc(name = "location", description = "The QLocation to spawn the mob at", required = true)
     QLocation location = null;
-    @QParamDoc(name = "homeRange", description = "Set the home range of the mob. The mob will try to stay within this range of the spawn location. Default: -1 (no home)")
-    int homeRange = -1;
+    @QParamDoc(name = "homeRange", description = "Set the home range around the spawn point. Defaults to the event range for event mobs. Use -1 for no home.")
+    Integer homeRange;
     @QParamDoc(name = "level", description = "Override the mob's level. Default: -1 (no override)")
     int overrideLevel = -1;
     @QParamDoc(name ="amount", description = "The amount of mobs to spawn", def="1")
@@ -52,38 +59,62 @@ public class SpawnMobAction extends QBaseAction {
     String tag = null;
 
     @Override
+    public List<List<String>> requiredParameterGroups() {
+        return List.of(List.of("mob", "id"));
+    }
+
+    @Override
     public void playInternal(Quester quester) {
         if (!conditions(quester)) return;
-        Location pLocation = quester.getLocation();
+        QEvent event = eventContext(quester);
         for (int i = 0; i < amount; i++) {
-            try {
-                Class<? extends AetherBaseMob> toSpawn = npcData.getEntityClass();
-                AetherBaseMob activeNPC;
-                if (overrideLevel == -1) {
-                    activeNPC = toSpawn.getConstructor(NPCData.class, World.class).newInstance(npcData, pLocation.getWorld());
-                } else {
-                    activeNPC = toSpawn.getConstructor(NPCData.class, World.class, Integer.class).newInstance(npcData, pLocation.getWorld(), overrideLevel);
+            Location spawnLocation = location.get(quester.getLocation());
+            if (event != null && event.isIncident()) {
+                if (!spawnMob(spawnLocation, null, event)) {
+                    event.stop(true);
+                    return;
                 }
-                activeNPC.setPos(location.getX(pLocation), location.getY(pLocation), location.getZ(pLocation));
-                activeNPC.addToWorld();
-                if (tag != null) {
-                    activeNPC.setMobTag(tag);
-                }
-                if (quester instanceof QEvent event) {
-                    homeRange = event.getRange();
-                }
-                if (homeRange != -1) {
-                    activeNPC.setHomeTo(new BlockPos((int) activeNPC.getX(), (int) activeNPC.getY(), (int) activeNPC.getZ()), homeRange);
-                }
+                continue;
             }
-            catch (Exception e) {
-                FriendlyError error = new FriendlyError(id, "Failed to spawn mob", e.getMessage(), "Mob ID: " + npcData.getID()).addStacktrace(e.getStackTrace());
-                QuestsXL.get().addRuntimeError(error);
+            Set<String> scopes = QxlInstanceScope.getSpawnScopes(quester, spawnLocation);
+            if (scopes.isEmpty()) {
+                spawnMob(spawnLocation, null, event);
+            } else {
+                for (String scope : scopes) spawnMob(spawnLocation, scope, event);
             }
         }
         onFinish(quester);
     }
 
+    private boolean spawnMob(Location spawnLocation, String instanceScope, QEvent event) {
+        try {
+            AetherBaseMob activeNPC = QxlMobSpawner.create(npcData, spawnLocation, overrideLevel);
+            if (event != null && event.isIncident() && !EncounterSpawnPlacement.placeIncidentMob(
+                    (ServerLevel) activeNPC.level(), activeNPC, spawnLocation)) {
+                activeNPC.discard();
+                Aether.log("Could not place " + npcData.getID() + " in incident " + event.getId());
+                return false;
+            }
+            activeNPC.setInstanceScope(instanceScope);
+            if (event != null && !activeNPC.attachToEvent(event)) return false;
+            activeNPC.addToWorld();
+            if (activeNPC.isRemoved()) return false;
+            if (tag != null) {
+                activeNPC.setMobTag(tag);
+            }
+            int effectiveHomeRange = homeRange != null ? homeRange : event == null ? -1 : event.getRange();
+            if (effectiveHomeRange != -1) {
+                activeNPC.setHomeTo(new BlockPos((int) activeNPC.getX(), (int) activeNPC.getY(),
+                        (int) activeNPC.getZ()), effectiveHomeRange);
+            }
+            return true;
+        } catch (Exception e) {
+            FriendlyError error = new FriendlyError(id, "Failed to spawn mob", e.getMessage(),
+                    "Mob ID: " + npcData.getID()).addStacktrace(e.getStackTrace());
+            QuestsXL.get().addRuntimeError(error);
+            return false;
+        }
+    }
 
     @Override
     public void load(QConfig cfg) {
@@ -92,7 +123,7 @@ public class SpawnMobAction extends QBaseAction {
         npcData = creatureManager.getByID(cfg.getString("mob"));
         overrideLevel = cfg.getInt("level", -1);
         tag = cfg.getString("tag", null);
-        homeRange = cfg.getInt("homeRange", -1);
+        homeRange = cfg.contains("homeRange") ? cfg.getInt("homeRange") : null;
         amount = cfg.getInt("amount", 1);
         if (npcData == null) { // Legacy support
             npcData = creatureManager.getByID(cfg.getString("id"));

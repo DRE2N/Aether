@@ -16,11 +16,11 @@ public class NMSUtils {
     public static ArmorStand spawnInvisibleArmorstand(Location location, boolean invisible, boolean marker, boolean invulnerable, String name) {
         CraftWorld craftWorld = (CraftWorld) location.getWorld();
         Level world = craftWorld.getHandle();
-        ArmorStand stand = new ArmorStand(net.minecraft.world.entity.EntityType.ARMOR_STAND, world);
+        ArmorStand stand = new ArmorStand(net.minecraft.world.entity.EntityTypes.ARMOR_STAND, world);
         stand.setInvisible(invisible);
         stand.collides = false;
         stand.setMarker(marker);
-        stand.setInvulnerable(invulnerable);
+        stand.getBukkitEntity().setInvulnerable(invulnerable);
         stand.getBukkitEntity().teleport(location);
         stand.getBukkitEntity().setCustomName(name);
         stand.setCustomNameVisible(true);
@@ -64,4 +64,3 @@ public class NMSUtils {
     }
 
 }
-

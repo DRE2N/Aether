@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "plugin": "Aether",
+  "contentTypes": [
+    {
+      "id": "aetherMobs",
+      "label": "Mobs",
+      "kind": "mob",
+      "extractors": ["aether"],
+      "parameters": {
+        "max_health": {"category": "durability", "unit": "points", "precision": 1, "min": 1},
+        "advantage": {"category": "offense", "unit": "points", "precision": 1},
+        "attack_damage": {"category": "offense", "unit": "points", "precision": 1, "min": 0},
+        "movement_speed": {"category": "mobility", "unit": "blocks/tick", "precision": 3, "min": 0},
+        "chance": {"category": "cadence", "unit": "percent", "precision": 1, "min": 0, "max": 100},
+        "cooldown": {"category": "cadence", "unit": "ticks", "precision": 0, "min": 0}
+      },
+      "formulas": [
+        {"id": "durability", "expression": "maxHealth", "requires": ["maxHealth"]},
+        {"id": "pressure", "expression": "attackOrAdvantage", "requires": ["attackOrAdvantage"]}
+      ]
+    }
+  ]
+}

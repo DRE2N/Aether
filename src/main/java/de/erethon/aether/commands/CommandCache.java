@@ -2,6 +2,7 @@ package de.erethon.aether.commands;
 
 import de.erethon.bedrock.command.ECommandCache;
 import de.erethon.bedrock.plugin.EPlugin;
+import org.bukkit.Bukkit;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,7 +24,9 @@ public class CommandCache extends ECommandCache {
         addCommand(new KillCommand());
         addCommand(new DebugCommand());
         addCommand(new SpawnerCommand());
-        addCommand(new NaturalSpawnCommand());
+        if (Bukkit.getPluginManager().isPluginEnabled("Factions")) {
+            addCommand(new NaturalSpawnCommand());
+        }
 
     }
 }

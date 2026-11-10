@@ -1,46 +1,52 @@
 package de.erethon.aether.ai.goals;
 
+import de.erethon.aether.creature.AetherBaseMob;
+import de.erethon.aether.creature.ModelledMob;
+import de.erethon.aether.creature.PlayerCombatTracker;
+import de.erethon.aether.qxl.QxlInstanceScope;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
-import de.erethon.aether.creature.AetherBaseMob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.phys.Vec3;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 
 import java.util.EnumSet;
 
-/**
- * Melee attack goal that paths toward the target until {@link MeleeReachUtil} says to stop chasing.
- */
+/** Owns the approach, windup and recovery of an ordinary melee strike. */
 public class AEMeleeAttackGoal extends Goal {
+
+    private static final int WINDUP_TICKS = 10;
+    private static final int RECOVERY_TICKS = 10;
+    private static final double ATTACK_ARC_DOT = 0.5;
 
     protected final PathfinderMob mob;
     private final double speedModifier;
     private final boolean followingTargetEvenIfNotSeen;
-    private int ticksUntilNextAttack;
+    private LivingEntity committedTarget;
+    private Vec3 attackDirection;
+    private int strikeAt;
+    private int recoverUntil;
+    private int nextPathAttempt;
+    private Vec3 lastPathTarget;
 
     public AEMeleeAttackGoal(PathfinderMob mob, double speedModifier, boolean followingTargetEvenIfNotSeen) {
         this.mob = mob;
         this.speedModifier = speedModifier;
         this.followingTargetEvenIfNotSeen = followingTargetEvenIfNotSeen;
-        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
     @Override
     public boolean canUse() {
-        if (shouldDeferToBehavior()) {
-            return false;
-        }
-        LivingEntity target = this.mob.getTarget();
-        if (target == null || !target.isAlive()) {
-            return false;
-        }
-        if (target instanceof Player player && (player.isSpectator() || player.isCreative())) {
-            return false;
-        }
-        return true;
+        LivingEntity target = mob.getTarget();
+        return target != null && target.isAlive() && mob.canAttack(target)
+                && (!(mob instanceof AetherBaseMob base) || !base.shouldSuppressCombatGoalsFromBehavior());
     }
 
     @Override
@@ -48,20 +54,18 @@ public class AEMeleeAttackGoal extends Goal {
         return canUse();
     }
 
-    private boolean shouldDeferToBehavior() {
-        return this.mob instanceof AetherBaseMob base && base.shouldSuppressCombatGoalsFromBehavior();
-    }
-
     @Override
     public void start() {
-        this.mob.setAggressive(true);
-        this.ticksUntilNextAttack = 0;
+        mob.setAggressive(true);
+        lastPathTarget = null;
+        nextPathAttempt = 0;
     }
 
     @Override
     public void stop() {
-        this.mob.setAggressive(false);
-        this.mob.getNavigation().stop();
+        cancelWindup();
+        mob.setAggressive(false);
+        mob.getNavigation().stop();
     }
 
     @Override
@@ -71,61 +75,107 @@ public class AEMeleeAttackGoal extends Goal {
 
     @Override
     public void tick() {
-        LivingEntity target = this.mob.getTarget();
-        if (target == null) {
+        LivingEntity target = mob.getTarget();
+        int now = MinecraftServer.currentTick;
+        if (committedTarget != null) {
+            if (target != committedTarget || !canUse() || now > strikeAt + 1) {
+                cancelWindup();
+            } else if (now >= strikeAt) {
+                resolveStrike(target);
+            }
+            return;
+        }
+        if (target == null || now < recoverUntil) {
             return;
         }
 
-        this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
-        this.ticksUntilNextAttack = Math.max(this.ticksUntilNextAttack - 1, 0);
+        mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
+        boolean inReach = mob.isWithinMeleeAttackRange(target);
+        boolean canSee = mob.getSensing().hasLineOfSight(target);
+        if (inReach && canSee && beginWindup(target)) {
+            return;
+        }
 
-        boolean canSee = this.followingTargetEvenIfNotSeen || this.mob.getSensing().hasLineOfSight(target);
-        if (MeleeReachUtil.shouldKeepChasingForMelee(this.mob, target) || !canSee) {
-            Vec3 approach = computeApproachPosition(target);
-            this.mob.getNavigation().moveTo(approach.x, approach.y, approach.z, this.speedModifier);
-        } else if (MobSeparationHelper.hasCrowd(this.mob)) {
-            Vec3 offset = MobSeparationHelper.separationOffset(this.mob, 1.0);
-            this.mob.getNavigation().moveTo(
-                    this.mob.getX() + offset.x,
-                    this.mob.getY(),
-                    this.mob.getZ() + offset.z,
-                    this.speedModifier * 0.85
-            );
+        if (!canSee && !followingTargetEvenIfNotSeen) {
+            return;
+        }
+        if (!inReach || !canSee) {
+            chase(target);
         } else {
-            this.mob.getNavigation().stop();
-        }
-
-        this.checkAndPerformAttack(target);
-    }
-
-    protected void checkAndPerformAttack(LivingEntity target) {
-        if (this.canPerformAttack(target)) {
-            this.resetAttackCooldown();
-            this.mob.swing(InteractionHand.MAIN_HAND);
-            ServerLevel level = (ServerLevel) this.mob.level();
-            this.mob.doHurtTarget(level, target);
+            mob.getNavigation().stop();
+            lastPathTarget = null;
+            Vec3 offset = MobSeparationHelper.separationOffset(mob, 1.0);
+            if (offset.lengthSqr() >= 1.0E-6) {
+                mob.getMoveControl().setWantedPosition(mob.getX() + offset.x, mob.getY(),
+                        mob.getZ() + offset.z, speedModifier * 0.85);
+            }
         }
     }
 
-    protected void resetAttackCooldown() {
-        this.ticksUntilNextAttack = this.adjustedTickDelay(20);
+    private boolean beginWindup(LivingEntity target) {
+        if (target instanceof Player player && !PlayerCombatTracker.getInstance()
+                .tryBeginWindup(player.getUUID(), mob.getUUID(), WINDUP_TICKS)) {
+            return false;
+        }
+
+        committedTarget = target;
+        attackDirection = horizontalDirectionTo(target);
+        strikeAt = MinecraftServer.currentTick + WINDUP_TICKS;
+        mob.getNavigation().stop();
+        mob.getMoveControl().setWantedPosition(mob.getX(), mob.getY(), mob.getZ(), 0);
+        mob.lookAt(target, 180.0F, 180.0F);
+        var entity = mob.getBukkitEntity();
+        var cueLocation = entity.getLocation().add(0, mob.getEyeHeight() + 0.25, 0);
+        for (var viewer : entity.getTrackedBy()) {
+            if (viewer.canSee(entity) && viewer.getLocation().distanceSquared(cueLocation) <= 24 * 24
+                    && (!(mob instanceof AetherBaseMob base) || QxlInstanceScope.canInteract(base, viewer))) {
+                viewer.playSound(entity, Sound.ENTITY_PLAYER_ATTACK_NODAMAGE, 0.75F, 0.65F);
+                viewer.spawnParticle(Particle.CRIT, cueLocation, 4, 0.15, 0.1, 0.15, 0);
+            }
+        }
+        return true;
     }
 
-    protected boolean canPerformAttack(LivingEntity target) {
-        boolean canSee = this.followingTargetEvenIfNotSeen || this.mob.getSensing().hasLineOfSight(target);
-        return this.ticksUntilNextAttack <= 0
-                && MeleeReachUtil.isWithinLenientAttackRange(this.mob, target)
-                && canSee;
+    private void resolveStrike(LivingEntity target) {
+        Vec3 direction = horizontalDirectionTo(target);
+        boolean inArc = attackDirection.lengthSqr() == 0 || direction.lengthSqr() == 0
+                || attackDirection.dot(direction) >= ATTACK_ARC_DOT;
+        cancelWindup();
+        mob.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT);
+        if (inArc && mob.isWithinMeleeAttackRange(target) && mob.getSensing().hasLineOfSight(target)
+                && (!(mob instanceof AetherBaseMob base) || base.isValidCombatTarget(target))) {
+            mob.doHurtTarget((ServerLevel) mob.level(), target);
+        } else if (mob instanceof ModelledMob modelledMob) {
+            modelledMob.playAttackAnimation();
+        }
     }
 
-    private Vec3 computeApproachPosition(LivingEntity target) {
-        double dist = Math.max(0.001, this.mob.distanceTo(target));
-        double nx = (this.mob.getX() - target.getX()) / dist;
-        double nz = (this.mob.getZ() - target.getZ()) / dist;
-        double stopAt = Math.max(0.1, MeleeReachUtil.approximateMeleeReach(this.mob, target) - MeleeReachUtil.CHASE_INSET_BLOCKS);
+    private void cancelWindup() {
+        if (committedTarget == null) {
+            return;
+        }
+        PlayerCombatTracker.getInstance().releaseWindup(mob.getUUID());
+        committedTarget = null;
+        recoverUntil = MinecraftServer.currentTick + RECOVERY_TICKS;
+        lastPathTarget = null;
+    }
 
-        double x = target.getX() + nx * stopAt;
-        double z = target.getZ() + nz * stopAt;
-        return new Vec3(x, target.getY(), z);
+    private void chase(LivingEntity target) {
+        if (mob.tickCount < nextPathAttempt
+                || (!mob.getNavigation().isDone() && lastPathTarget != null
+                && lastPathTarget.distanceToSqr(target.position()) < 1.0)) {
+            return;
+        }
+
+        Vec3 direction = horizontalDirectionTo(target);
+        double stopAt = Math.max(0.1, MeleeReachUtil.approximateMeleeReach(mob, target) - MeleeReachUtil.CHASE_INSET_BLOCKS);
+        Vec3 approach = target.position().subtract(direction.scale(stopAt));
+        boolean foundPath = mob.getNavigation().moveTo(approach.x, approach.y, approach.z, speedModifier);
+        lastPathTarget = target.position();
+        nextPathAttempt = mob.tickCount + (foundPath ? 5 : 15) + Math.floorMod(mob.getId(), 4);
+    }
+
+    private Vec3 horizontalDirectionTo(LivingEntity target) {
+        return new Vec3(target.getX() - mob.getX(), 0, target.getZ() - mob.getZ()).normalize();
     }
 }

@@ -3,6 +3,7 @@ package de.erethon.aether.qxl.actions;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
+import de.erethon.aether.qxl.QxlInstanceScope;
 import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.Quester;
 import de.erethon.questsxl.common.doc.QLoadableDoc;
@@ -57,15 +58,15 @@ public class ShowMobAction extends QBaseAction {
             for (AetherBaseMob mob : mobs) {
                 if (quester instanceof QEvent event) {
                     switch (mode) {
-                        case EVENT_IN_RANGE -> execute(quester, player -> player.getPlayer().showEntity(Aether.getInstance(), mob.getBukkitLivingEntity()));
+                        case EVENT_IN_RANGE -> execute(quester, player -> show(player.getPlayer(), mob));
                         case EVENT_PARTICIPANTS -> {
                             for (QPlayer player : event.getParticipants().keySet()) {
-                                player.getPlayer().showEntity(Aether.getInstance(), mob.getBukkitLivingEntity());
+                                show(player.getPlayer(), mob);
                             }
                         }
                         case ALL -> {
                             for (Player player : Bukkit.getOnlinePlayers()) {
-                                player.showEntity(Aether.getInstance(), mob.getBukkitLivingEntity());
+                                show(player, mob);
                             }
                         }
                         default -> {
@@ -75,13 +76,13 @@ public class ShowMobAction extends QBaseAction {
                 }
                 if (quester instanceof QPlayer qPlayer) {
                     switch (mode) {
-                        case SELF -> qPlayer.getPlayer().showEntity(Aether.getInstance(), mob.getBukkitLivingEntity());
+                        case SELF -> show(qPlayer.getPlayer(), mob);
                         case GROUP -> {
                             // TODO, need to implement groups with Aergia
                         }
                         case ALL -> {
                             for (Player player : Bukkit.getOnlinePlayers()) {
-                                player.showEntity(Aether.getInstance(), mob.getBukkitLivingEntity());
+                                show(player, mob);
                             }
                         }
                         default -> {
@@ -96,6 +97,12 @@ public class ShowMobAction extends QBaseAction {
             QuestsXL.get().addRuntimeError(error);
         }
         onFinish(quester);
+    }
+
+    private void show(Player player, AetherBaseMob mob) {
+        if (QxlInstanceScope.canInteract(mob, player)) {
+            player.showEntity(Aether.getInstance(), mob.getBukkitLivingEntity());
+        }
     }
 
 

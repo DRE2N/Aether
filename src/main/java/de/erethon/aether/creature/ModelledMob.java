@@ -46,7 +46,7 @@ public class ModelledMob extends AetherBaseMob {
 
     public ModelledMob(NPCData data, World world, Integer overrideLevel) {
         super(data, world, overrideLevel);
-        displayType = EntityType.PIG; // Hardcode this for now
+        displayType = net.minecraft.world.entity.EntityTypes.PIG; // Hardcode this for now
         String id = data.cfg.getString("modelId");
         if (id == null) {
             Aether.addException("ModelledMob " + data.getID(), "Missing  modelId", "Add a modelId or remove the ModelledMob base class", null);
@@ -97,10 +97,14 @@ public class ModelledMob extends AetherBaseMob {
 
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
+        playAttackAnimation();
+        return super.doHurtTarget(level, target);
+    }
+
+    public void playAttackAnimation() {
         if (model.hasAnimation("attack")) {
             model.playAnimation("attack", false, false);
         }
-        return super.doHurtTarget(level, target);
     }
 
     @Override

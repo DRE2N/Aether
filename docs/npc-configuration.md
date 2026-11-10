@@ -15,6 +15,13 @@ displayType: pig
 # The base Minecraft entity type to use for hitbox and basic behavior
 # Examples: pig, zombie, skeleton, player, villager, etc.
 
+naturalSpawnType: zombie
+# Optional. Vanilla entity type used only for natural spawn placement and spawn-rule checks
+# before Aether replaces it with this NPC.
+# Use this to control conditions such as light level, water, ground, or biome placement.
+# Examples: zombie, skeleton, husk, drowned, pig, wolf
+# Default: zombie
+
 version: 1
 # Configuration version number. Mobs will get updated if their version is below this number.
 ```
@@ -139,8 +146,35 @@ Spell names must match spell IDs defined in Spellbook configuration.
 
 ## Leveling System
 
-The leveling system allows NPCs to have different stats and loot based on their level. When an NPC spawns, a level is randomly selected based on weights.
-Alternatively , you can set a fixed level for the NPC using Spawners or QuestsXL.
+Set `level: 5` for a mob with a fixed level and the shared combat stats. Use
+`leveling` to choose among weighted levels or to define level-specific loot.
+A level supplied by a spawner, a region, or QuestsXL takes precedence over the
+creature file. A fixed `level` in the creature file takes precedence over its
+weighted selection.
+
+Aether copies `mob-attribute-curves.yml` to its data folder on first startup.
+Each configured stat uses `base × (1 + growth × (level − 1))^exponent`, with the
+curve input limited to levels 1–20. Mobs with a chosen level or an authored
+curve stat use the curves. An unlevelled NPC can opt in with
+`useAttributeCurves: true`, and a creature can opt out with `useAttributeCurves: false`.
+
+For stats with an active curve, Aether adds both the creature's top-level
+`attributes` value and the inherited `leveling.<level>.attributes` roll to the
+curve. Use negative values for weaker variants. Attributes without an active
+curve, such as movement speed, use absolute values. For example, this level 5
+skirmisher uses shared stats with 12 less HP.
+
+```yaml
+level: 5
+attributes:
+  0:
+    id: max_health
+    value: -12
+```
+
+Reload Aether after changing the curve file. The curves apply to new spawns.
+Saved mobs keep their existing stats until their creature version is bumped or
+they respawn.
 
 ```yaml
 leveling:
@@ -154,10 +188,10 @@ leveling:
       # Attribute bonuses for this level
       0:
         id: "max_health"
-        value: 100  # Exact value
+        value: 10  # HP added to the shared curve
       1:
         id: "attack_damage"
-        min: 10  # Random value between min and max
+        min: 10  # Absolute value for this uncurved attribute
         max: 15
     
     loot:
@@ -178,8 +212,8 @@ leveling:
     attributes:
       0:
         id: "max_health"
-        min: 200
-        max: 250
+        min: 15
+        max: 25
       1:
         id: "attack_damage"
         value: 25
@@ -204,7 +238,7 @@ leveling:
     attributes:
       0:
         id: "max_health"
-        value: 1000
+        value: 100
       1:
         id: "attack_damage"
         value: 50
@@ -227,15 +261,29 @@ leveling:
 
 ### How Leveling Works
 
-1. **Random Selection**: When an NPC spawns, the system randomly selects a level based on weights
-2. **Attribute Inheritance**: If an attribute is not defined at a specific level, it falls back to the highest configured level below it
-3. **Loot Inheritance**: Loot uses the highest configured level at or below the target level
+1. When no fixed or external level is supplied, Aether selects a level using the configured weights.
+2. For each level attribute, Aether uses the highest configured level at or below the selected level.
+3. Loot uses the highest configured level at or below the selected level.
 
 Example:
 - Level 3 spawns but only levels 1, 5, and 10 are configured
-- Health comes from level 1 (highest below 3 with health defined)
+- The level 3 health curve receives the level 1 health bonus.
 - Attack damage comes from level 1
 - Loot comes from level 1
+
+### Migrating absolute combat stats
+
+Run the migration against old creature YAML before loading it with curves.
+Pass the complete curve configuration used by the target server. The tool
+prints the files it would change. Add `--write` to apply the offsets.
+
+```powershell
+java --class-path <snakeyaml-2.7.jar> tools/MigrateMobAttributeCurves.java <creatures-dir> src/main/resources/mob-attribute-curves.yml
+```
+
+Migration preserves authored values and ranges at their configured levels.
+Top-level values use the fixed `level`, or level 1 when there is no fixed level.
+Inherited offsets continue to follow the curve between authored levels.
 
 ---
 
@@ -642,6 +690,45 @@ ai:
 ```
 
 For full ready-to-copy behavior examples, see `docs/behavior-ai-examples.md`.
+
+## Boss defiance bar
+
+Any authored Aether creature can opt into the shared boss CC bar, regardless of
+its Java entity class or model. The bar opens for a timed window, accepts
+control pressure from Spellbook skills, and staggers the boss when depleted.
+While broken, AI pauses and incoming damage is multiplied. Ordinary knockback
+does not move a configured boss.
+
+```yaml
+boss:
+  breakbar:
+    enabled: true
+    name: "Defiance"
+    max: 100
+    autoWindow: true
+    windowTicks: 140
+    intervalTicks: 280
+    brokenTicks: 100
+    damageMultiplier: 1.5
+    viewRadius: 32
+```
+
+With `autoWindow: true`, the first window opens after 40 ticks and later
+windows follow `intervalTicks`. To tie the bar to a specific attack, set
+`autoWindow: false` and put `- "open_breakbar"` in that behavior state's
+`onEnter` actions. Do not put it in `onTick`: a state transition should choose
+the moment players can interrupt. A failed bar resets when its window closes.
+Transitions can use `breakbar_broken` or `breakbar_failed` conditions to branch
+to stagger recovery or a missed-interrupt attack. A failed result stays available
+until the next window opens; the broken condition lasts for the exposed window.
+The encounter must still author the dangerous cast and its responses: opening
+the bar alone does not create those consequences.
+
+Bar pressure is fixed per skill and does not scale with combat attributes.
+At window start, `max` rises by 40% for each additional nearby participant,
+up to four participants. The bar is visible to nearby players who can see and
+interact with that encounter instance. A solo boss can use a shorter window or
+lower bar budget; group encounters can demand coordinated control.
 
 
 

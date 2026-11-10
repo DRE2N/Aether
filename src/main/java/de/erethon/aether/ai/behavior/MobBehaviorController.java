@@ -47,6 +47,9 @@ public class MobBehaviorController {
         }
 
         applyTransitions(state);
+        // A breakbar outcome may have changed state; never tick the old cast once more.
+        state = getCurrentState();
+        if (state == null) return;
 
         if (worldTicks % behavior.tickInterval() != 0) {
             return;

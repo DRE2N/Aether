@@ -41,16 +41,16 @@ public class DeliverItemObjective extends QBaseObjective<MobDeliverItemEvent> {
 
     @Override
     public void check(ActiveObjective activeObjective, MobDeliverItemEvent event) {
-        if (!conditions(event.getPlayer())) {
-            return;
-        }
+        var player = getRelevantPlayer(activeObjective, event.getPlayer());
+        if (player == null) return;
         if (!event.getMobID().equalsIgnoreCase(mobID)) {
             return;
         }
         HItem deliveredItem = event.getItem();
-        if (deliveredItem.getKey().toString().equalsIgnoreCase(itemID) && event.getAmount() >= amount) {
+        if (deliveredItem.getKey().toString().equalsIgnoreCase(itemID) && event.getAmount() >= amount
+                && conditions(activeObjective.getHolder(), player)) {
             event.setAmount(event.getAmount() - amount);
-            checkCompletion(activeObjective, this, getPlayerHolder(event.getPlayer()));
+            checkCompletion(activeObjective, this, player);
         }
     }
 

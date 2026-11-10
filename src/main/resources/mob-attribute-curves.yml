@@ -1,0 +1,9 @@
+# Base combat stats for Aether mobs, evaluated at levels 1–20.
+# HP follows roughly 12 unmitigated Paladin base attacks, adjusted for mob resistance.
+# Attack is 90% of Warrior base attack. Resistance is 80% of Paladin base resistance.
+attributeCurves:
+  max_health: {base: 69.1, growth: 0.045, exponent: 1.15}
+  advantage_physical: {base: 6.39, growth: 0.045, exponent: 1.15}
+  advantage_magical: {base: 6.39, growth: 0.045, exponent: 1.15}
+  resistance_physical: {base: 1.344, growth: 0.030, exponent: 1.15}
+  resistance_magical: {base: 1.344, growth: 0.030, exponent: 1.15}

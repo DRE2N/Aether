@@ -27,7 +27,9 @@ public class SpawnerAction extends QBaseAction {
     @Override
     public void playInternal(Quester quester) {
         if (!conditions(quester)) return;
-        spawnerManager.triggerSpawner(spawnerID);
+        var event = eventContext(quester);
+        if (event == null) spawnerManager.triggerSpawner(spawnerID);
+        else spawnerManager.triggerEventSpawner(spawnerID, event);
         onFinish(quester);
     }
 

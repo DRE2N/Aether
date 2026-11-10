@@ -1,6 +1,7 @@
 package de.erethon.aether;
 
 import de.erethon.aether.commands.CommandCache;
+import de.erethon.aether.combat.MobAttributeCurve;
 import de.erethon.aether.creature.ActiveCreatureManager;
 import de.erethon.aether.creature.CreatureManager;
 import de.erethon.aether.creature.SkinCache;
@@ -16,6 +17,7 @@ import de.erethon.aether.qxl.conditions.CharacterLevelCondition;
 import de.erethon.aether.qxl.objectives.DeliverItemObjective;
 import de.erethon.aether.qxl.objectives.InteractMobObjective;
 import de.erethon.aether.qxl.objectives.KillMobObjective;
+import de.erethon.aether.qxl.objectives.TimedDefenseObjective;
 import de.erethon.aether.spawning.MobSpawnConfig;
 import de.erethon.aether.spawning.NaturalSpawningListener;
 import de.erethon.aether.spawning.SpawnerManager;
@@ -31,8 +33,12 @@ import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.QRegistries;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.minecraft.core.Holder;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -44,9 +50,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class Aether extends EPlugin implements Listener {
 
@@ -68,6 +77,8 @@ public final class Aether extends EPlugin implements Listener {
     NaturalSpawningListener naturalSpawningListener;
     SpawnerManager spawnerManager;
     MobSpawnConfig mobSpawnConfig;
+    private Map<Holder<Attribute>, MobAttributeCurve> mobAttributeCurves = Map.of();
+    private static final String MOB_ATTRIBUTE_CURVES_FILE = "mob-attribute-curves.yml";
 
     private Hephaestus hephaestusPlugin;
     private HItemLibrary hitemLibrary;
@@ -141,7 +152,7 @@ public final class Aether extends EPlugin implements Listener {
                 e.printStackTrace();
             }
         }
-        //npcManager = new NPCManager();
+        loadMobAttributeCurves();
         creatureManager = new CreatureManager();
         activeCreatureManager = new ActiveCreatureManager();
         playerListener = new PlayerListener();
@@ -149,8 +160,12 @@ public final class Aether extends EPlugin implements Listener {
         skinCache = new SkinCache(SKINS);
         spawnerManager = new SpawnerManager();
         mobSpawnConfig = new MobSpawnConfig();
-        naturalSpawningListener = new NaturalSpawningListener(mobSpawnConfig);
-        Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
+        if (Bukkit.getPluginManager().isPluginEnabled("Factions")) {
+            naturalSpawningListener = new NaturalSpawningListener(mobSpawnConfig);
+            Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
+        } else {
+            getLogger().warning("Factions is unavailable; region-aware natural spawning is disabled.");
+        }
 
 
         //Bukkit.getPluginManager().registerEvents(npcManager, this);
@@ -160,8 +175,14 @@ public final class Aether extends EPlugin implements Listener {
         commands = new CommandCache(this);
         setCommandCache(commands);
         commands.register(this);
-        Bukkit.getPluginManager().registerEvents(this, this);
-        this.getServer().getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onFinishStartup(ServerLoadEvent event) {
+                if (event.getType() == ServerLoadEvent.LoadType.STARTUP) {
+                    loadDelayedCreatures();
+                }
+            }
+        }, this);
         QuestsXL questsXL = (QuestsXL) Bukkit.getPluginManager().getPlugin("QuestsXL");
         if (questsXL != null) {
             questsXL.registerComponent(QRegistries.ACTIONS, "spawn_mob", SpawnMobAction::new);
@@ -173,6 +194,7 @@ public final class Aether extends EPlugin implements Listener {
             questsXL.registerComponent(QRegistries.CONDITIONS, "character_level", CharacterLevelCondition::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "deliver_item", DeliverItemObjective::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "kill_mob", KillMobObjective::new);
+            questsXL.registerComponent(QRegistries.OBJECTIVES, "timed_defense", TimedDefenseObjective::new);
             questsXL.registerComponent(QRegistries.OBJECTIVES, "interact_mob", InteractMobObjective::new);
         }
     }
@@ -185,6 +207,7 @@ public final class Aether extends EPlugin implements Listener {
     
     public void reload() {
         errors.clear();
+        loadMobAttributeCurves();
         creatureManager.reload();
         reloadMobSpawns();
         spawnerManager.reloadSpawners();
@@ -198,11 +221,33 @@ public final class Aether extends EPlugin implements Listener {
         }
     }
 
-    @EventHandler
-    private void onFinishStartup(ServerLoadEvent event) {
-        if (event.getType() != ServerLoadEvent.LoadType.STARTUP) {
-            return;
+    public Map<Holder<Attribute>, MobAttributeCurve> getMobAttributeCurves() {
+        return mobAttributeCurves;
+    }
+
+    private void loadMobAttributeCurves() {
+        try (var reader = new InputStreamReader(getResource(MOB_ATTRIBUTE_CURVES_FILE), StandardCharsets.UTF_8)) {
+            YamlConfiguration bundled = new YamlConfiguration();
+            bundled.load(reader);
+            Map<Holder<Attribute>, MobAttributeCurve> curves = MobAttributeCurve.load(bundled);
+            if (mobAttributeCurves.isEmpty()) {
+                mobAttributeCurves = Map.copyOf(curves);
+            }
+            File file = new File(getDataFolder(), MOB_ATTRIBUTE_CURVES_FILE);
+            if (!file.exists()) {
+                saveResource(MOB_ATTRIBUTE_CURVES_FILE, false);
+            }
+            YamlConfiguration config = new YamlConfiguration();
+            config.load(file);
+            curves.putAll(MobAttributeCurve.load(config));
+            mobAttributeCurves = Map.copyOf(curves);
+        } catch (IOException | InvalidConfigurationException | IllegalArgumentException e) {
+            addException(MOB_ATTRIBUTE_CURVES_FILE, "Could not load mob attribute curves: " + e.getMessage(),
+                    "Correct the curve configuration and reload Aether", null);
         }
+    }
+
+    private void loadDelayedCreatures() {
         BukkitRunnable runnable = new BukkitRunnable() {
             @Override
             public void run() {
@@ -282,9 +327,12 @@ public final class Aether extends EPlugin implements Listener {
         mobSpawnConfig = new MobSpawnConfig();
         if (naturalSpawningListener != null) {
             HandlerList.unregisterAll(naturalSpawningListener);
+            naturalSpawningListener = null;
         }
-        naturalSpawningListener = new NaturalSpawningListener(mobSpawnConfig);
-        Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
+        if (Bukkit.getPluginManager().isPluginEnabled("Factions")) {
+            naturalSpawningListener = new NaturalSpawningListener(mobSpawnConfig);
+            Bukkit.getPluginManager().registerEvents(naturalSpawningListener, this);
+        }
     }
 
 

@@ -3,6 +3,7 @@ package de.erethon.aether.qxl.actions;
 import de.erethon.aether.Aether;
 import de.erethon.aether.creature.AetherBaseMob;
 import de.erethon.aether.creature.CreatureManager;
+import de.erethon.aether.qxl.QxlInstanceScope;
 import de.erethon.questsxl.QuestsXL;
 import de.erethon.questsxl.common.Quester;
 import de.erethon.questsxl.common.doc.QLoadableDoc;
@@ -56,15 +57,19 @@ public class WalkMobAction extends QBaseAction {
                 throw new IllegalArgumentException("No mobs with tag " + tag + " found.");
             }
             for (AetherBaseMob mob : mobs) {
+                if (quester instanceof de.erethon.questsxl.player.QPlayer player
+                        && !QxlInstanceScope.canInteract(mob, player.getPlayer())) {
+                    continue;
+                }
                 // Remove the random walk goal to prevent it from interfering
                 Set<Goal> toRemove = new HashSet<>();
-                for (WrappedGoal goal : mob.goalSelector.getAvailableGoals()) {
+                for (WrappedGoal goal : mob.getGoalSelector().getAvailableGoals()) {
                     if (goal.getGoal() instanceof RandomStrollGoal || goal.getGoal() instanceof RandomSwimmingGoal) {
                         toRemove.add(goal.getGoal());
                         break;
                     }
                 }
-                toRemove.forEach(goal -> mob.goalSelector.removeGoal(goal));
+                toRemove.forEach(goal -> mob.getGoalSelector().removeGoal(goal));
                 mob.getMoveControl().setWantedPosition(location.getX(quester.getLocation()), location.getY(quester.getLocation()), location.getZ(quester.getLocation()), 1);
                 if (moveHome) {
                     BlockPos home = new BlockPos((int) location.getX(quester.getLocation()), (int) location.getY(quester.getLocation()), (int) location.getZ(quester.getLocation()));
@@ -76,7 +81,7 @@ public class WalkMobAction extends QBaseAction {
                     if (distance < 4) {
                         onFinish(quester);
                         // Re-add the random walk goal
-                        toRemove.forEach(goal -> mob.goalSelector.addGoal(1, goal));
+                        toRemove.forEach(goal -> mob.getGoalSelector().addGoal(1, goal));
                         cancel();
                     } else {
                         mob.getMoveControl().setWantedPosition(location.getX(quester.getLocation()), location.getY(quester.getLocation()), location.getZ(quester.getLocation()), 1);

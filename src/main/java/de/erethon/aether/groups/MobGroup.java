@@ -58,8 +58,8 @@ public class MobGroup {
     public void makeAttack(LivingEntity target) {
         net.minecraft.world.entity.LivingEntity nmsTarget = ((CraftLivingEntity) target).getHandle();
         for (ActiveNPC npc : npcs) {
-            npc.getNMSMob().goalSelector.addGoal(0, new net.minecraft.world.entity.ai.goal.MeleeAttackGoal((PathfinderMob) nmsTarget, 1.7, true));
-            npc.getNMSMob().goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.MoveTowardsTargetGoal((PathfinderMob) nmsTarget, 1.7, 64));
+            npc.getNMSMob().getGoalSelector().addGoal(0, new net.minecraft.world.entity.ai.goal.MeleeAttackGoal((PathfinderMob) nmsTarget, 1.7, true));
+            npc.getNMSMob().getGoalSelector().addGoal(1, new net.minecraft.world.entity.ai.goal.MoveTowardsTargetGoal((PathfinderMob) nmsTarget, 1.7, 64));
             npc.getNMSMob().setTarget(((CraftLivingEntity) target).getHandle());
         }
     }

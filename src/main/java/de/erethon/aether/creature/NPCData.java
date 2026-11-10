@@ -59,7 +59,7 @@ public class NPCData {
     ConfigurationSection cfg;
     private Class entityClass;
     private EntityType displayType;
-    private EntityType naturalSpawnType = EntityType.ZOMBIE;
+    private EntityType naturalSpawnType = net.minecraft.world.entity.EntityTypes.ZOMBIE;
     private MobCategory mobCategoryOverride;
     private Component displayName = Component.text("NPC");
     private boolean instancable = false;
@@ -83,6 +83,7 @@ public class NPCData {
 
     // Attributes
     private final Map<Holder<Attribute>, Double> attributes = new HashMap<>();
+    private final Map<Holder<Attribute>, Double> configuredAttributes = new HashMap<>();
 
     // Equipment
     private HItem mainHand;
@@ -130,6 +131,7 @@ public class NPCData {
     private Map<HItem, Float> loot = new HashMap<>();
 
     // Level System
+    private Integer fixedLevel;
     private Map<Integer, Integer> levelWeights = new HashMap<>();
     private Map<Integer, MobLevelInfo> levelInfo = new HashMap<>();
 
@@ -175,6 +177,19 @@ public class NPCData {
         return currentVersion;
     }
 
+    public boolean hasBossBreakbar() {
+        return cfg != null && cfg.getBoolean("boss.breakbar.enabled", false);
+    }
+
+    public double getBossBreakbarMax() { return cfg.getDouble("boss.breakbar.max", 100.0); }
+    public boolean isBossBreakbarAutoWindow() { return cfg.getBoolean("boss.breakbar.autoWindow", true); }
+    public int getBossBreakbarWindowTicks() { return cfg.getInt("boss.breakbar.windowTicks", 140); }
+    public int getBossBreakbarIntervalTicks() { return cfg.getInt("boss.breakbar.intervalTicks", 280); }
+    public int getBossBreakbarBrokenTicks() { return cfg.getInt("boss.breakbar.brokenTicks", 100); }
+    public double getBossBreakbarDamageMultiplier() { return cfg.getDouble("boss.breakbar.damageMultiplier", 1.5); }
+    public double getBossBreakbarViewRadius() { return cfg.getDouble("boss.breakbar.viewRadius", 32.0); }
+    public String getBossBreakbarName() { return cfg.getString("boss.breakbar.name", "Defiance"); }
+
     public boolean isValid() {
         return isValid;
     }
@@ -197,6 +212,20 @@ public class NPCData {
 
     public Map<Holder<Attribute>, Double> getAttributes() {
         return attributes;
+    }
+
+    public double getConfiguredAttribute(Holder<Attribute> attribute) {
+        return configuredAttributes.getOrDefault(attribute, 0.0);
+    }
+
+    public boolean usesAttributeCurves(boolean hasSpawnLevel, Set<Holder<Attribute>> curvedAttributes) {
+        if (cfg == null) {
+            return false;
+        }
+        if (cfg.isBoolean("useAttributeCurves")) {
+            return cfg.getBoolean("useAttributeCurves");
+        }
+        return hasSpawnLevel || hasLevels() || configuredAttributes.keySet().stream().anyMatch(curvedAttributes::contains);
     }
 
     public HItem getMainHand() {
@@ -384,8 +413,8 @@ public class NPCData {
             return;
         }
         displayType = optional.get().value();
-        if (displayType == EntityType.PLAYER) {
-            displayType = EntityType.MANNEQUIN; // Legacy support
+        if (displayType == net.minecraft.world.entity.EntityTypes.PLAYER) {
+            displayType = net.minecraft.world.entity.EntityTypes.MANNEQUIN; // Legacy support
         }
         String naturalSpawnTypeString = cfg.getString("naturalSpawnType", "zombie");
         Optional<Holder.Reference<EntityType<?>>> naturalSpawnTypeOptional = BuiltInRegistries.ENTITY_TYPE.get(parseMinecraftEntityType(naturalSpawnTypeString));
@@ -415,7 +444,7 @@ public class NPCData {
         glowing = cfg.getBoolean("config.glowing", false);
         gravity = cfg.getBoolean("config.gravity", true);
         nameTagVisible = cfg.getBoolean("config.nametagVisible", false);
-        noDamageTicks = cfg.getInt("config.noDamageTicks", 20);
+        noDamageTicks = cfg.getInt("config.noDamageTicks", 3);
         maximumAir = cfg.getInt("config.maximumAir", 20);
         // Players
         skinLink = cfg.getString("skin");
@@ -451,9 +480,9 @@ public class NPCData {
                     Aether.addException(ID, "No id found for attribute " + key, "Ensure the section includes 'id: '", null);
                     continue;
                 }
-                Double value = section.getDouble("value", 0.0);
-                if (value == 0.0) {
-                    Aether.addException(ID, "No value found for attribute " + key, "Ensure the section includes 'value: '", null);
+                double value = section.getDouble("value", Double.NaN);
+                if (!Double.isFinite(value)) {
+                    Aether.addException(ID, "Invalid value for attribute " + key, "Ensure the section includes a finite value", null);
                     continue;
                 }
                 Attribute attribute;
@@ -471,6 +500,7 @@ public class NPCData {
                     continue;
                 }
                 attributes.put(attributeHolder, value);
+                configuredAttributes.put(attributeHolder, value);
             }
         }
         // Equipment - Critical, return if it fails
@@ -735,6 +765,11 @@ public class NPCData {
     }
 
     private void loadLevelSystem() {
+        if (cfg.isInt("level") && cfg.getInt("level") > 0) {
+            fixedLevel = cfg.getInt("level");
+        } else if (cfg.contains("level")) {
+            Aether.addException(ID, "Invalid fixed mob level", "Set level to a positive integer", null);
+        }
         if (cfg.contains("leveling")) {
             ConfigurationSection section = cfg.getConfigurationSection("leveling");
             if (section == null) {
@@ -859,7 +894,7 @@ public class NPCData {
     }
 
     public boolean hasLevels() {
-        return !levelWeights.isEmpty();
+        return fixedLevel != null || !levelWeights.isEmpty();
     }
 
     public int selectRandomLevel() {
@@ -867,6 +902,9 @@ public class NPCData {
     }
 
     public int selectRandomLevel(Integer minLevel) {
+        if (fixedLevel != null) {
+            return fixedLevel;
+        }
         if (levelWeights.isEmpty()) {
             return 1; // Default level
         }

@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
@@ -33,6 +34,7 @@ public class AetherPlayer extends AetherBaseMob {
     private static EntityDataAccessor<ResolvableProfile> DATA_PLAYER_PROFILE = null;
     private static EntityDataAccessor<Optional<net.minecraft.network.chat.Component>> DATA_DESCRIPTION = null;
     private static EntityDataAccessor<HumanoidArm> DATA_PLAYER_MAIN_HAND = null;
+    private boolean noAi;
 
     public AetherPlayer(EntityType<? extends Mob> type, Level world) {
         super(type, world);
@@ -49,6 +51,20 @@ public class AetherPlayer extends AetherBaseMob {
     @Override
     protected void onFirstSpawn() {
         super.onFirstSpawn();
+        restoreAppearance();
+    }
+
+    @Override
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        if (data != null) {
+            // The base loader replaces entityData with the display type's defaults.
+            // Mannequin appearance is not restored by that template or vanilla NBT.
+            restoreAppearance();
+        }
+    }
+
+    private void restoreAppearance() {
         if (DATA_PLAYER_PROFILE == null) {
             DATA_PLAYER_PROFILE = DataMappings.getAccessor(Mannequin.class, "DATA_PROFILE");
         }
@@ -72,17 +88,18 @@ public class AetherPlayer extends AetherBaseMob {
     @Override
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket(@NotNull ServerEntity entity) {
         detectEquipmentUpdates();
-        return NMSUtils.getAddEntityPacketWithType(this, EntityType.MANNEQUIN);
+        return NMSUtils.getAddEntityPacketWithType(this, net.minecraft.world.entity.EntityTypes.MANNEQUIN);
     }
 
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
-        swing(InteractionHand.MAIN_HAND, false);
+        swing(InteractionHand.MAIN_HAND, net.minecraft.world.item.component.SwingAnimation.DEFAULT, false);
         return super.doHurtTarget(level, target);
     }
 
     @Override
     public void setNoAi(boolean noAi) {
+        this.noAi = noAi;
     }
 
     @Override
@@ -95,7 +112,7 @@ public class AetherPlayer extends AetherBaseMob {
 
     @Override
     public boolean isNoAi() {
-        return false;
+        return noAi;
     }
 
     @Override

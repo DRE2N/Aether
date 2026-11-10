@@ -22,7 +22,7 @@ import org.bukkit.entity.Player;
 )
 public class InteractMobObjective extends QBaseObjective<CreatureInteractEvent> {
 
-    @QParamDoc(name = "mos", description = "The ID of the mob that counts towards this objective", required = true)
+    @QParamDoc(name = "mob", description = "The ID of the mob that counts towards this objective", required = true)
     private String mob;
     @QParamDoc(name = "tag", description = "If set, only the mob with the specified tag will count towards this objective", required = false)
     private String tag;
@@ -36,7 +36,8 @@ public class InteractMobObjective extends QBaseObjective<CreatureInteractEvent> 
             String eventTag = event.getMob().getMobTag();
             if (eventTag == null || !eventTag.equalsIgnoreCase(tag)) return;
         }
-        checkCompletion(active, this, plugin.getDatabaseManager().getCurrentPlayer(event.getPlayer()));
+        var player = getRelevantPlayer(active, event.getPlayer());
+        if (player != null && conditions(active.getHolder(), player)) checkCompletion(active, this, player);
     }
 
     @Override
